@@ -104,3 +104,17 @@ tables are provenance records and do not enable crawling or admission APIs.
 `start_at`, `end_at`, `university_id`, `department_id`, and `event_type`
 filters. Events are ordered by `start_at` and expose provenance, fixture
 estimate status, and derived imminent-deadline/ended flags.
+
+## Recommendation API implementation (2026-07-18)
+
+`GET /recommendations?user_id=demo-user` reads only persisted results, while
+`POST /recommendations/recompute?user_id=demo-user` explicitly recalculates and
+upserts one item per existing lab. Items sort by total score, confidence, then
+lab ID. The response includes scores, effective weights, contributions,
+unavailable/degraded state, DB-backed evidence, and a template reason/action.
+
+Scoring uses keyword (35%), semantic (30%), recent-paper research (20%),
+profile preference (10%), and source freshness (5%). Missing components are
+renormalized across available components and lower confidence. `user_keywords`
+does not persist weights, so the current implementation reports uniform `1.0`
+fallback weights; adding durable CV weights requires a future migration.
