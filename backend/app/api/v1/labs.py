@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.db.session import get_db_session
 from app.repositories.labs import LabSearchFilters
-from app.schemas.labs import LabDetail, LabSearchResponse
+from app.schemas.labs import LabDetail, LabSearchResponse, SimilarLabsResponse
 from app.services.lab_search import LabSearchService
 
 router = APIRouter(prefix="/labs", tags=["labs"])
@@ -70,3 +70,15 @@ def get_lab(lab_id: str, session: Annotated[Session, Depends(get_db_session)]) -
     if lab is None:
         raise HTTPException(status_code=404)
     return lab
+
+
+@router.get("/{lab_id}/similar", response_model=SimilarLabsResponse)
+def get_similar_labs(
+    lab_id: str,
+    session: Annotated[Session, Depends(get_db_session)],
+    limit: Annotated[int, Query(ge=1, le=12)] = 3,
+) -> SimilarLabsResponse:
+    similar = LabSearchService(session).get_similar(lab_id, limit)
+    if similar is None:
+        raise HTTPException(status_code=404)
+    return similar

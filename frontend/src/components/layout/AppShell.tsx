@@ -1,13 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import {
-  Search,
-  Sparkles,
-  Heart,
-  Calendar as CalendarIcon,
-  User,
-  Menu,
-  X,
-} from "lucide-react";
+import { Search, Sparkles, Heart, Calendar as CalendarIcon, User, Menu, X } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
@@ -171,9 +163,7 @@ export function AppShell({
               <h1 className="truncate text-xl font-semibold tracking-tight text-[color:var(--navy)]">
                 {title}
               </h1>
-              {description && (
-                <p className="mt-1 text-sm text-muted-foreground">{description}</p>
-              )}
+              {description && <p className="mt-1 text-sm text-muted-foreground">{description}</p>}
             </div>
             {actions && <div className="flex shrink-0 items-center gap-2">{actions}</div>}
           </div>
@@ -184,9 +174,7 @@ export function AppShell({
             <h1 className="text-xl font-semibold tracking-tight text-[color:var(--navy)]">
               {title}
             </h1>
-            {description && (
-              <p className="mt-1 text-sm text-muted-foreground">{description}</p>
-            )}
+            {description && <p className="mt-1 text-sm text-muted-foreground">{description}</p>}
             {actions && <div className="mt-3 flex flex-wrap gap-2">{actions}</div>}
           </div>
           {children}
@@ -205,9 +193,7 @@ export function AppShell({
                 to={item.to}
                 className={cn(
                   "flex flex-col items-center gap-1 py-2 text-[11px]",
-                  active
-                    ? "text-[color:var(--point)]"
-                    : "text-muted-foreground",
+                  active ? "text-[color:var(--point)]" : "text-muted-foreground",
                 )}
               >
                 <Icon className="h-5 w-5" strokeWidth={active ? 2.2 : 1.6} />

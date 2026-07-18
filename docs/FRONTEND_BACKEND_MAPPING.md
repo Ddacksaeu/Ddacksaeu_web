@@ -117,6 +117,24 @@ Results accept `sort=score|recent`, `page`, and `page_size`, and return
 the same list fields plus provenance-backed facts and papers. This is a
 backend-only implementation; no frontend files are changed.
 
+## Search and detail frontend integration (in progress, 2026-07-18)
+
+This integration replaces only the research-lab explorer and detail-page mock
+lookups. Profile, favorites, calendar, recommendations, and email state remain
+separate work items, so their local UI state is not treated as persisted data.
+
+| Frontend concern | API contract used in this task | Rendering rule |
+| --- | --- | --- |
+| Explorer search and filters | `GET /api/v1/labs?q=&department=&field=&sort=score|recent&page=&page_size=` | Filter changes preserve the current query; API loading, empty, and retry states are explicit. |
+| Lab detail | `GET /api/v1/labs/{lab_id}` | Missing contact, homepage, facts, or papers are rendered as unavailable, not invented from mock data. |
+| Similar labs | `GET /api/v1/labs/{lab_id}/similar?limit=3` | Server selects related labs using the same field first, then shared keyword terms; the current lab is never returned. |
+| Match score | Nullable `recommendationScore` on a lab response | The UI shows a score only when the API supplied a persisted value. It never derives a score from fixture data. |
+| Provenance | `sourceUrl`, `sourceCheckedAt`, fact and paper provenance | Fixture origins and verification timestamps remain visible to the user. |
+
+The frontend uses `VITE_API_BASE_URL` (default
+`http://127.0.0.1:8000/api/v1`) for this public API location. No server secret
+or OpenAI key is exposed to the browser.
+
 ## Document-analysis API (2026-07-18)
 
 The current frontend remains unchanged and has no live upload integration.

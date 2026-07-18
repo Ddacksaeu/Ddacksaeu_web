@@ -21,7 +21,7 @@ import {
   Wand2,
   Eye,
 } from "lucide-react";
-import { useMemo, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { AppShell } from "@/components/layout/AppShell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -30,7 +30,13 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
 import {
   Dialog,
@@ -60,7 +66,11 @@ export const Route = createFileRoute("/lab/$id/email")({
           ? `${loaderData.lab.name} Outreach Email · Ddaksaeu`
           : "Outreach Email · Ddaksaeu",
       },
-      { name: "description", content: "Draft and review a personalized outreach email using your CV and lab information." },
+      {
+        name: "description",
+        content:
+          "Draft and review a personalized outreach email using your CV and lab information.",
+      },
     ],
   }),
 });
@@ -70,8 +80,16 @@ type Length = "short" | "normal" | "detailed";
 type Purpose = "apply" | "intern" | "meeting";
 type Lang = "ko" | "en";
 
-const TONE_LABEL: Record<Tone, string> = { polite: "Polite", concise: "Concise", passionate: "Enthusiastic" };
-const LEN_LABEL: Record<Length, string> = { short: "Short", normal: "Standard", detailed: "Detailed" };
+const TONE_LABEL: Record<Tone, string> = {
+  polite: "Polite",
+  concise: "Concise",
+  passionate: "Enthusiastic",
+};
+const LEN_LABEL: Record<Length, string> = {
+  short: "Short",
+  normal: "Standard",
+  detailed: "Detailed",
+};
 const PURPOSE_LABEL: Record<Purpose, string> = {
   apply: "Graduate application inquiry",
   intern: "Research internship inquiry",
@@ -272,12 +290,10 @@ function EmailComposer() {
   const [subject, setSubject] = useState(
     `Prospective Graduate Student Inquiry — ${profile.name} · ${lab.name}`,
   );
-  const initial = useMemo(
-    () => applyNaturalStyle(makeDraft(lab, profile, { tone, length, purpose, lang }), lab, profile),
-    [],
-  ); // eslint-disable-line react-hooks/exhaustive-deps
-  const [body, setBody] = useState(initial);
-  const historyRef = useRef<{ stack: string[]; index: number }>({ stack: [initial], index: 0 });
+  const [body, setBody] = useState(() =>
+    applyNaturalStyle(makeDraft(lab, profile, { tone, length, purpose, lang }), lab, profile),
+  );
+  const historyRef = useRef<{ stack: string[]; index: number }>({ stack: [body], index: 0 });
   const [lastEdited, setLastEdited] = useState<Date>(new Date());
   const [regenLoading, setRegenLoading] = useState(false);
 
@@ -309,7 +325,9 @@ function EmailComposer() {
   // Export dialog
   const [exportOpen, setExportOpen] = useState(false);
   // Diff preview dialog
-  const [diffOpen, setDiffOpen] = useState<null | { before: string; after: string; label: string }>(null);
+  const [diffOpen, setDiffOpen] = useState<null | { before: string; after: string; label: string }>(
+    null,
+  );
 
   const pushHistory = (next: string) => {
     const h = historyRef.current;
@@ -491,10 +509,7 @@ function EmailComposer() {
     return parts.map((p, i) => ({ text: p, hit: i % 2 === 1 }));
   }, [body, highlightTerms]);
 
-  const openAssistant = (
-    tab: "settings" | "ai",
-    tool?: "spell" | "style",
-  ) => {
+  const openAssistant = (tab: "settings" | "ai", tool?: "spell" | "style") => {
     setHelperTab(tab);
     if (tool) {
       setAiTool(tool);
@@ -523,8 +538,13 @@ function EmailComposer() {
         }
       >
         {/* Breadcrumb */}
-        <nav aria-label="breadcrumb" className="mb-4 flex items-center gap-1.5 text-xs text-muted-foreground">
-          <Link to="/" className="hover:text-[color:var(--deep)]">Explore Labs</Link>
+        <nav
+          aria-label="breadcrumb"
+          className="mb-4 flex items-center gap-1.5 text-xs text-muted-foreground"
+        >
+          <Link to="/" className="hover:text-[color:var(--deep)]">
+            Explore Labs
+          </Link>
           <ChevronRight className="h-3 w-3" />
           <Link to="/lab/$id" params={{ id: lab.id }} className="hover:text-[color:var(--deep)]">
             {lab.name}
@@ -544,8 +564,9 @@ function EmailComposer() {
                 Ddaksaeu helps you draft and review emails, but never sends them to professors.
               </p>
               <p className="mt-1 text-xs leading-relaxed text-[color:oklch(0.42_0.09_75)]">
-                Complete the final review and send the message from your own email app, such as Gmail or Outlook.
-                Verify names, affiliations, paper references, and all other facts before sending.
+                Complete the final review and send the message from your own email app, such as
+                Gmail or Outlook. Verify names, affiliations, paper references, and all other facts
+                before sending.
               </p>
             </div>
           </div>
@@ -553,10 +574,14 @@ function EmailComposer() {
 
         <p className="mt-3 flex items-center gap-2 px-1 text-sm text-muted-foreground">
           <Info className="h-4 w-4 shrink-0 text-[color:var(--deep)]" />
-          Draft from your profile and lab data, edit it in your own voice, and review every fact before sending.
+          Draft from your profile and lab data, edit it in your own voice, and review every fact
+          before sending.
         </p>
 
-        <section className="mt-3 rounded-2xl border border-border bg-white p-4" aria-label="Email settings">
+        <section
+          className="mt-3 rounded-2xl border border-border bg-white p-4"
+          aria-label="Email settings"
+        >
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             <SettingRow label="Email language">
               <SegSelect
@@ -597,7 +622,9 @@ function EmailComposer() {
                 </SelectTrigger>
                 <SelectContent>
                   {(Object.keys(PURPOSE_LABEL) as Purpose[]).map((k) => (
-                    <SelectItem key={k} value={k}>{PURPOSE_LABEL[k]}</SelectItem>
+                    <SelectItem key={k} value={k}>
+                      {PURPOSE_LABEL[k]}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -608,20 +635,28 @@ function EmailComposer() {
               checked={naturalStyle}
               onCheckedChange={(checked) => setNaturalStyle(checked === true)}
             />
-            <span className="text-sm font-medium text-[color:var(--navy)]">Natural, personal style</span>
+            <span className="text-sm font-medium text-[color:var(--navy)]">
+              Natural, personal style
+            </span>
             <Badge className="rounded-full bg-[color:var(--point)]/10 px-1.5 py-0 text-[10px] font-medium text-[color:var(--deep)] hover:bg-[color:var(--point)]/10">
               Recommended
             </Badge>
           </label>
         </section>
 
-        <section className="mt-3 rounded-2xl border border-border bg-white px-4 py-3" aria-label="Attachments">
+        <section
+          className="mt-3 rounded-2xl border border-border bg-white px-4 py-3"
+          aria-label="Attachments"
+        >
           <div className="flex flex-wrap items-center gap-2">
             <span className="mr-1 flex items-center gap-1.5 text-xs font-semibold text-[color:var(--navy)]">
               <Paperclip className="h-3.5 w-3.5" /> Attachments
             </span>
             {attachments.map((a) => (
-              <span key={a.id} className="inline-flex h-8 items-center gap-2 rounded-lg border border-border bg-[color:var(--surface)] px-2.5 text-xs">
+              <span
+                key={a.id}
+                className="inline-flex h-8 items-center gap-2 rounded-lg border border-border bg-[color:var(--surface)] px-2.5 text-xs"
+              >
                 <Checkbox
                   checked={a.checked}
                   onCheckedChange={(v) =>
@@ -630,7 +665,9 @@ function EmailComposer() {
                     )
                   }
                 />
-                <span className="max-w-52 truncate font-medium text-[color:var(--navy)]">{a.name}</span>
+                <span className="max-w-52 truncate font-medium text-[color:var(--navy)]">
+                  {a.name}
+                </span>
                 <button
                   type="button"
                   onClick={() => setAttachments((s) => s.filter((x) => x.id !== a.id))}
@@ -665,28 +702,62 @@ function EmailComposer() {
                 }}
               />
             </label>
-            <span className="ml-auto text-[11px] text-muted-foreground">PDF only · Review before export</span>
+            <span className="ml-auto text-[11px] text-muted-foreground">
+              PDF only · Review before export
+            </span>
           </div>
         </section>
 
         <section className="hidden" aria-label="AI email tools">
-          <button type="button" onClick={() => openAssistant("settings")} className="rounded-2xl border border-border bg-white p-4 text-left transition hover:border-[color:var(--point)]/40 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--point)]">
-            <span className="grid h-9 w-9 place-items-center rounded-xl bg-[color:var(--point)]/10 text-[color:var(--deep)]"><Sparkles className="h-4 w-4" /></span>
+          <button
+            type="button"
+            onClick={() => openAssistant("settings")}
+            className="rounded-2xl border border-border bg-white p-4 text-left transition hover:border-[color:var(--point)]/40 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--point)]"
+          >
+            <span className="grid h-9 w-9 place-items-center rounded-xl bg-[color:var(--point)]/10 text-[color:var(--deep)]">
+              <Sparkles className="h-4 w-4" />
+            </span>
             <strong className="mt-3 block text-sm text-[color:var(--navy)]">Draft with AI</strong>
-            <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">Combine your CV and lab information into a draft tailored by purpose and tone.</span>
-            <span className="mt-3 inline-flex text-xs font-medium text-[color:var(--deep)]">Open settings →</span>
+            <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">
+              Combine your CV and lab information into a draft tailored by purpose and tone.
+            </span>
+            <span className="mt-3 inline-flex text-xs font-medium text-[color:var(--deep)]">
+              Open settings →
+            </span>
           </button>
-          <button type="button" onClick={() => openAssistant("ai", "spell")} className="rounded-2xl border border-border bg-white p-4 text-left transition hover:border-[color:var(--point)]/40 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--point)]">
-            <span className="grid h-9 w-9 place-items-center rounded-xl bg-[color:var(--point)]/10 text-[color:var(--deep)]"><Check className="h-4 w-4" /></span>
-            <strong className="mt-3 block text-sm text-[color:var(--navy)]">Check grammar and wording</strong>
-            <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">Find typos and awkward phrases, then compare suggested edits side by side.</span>
-            <span className="mt-3 inline-flex text-xs font-medium text-[color:var(--deep)]">Open checker →</span>
+          <button
+            type="button"
+            onClick={() => openAssistant("ai", "spell")}
+            className="rounded-2xl border border-border bg-white p-4 text-left transition hover:border-[color:var(--point)]/40 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--point)]"
+          >
+            <span className="grid h-9 w-9 place-items-center rounded-xl bg-[color:var(--point)]/10 text-[color:var(--deep)]">
+              <Check className="h-4 w-4" />
+            </span>
+            <strong className="mt-3 block text-sm text-[color:var(--navy)]">
+              Check grammar and wording
+            </strong>
+            <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">
+              Find typos and awkward phrases, then compare suggested edits side by side.
+            </span>
+            <span className="mt-3 inline-flex text-xs font-medium text-[color:var(--deep)]">
+              Open checker →
+            </span>
           </button>
-          <button type="button" onClick={() => openAssistant("ai", "style")} className="rounded-2xl border border-border bg-white p-4 text-left transition hover:border-[color:var(--point)]/40 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--point)]">
-            <span className="grid h-9 w-9 place-items-center rounded-xl bg-[color:var(--point)]/10 text-[color:var(--deep)]"><ShieldCheck className="h-4 w-4" /></span>
+          <button
+            type="button"
+            onClick={() => openAssistant("ai", "style")}
+            className="rounded-2xl border border-border bg-white p-4 text-left transition hover:border-[color:var(--point)]/40 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--point)]"
+          >
+            <span className="grid h-9 w-9 place-items-center rounded-xl bg-[color:var(--point)]/10 text-[color:var(--deep)]">
+              <ShieldCheck className="h-4 w-4" />
+            </span>
             <strong className="mt-3 block text-sm text-[color:var(--navy)]">Review with AI</strong>
-            <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">Review politeness, clarity, specificity, and exaggerated wording before sending.</span>
-            <span className="mt-3 inline-flex text-xs font-medium text-[color:var(--deep)]">Open review →</span>
+            <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">
+              Review politeness, clarity, specificity, and exaggerated wording before sending.
+            </span>
+            <span className="mt-3 inline-flex text-xs font-medium text-[color:var(--deep)]">
+              Open review →
+            </span>
           </button>
         </section>
 
@@ -698,7 +769,9 @@ function EmailComposer() {
               {/* Header meta */}
               <div className="space-y-3 border-b border-border p-5">
                 <div className="grid gap-2">
-                  <Label htmlFor="to" className="text-xs text-muted-foreground">To</Label>
+                  <Label htmlFor="to" className="text-xs text-muted-foreground">
+                    To
+                  </Label>
                   <div className="flex items-center gap-2">
                     <Input
                       id="to"
@@ -726,7 +799,9 @@ function EmailComposer() {
                   </div>
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="subject" className="text-xs text-muted-foreground">Subject</Label>
+                  <Label htmlFor="subject" className="text-xs text-muted-foreground">
+                    Subject
+                  </Label>
                   <Input
                     id="subject"
                     value={subject}
@@ -752,10 +827,18 @@ function EmailComposer() {
                   <Redo2 className="h-4 w-4" />
                 </ToolBtn>
                 <span className="mx-1 h-4 w-px bg-border" />
-                <ToolBtn label="Bold" onClick={() => wrapSelection("**")}><Bold className="h-4 w-4" /></ToolBtn>
-                <ToolBtn label="Underline" onClick={() => wrapSelection("__")}><Underline className="h-4 w-4" /></ToolBtn>
-                <ToolBtn label="Bulleted list" onClick={() => wrapSelection("\n- ", "")}><List className="h-4 w-4" /></ToolBtn>
-                <ToolBtn label="Link" onClick={() => wrapSelection("[", "](https://)")}><Link2 className="h-4 w-4" /></ToolBtn>
+                <ToolBtn label="Bold" onClick={() => wrapSelection("**")}>
+                  <Bold className="h-4 w-4" />
+                </ToolBtn>
+                <ToolBtn label="Underline" onClick={() => wrapSelection("__")}>
+                  <Underline className="h-4 w-4" />
+                </ToolBtn>
+                <ToolBtn label="Bulleted list" onClick={() => wrapSelection("\n- ", "")}>
+                  <List className="h-4 w-4" />
+                </ToolBtn>
+                <ToolBtn label="Link" onClick={() => wrapSelection("[", "](https://)")}>
+                  <Link2 className="h-4 w-4" />
+                </ToolBtn>
                 <div className="ml-auto flex items-center gap-1 text-[11px] text-muted-foreground">
                   <span className="hidden sm:inline">Edit message</span>
                 </div>
@@ -765,7 +848,8 @@ function EmailComposer() {
               <details className="border-b border-border" open>
                 <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-5 py-2.5 text-xs text-muted-foreground hover:bg-[color:var(--surface)]">
                   <span className="flex items-center gap-1.5">
-                    <Eye className="h-3.5 w-3.5" /> Personalization preview · highlighted profile and lab details
+                    <Eye className="h-3.5 w-3.5" /> Personalization preview · highlighted profile
+                    and lab details
                   </span>
                   <span className="text-[11px]">Expand/collapse</span>
                 </summary>
@@ -787,7 +871,9 @@ function EmailComposer() {
 
               {/* Body */}
               <div className="p-5">
-                <Label htmlFor="body" className="sr-only">Message body</Label>
+                <Label htmlFor="body" className="sr-only">
+                  Message body
+                </Label>
                 <Textarea
                   id="body"
                   ref={textareaRef}
@@ -802,7 +888,13 @@ function EmailComposer() {
                     <span className="text-border">·</span>
                     <span>Estimated read: {readMin} min</span>
                     <span className="text-border">·</span>
-                    <span>Last edited {lastEdited.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}</span>
+                    <span>
+                      Last edited{" "}
+                      {lastEdited.toLocaleTimeString("en-US", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -816,7 +908,11 @@ function EmailComposer() {
                   onClick={regenerateFromApi}
                   disabled={regenLoading}
                 >
-                  {regenLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+                  {regenLoading ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Sparkles className="h-3.5 w-3.5" />
+                  )}
                   Draft with AI
                 </Button>
                 <Button
@@ -886,7 +982,9 @@ function EmailComposer() {
             <section className="hidden">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <h3 className="text-sm font-semibold text-[color:var(--navy)]">Pre-send checklist</h3>
+                  <h3 className="text-sm font-semibold text-[color:var(--navy)]">
+                    Pre-send checklist
+                  </h3>
                   <p className="mt-0.5 text-xs text-muted-foreground">
                     Review each item before sending.
                   </p>
@@ -925,7 +1023,10 @@ function EmailComposer() {
                       onCheckedChange={(v) => setChecks((s) => ({ ...s, [key]: v === true }))}
                       className="mt-0.5"
                     />
-                    <Label htmlFor={`chk-${key}`} className="cursor-pointer text-sm leading-relaxed text-foreground/85">
+                    <Label
+                      htmlFor={`chk-${key}`}
+                      className="cursor-pointer text-sm leading-relaxed text-foreground/85"
+                    >
                       {label}
                     </Label>
                   </li>
@@ -939,11 +1040,24 @@ function EmailComposer() {
             <div className="rounded-2xl border border-border bg-white">
               <Tabs value={helperTab} onValueChange={(v) => setHelperTab(v as typeof helperTab)}>
                 <TabsList className="grid w-full grid-cols-2 rounded-none rounded-t-2xl border-b border-border bg-[color:var(--surface)] p-1">
-                  <TabsTrigger value="context" className="rounded-lg text-xs data-[state=active]:bg-white data-[state=active]:text-[color:var(--navy)] data-[state=active]:shadow-sm">Context</TabsTrigger>
-                  <TabsTrigger value="settings" className="hidden">Email settings</TabsTrigger>
-                  <TabsTrigger value="attach" className="hidden">Attachments</TabsTrigger>
-                  <TabsTrigger value="ai" className="rounded-lg text-xs data-[state=active]:bg-white data-[state=active]:text-[color:var(--navy)] data-[state=active]:shadow-sm">
-                    <Wand2 className="mr-1 h-3.5 w-3.5" />Assistant
+                  <TabsTrigger
+                    value="context"
+                    className="rounded-lg text-xs data-[state=active]:bg-white data-[state=active]:text-[color:var(--navy)] data-[state=active]:shadow-sm"
+                  >
+                    Context
+                  </TabsTrigger>
+                  <TabsTrigger value="settings" className="hidden">
+                    Email settings
+                  </TabsTrigger>
+                  <TabsTrigger value="attach" className="hidden">
+                    Attachments
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="ai"
+                    className="rounded-lg text-xs data-[state=active]:bg-white data-[state=active]:text-[color:var(--navy)] data-[state=active]:shadow-sm"
+                  >
+                    <Wand2 className="mr-1 h-3.5 w-3.5" />
+                    Assistant
                   </TabsTrigger>
                 </TabsList>
 
@@ -973,7 +1087,9 @@ function EmailComposer() {
                     <ul className="space-y-1.5 text-sm">
                       <li className="flex items-start gap-2 text-foreground/85">
                         <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[color:var(--success)]" />
-                        <span>{lab.professor} · {lab.name}</span>
+                        <span>
+                          {lab.professor} · {lab.name}
+                        </span>
                       </li>
                       <li className="flex items-start gap-2 text-foreground/85">
                         <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[color:var(--success)]" />
@@ -1034,7 +1150,9 @@ function EmailComposer() {
                       </SelectTrigger>
                       <SelectContent>
                         {(Object.keys(PURPOSE_LABEL) as Purpose[]).map((k) => (
-                          <SelectItem key={k} value={k}>{PURPOSE_LABEL[k]}</SelectItem>
+                          <SelectItem key={k} value={k}>
+                            {PURPOSE_LABEL[k]}
+                          </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -1054,7 +1172,8 @@ function EmailComposer() {
                           </Badge>
                         </span>
                         <span className="mt-1 block text-[11px] leading-relaxed text-muted-foreground">
-                          Use specific projects and research interests while reducing repetitive greetings, exaggerated wording, and formulaic sentences.
+                          Use specific projects and research interests while reducing repetitive
+                          greetings, exaggerated wording, and formulaic sentences.
                         </span>
                       </span>
                     </label>
@@ -1064,11 +1183,16 @@ function EmailComposer() {
                     onClick={regenerateFromApi}
                     disabled={regenLoading}
                   >
-                    {regenLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                    {regenLoading ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Sparkles className="h-4 w-4" />
+                    )}
                     Regenerate draft
                   </Button>
                   <p className="text-[11px] leading-relaxed text-muted-foreground">
-                    Regenerating replaces your current edits with a new draft. You can restore them with Undo.
+                    Regenerating replaces your current edits with a new draft. You can restore them
+                    with Undo.
                   </p>
                 </TabsContent>
 
@@ -1090,7 +1214,9 @@ function EmailComposer() {
                         <Paperclip className="h-4 w-4" />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <div className="truncate text-sm font-medium text-[color:var(--navy)]">{a.name}</div>
+                        <div className="truncate text-sm font-medium text-[color:var(--navy)]">
+                          {a.name}
+                        </div>
                         <div className="text-[11px] text-muted-foreground">{a.size}</div>
                       </div>
                       <button
@@ -1127,8 +1253,12 @@ function EmailComposer() {
                 <TabsContent value="ai" className="p-4">
                   <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[color:var(--point)]/25 bg-[color:var(--point)]/5 p-3">
                     <div>
-                      <p className="text-sm font-medium text-[color:var(--navy)]">Generate a new draft</p>
-                      <p className="text-[11px] text-muted-foreground">Uses the settings and attachments shown above.</p>
+                      <p className="text-sm font-medium text-[color:var(--navy)]">
+                        Generate a new draft
+                      </p>
+                      <p className="text-[11px] text-muted-foreground">
+                        Uses the settings and attachments shown above.
+                      </p>
                     </div>
                     <Button
                       type="button"
@@ -1137,7 +1267,11 @@ function EmailComposer() {
                       onClick={regenerateFromApi}
                       disabled={regenLoading}
                     >
-                      {regenLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+                      {regenLoading ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <Sparkles className="h-3.5 w-3.5" />
+                      )}
                       Draft with AI
                     </Button>
                   </div>
@@ -1175,7 +1309,11 @@ function EmailComposer() {
                     onClick={runAi}
                     disabled={aiLoading}
                   >
-                    {aiLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
+                    {aiLoading ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Wand2 className="h-4 w-4" />
+                    )}
                     Run
                   </Button>
 
@@ -1255,10 +1393,16 @@ function EmailComposer() {
 
                     {!aiLoading && aiTool === "polish" && polishResult && (
                       <div className="rounded-lg border border-border p-3">
-                        <div className="text-[11px] uppercase tracking-widest text-muted-foreground">Original</div>
+                        <div className="text-[11px] uppercase tracking-widest text-muted-foreground">
+                          Original
+                        </div>
                         <p className="mt-1 text-xs text-foreground/80">{polishResult.before}</p>
-                        <div className="mt-3 text-[11px] uppercase tracking-widest text-muted-foreground">Suggestion</div>
-                        <p className="mt-1 text-xs text-[color:var(--navy)]">{polishResult.after}</p>
+                        <div className="mt-3 text-[11px] uppercase tracking-widest text-muted-foreground">
+                          Suggestion
+                        </div>
+                        <p className="mt-1 text-xs text-[color:var(--navy)]">
+                          {polishResult.after}
+                        </p>
                         <div className="mt-3 flex justify-end gap-1">
                           <button
                             onClick={() =>
@@ -1290,7 +1434,10 @@ function EmailComposer() {
                       <div className="rounded-lg border border-border p-3 text-xs text-foreground/80">
                         <p className="font-medium text-[color:var(--navy)]">2 repeated phrases</p>
                         <ul className="mt-2 space-y-1.5 text-muted-foreground">
-                          <li>· "The word "interest" appears several times. Consider varying the wording.</li>
+                          <li>
+                            · "The word "interest" appears several times. Consider varying the
+                            wording.
+                          </li>
                           <li>· "A similar request phrase appears twice.</li>
                         </ul>
                       </div>
@@ -1328,7 +1475,9 @@ function EmailComposer() {
                         }}
                         className="w-full rounded-lg border border-border p-3 text-left text-xs hover:bg-[color:var(--surface)]"
                       >
-                        <p className="font-medium text-[color:var(--navy)]">A draft about 30% shorter is ready</p>
+                        <p className="font-medium text-[color:var(--navy)]">
+                          A draft about 30% shorter is ready
+                        </p>
                         <p className="mt-1 text-muted-foreground">Select to preview the changes</p>
                       </button>
                     )}
@@ -1361,12 +1510,18 @@ function EmailComposer() {
         <section className="mt-4 rounded-2xl border border-border bg-white p-5">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <h3 className="text-sm font-semibold text-[color:var(--navy)]">Final review before sending</h3>
-              <p className="mt-0.5 text-xs text-muted-foreground">Complete this checklist after writing and AI review.</p>
+              <h3 className="text-sm font-semibold text-[color:var(--navy)]">
+                Final review before sending
+              </h3>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                Complete this checklist after writing and AI review.
+              </p>
             </div>
             <div className="flex items-center gap-3">
               <Progress value={(doneChecks / totalChecks) * 100} className="h-2 w-28" />
-              <span className="text-xs tabular-nums text-muted-foreground">{doneChecks}/{totalChecks}</span>
+              <span className="text-xs tabular-nums text-muted-foreground">
+                {doneChecks}/{totalChecks}
+              </span>
             </div>
           </div>
           <ul className="mt-4 grid gap-2 md:grid-cols-2">
@@ -1379,14 +1534,20 @@ function EmailComposer() {
                 ["tone", "No unnecessary personal data or exaggerated claims"],
               ] as const
             ).map(([key, label]) => (
-              <li key={key} className="flex items-start gap-2 rounded-lg bg-[color:var(--surface)]/60 px-3 py-2.5">
+              <li
+                key={key}
+                className="flex items-start gap-2 rounded-lg bg-[color:var(--surface)]/60 px-3 py-2.5"
+              >
                 <Checkbox
                   id={`final-${key}`}
                   checked={checks[key]}
                   onCheckedChange={(v) => setChecks((s) => ({ ...s, [key]: v === true }))}
                   className="mt-0.5"
                 />
-                <Label htmlFor={`final-${key}`} className="cursor-pointer text-sm leading-relaxed text-foreground/85">
+                <Label
+                  htmlFor={`final-${key}`}
+                  className="cursor-pointer text-sm leading-relaxed text-foreground/85"
+                >
                   {label}
                 </Label>
               </li>
@@ -1400,7 +1561,8 @@ function EmailComposer() {
             <DialogHeader>
               <DialogTitle>Move to my email app</DialogTitle>
               <DialogDescription>
-                Ddaksaeu does not send email for you. Review the summary, then send it yourself from your email app.
+                Ddaksaeu does not send email for you. Review the summary, then send it yourself from
+                your email app.
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-3 rounded-xl border border-border bg-[color:var(--surface)] p-3 text-sm">
@@ -1409,15 +1571,18 @@ function EmailComposer() {
               <SummaryRow
                 k="Attachments"
                 v={
-                  attachments.filter((a) => a.checked).map((a) => a.name).join(", ") ||
-                  "No attachments"
+                  attachments
+                    .filter((a) => a.checked)
+                    .map((a) => a.name)
+                    .join(", ") || "No attachments"
                 }
               />
             </div>
             <div className="flex items-start gap-2 rounded-lg border border-[color:var(--warning)]/40 bg-[color:var(--warning)]/10 px-3 py-2 text-[11px] text-[color:oklch(0.42_0.09_75)]">
               <Info className="mt-0.5 h-3 w-3 shrink-0" />
               <p>
-                You are responsible for the final message. Double-check the recipient and attachments before sending.
+                You are responsible for the final message. Double-check the recipient and
+                attachments before sending.
               </p>
             </div>
             <DialogFooter>
@@ -1454,13 +1619,17 @@ function EmailComposer() {
             </DialogHeader>
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="rounded-lg border border-border bg-[color:var(--surface)] p-3">
-                <div className="mb-2 text-[11px] uppercase tracking-widest text-muted-foreground">Before</div>
+                <div className="mb-2 text-[11px] uppercase tracking-widest text-muted-foreground">
+                  Before
+                </div>
                 <pre className="max-h-72 overflow-auto whitespace-pre-wrap text-[12px] leading-relaxed text-foreground/85">
                   {diffOpen?.before}
                 </pre>
               </div>
               <div className="rounded-lg border border-[color:var(--point)]/30 bg-[color:var(--point)]/5 p-3">
-                <div className="mb-2 text-[11px] uppercase tracking-widest text-[color:var(--deep)]">After</div>
+                <div className="mb-2 text-[11px] uppercase tracking-widest text-[color:var(--deep)]">
+                  After
+                </div>
                 <pre className="max-h-72 overflow-auto whitespace-pre-wrap text-[12px] leading-relaxed text-[color:var(--navy)]">
                   {diffOpen?.after}
                 </pre>
@@ -1513,7 +1682,8 @@ function ToolBtn({
             "grid h-8 w-8 place-items-center rounded-md text-muted-foreground transition-colors",
             "hover:bg-[color:var(--surface)] hover:text-[color:var(--navy)]",
             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--point)]",
-            disabled && "cursor-not-allowed opacity-40 hover:bg-transparent hover:text-muted-foreground",
+            disabled &&
+              "cursor-not-allowed opacity-40 hover:bg-transparent hover:text-muted-foreground",
           )}
         >
           {children}
@@ -1590,7 +1760,9 @@ function EmptyResult({ label, onRetry }: { label: string; onRetry: () => void })
 function SummaryRow({ k, v }: { k: string; v: string }) {
   return (
     <div className="flex items-start gap-3">
-      <div className="w-16 shrink-0 text-[11px] uppercase tracking-widest text-muted-foreground">{k}</div>
+      <div className="w-16 shrink-0 text-[11px] uppercase tracking-widest text-muted-foreground">
+        {k}
+      </div>
       <div className="min-w-0 flex-1 break-words text-foreground/85">{v}</div>
     </div>
   );

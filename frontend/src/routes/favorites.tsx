@@ -58,7 +58,10 @@ function FavoritesPage() {
           <p className="mt-1 text-sm text-muted-foreground">
             Select the heart on any lab card to save it for later.
           </p>
-          <Button asChild className="mt-4 gap-2 rounded-full bg-[color:var(--point)] hover:bg-[color:var(--deep)]">
+          <Button
+            asChild
+            className="mt-4 gap-2 rounded-full bg-[color:var(--point)] hover:bg-[color:var(--deep)]"
+          >
             <Link to="/">
               Explore labs <ArrowRight className="h-4 w-4" />
             </Link>
@@ -76,7 +79,8 @@ function FavoritesPage() {
                   <label
                     className={cn(
                       "absolute right-4 top-4 flex cursor-pointer items-center gap-1.5 rounded-full border border-border bg-white px-2.5 py-1 text-xs text-foreground/80 shadow-sm",
-                      inCompare && "border-[color:var(--point)] bg-[color:var(--point)]/10 text-[color:var(--deep)]",
+                      inCompare &&
+                        "border-[color:var(--point)] bg-[color:var(--point)]/10 text-[color:var(--deep)]",
                       compareFull && "cursor-not-allowed opacity-50",
                     )}
                   >
@@ -145,9 +149,7 @@ function FavoritesPage() {
         <DialogContent className="max-w-4xl">
           <DialogHeader>
             <DialogTitle>Compare labs</DialogTitle>
-            <DialogDescription>
-              {compareLabs.length} labs side by side.
-            </DialogDescription>
+            <DialogDescription>{compareLabs.length} labs side by side.</DialogDescription>
           </DialogHeader>
           <div className="overflow-x-auto">
             <table className="min-w-full border-separate border-spacing-0 text-sm">

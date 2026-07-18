@@ -60,6 +60,48 @@ class LabRepository:
         )
         return self.session.execute(statement).one_or_none()
 
+    def list_similar(self, lab_id: str, limit: int) -> list:
+        source_row = self.get_by_id(lab_id)
+        if source_row is None:
+            return []
+
+        source_lab = source_row[0]
+        source_keywords = {link.keyword.term_ko.casefold() for link in source_lab.keywords}
+        favorite_exists = select(Favorite.lab_id).where(
+            Favorite.user_id == self.user_id, Favorite.lab_id == Lab.id
+        )
+        recommendation_score = (
+            select(Recommendation.total_score)
+            .where(Recommendation.user_id == self.user_id, Recommendation.lab_id == Lab.id)
+            .scalar_subquery()
+        )
+        rows = self.session.execute(
+            select(
+                Lab,
+                University.name.label("university"),
+                recommendation_score.label("recommendation_score"),
+                favorite_exists.exists().label("is_favorite"),
+            )
+            .join(Lab.professor)
+            .join(Professor.university)
+            .where(Lab.id != lab_id)
+            .options(selectinload(Lab.keywords).selectinload(LabKeyword.keyword))
+        ).all()
+
+        def rank(row) -> tuple[int, int, object, str]:
+            lab = row[0]
+            shared_keywords = len(
+                source_keywords & {link.keyword.term_ko.casefold() for link in lab.keywords}
+            )
+            return (
+                0 if lab.field == source_lab.field else 1,
+                -shared_keywords,
+                lab.updated_at,
+                lab.name,
+            )
+
+        return sorted(rows, key=rank)[:limit]
+
     def _base_statement(self, filters: LabSearchFilters) -> Select:
         favorite_exists = select(Favorite.lab_id).where(
             Favorite.user_id == self.user_id, Favorite.lab_id == Lab.id

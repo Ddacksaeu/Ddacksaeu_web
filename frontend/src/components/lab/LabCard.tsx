@@ -2,9 +2,10 @@ import { Link } from "@tanstack/react-router";
 import { ExternalLink, Heart, Building2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 import { useAppState } from "@/lib/app-state";
+import type { LabListItem } from "@/lib/api/labs";
 import type { Lab } from "@/lib/mock-data";
+import { cn } from "@/lib/utils";
 
 export function MatchBar({ score }: { score: number }) {
   return (
@@ -25,15 +26,23 @@ export function LabCard({
   variant = "grid",
   highlight,
 }: {
-  lab: Lab;
+  lab: Lab | LabListItem;
   variant?: "grid" | "list";
   highlight?: string[];
 }) {
   const { isFavorite, toggleFavorite } = useAppState();
-  const fav = isFavorite(lab.id);
-
-  const isMatch = (k: string) =>
-    highlight?.some((h) => h.toLowerCase() === k.toLowerCase() || k.toLowerCase().includes(h.toLowerCase()));
+  const apiLab = "professorName" in lab;
+  const fav = apiLab ? lab.isFavorite : isFavorite(lab.id);
+  const professor = apiLab ? lab.professorName : lab.professor;
+  const homepage = apiLab ? lab.homepageUrl : lab.homepage;
+  const score = apiLab ? lab.recommendationScore : lab.matchScore;
+  const recentTopics = apiLab ? [] : lab.recentTopics;
+  const isMatch = (keyword: string) =>
+    highlight?.some(
+      (item) =>
+        item.toLowerCase() === keyword.toLowerCase() ||
+        keyword.toLowerCase().includes(item.toLowerCase()),
+    );
 
   return (
     <article
@@ -42,13 +51,13 @@ export function LabCard({
         variant === "list" && "lg:flex-row lg:items-start lg:gap-6",
       )}
     >
-      <div className="flex-1 min-w-0">
+      <div className="min-w-0 flex-1">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <Building2 className="h-3.5 w-3.5" />
               <span>{lab.department}</span>
-              <span className="text-border">·</span>
+              <span className="text-border">쨌</span>
               <span className="text-[color:var(--deep)]">{lab.field}</span>
             </div>
             <h3 className="mt-2 truncate text-base font-semibold tracking-tight text-[color:var(--navy)]">
@@ -56,7 +65,7 @@ export function LabCard({
                 {lab.name}
               </Link>
             </h3>
-            <p className="mt-0.5 text-sm text-muted-foreground">{lab.professor}</p>
+            <p className="mt-0.5 text-sm text-muted-foreground">{professor}</p>
           </div>
           <button
             type="button"
@@ -74,50 +83,73 @@ export function LabCard({
         </div>
 
         <p className="mt-3 line-clamp-2 text-sm leading-relaxed text-foreground/80">
-          {lab.summary}
+          {lab.summary ?? "No verified lab summary is available yet."}
         </p>
 
         <div className="mt-3 flex flex-wrap gap-1.5">
-          {lab.keywords.slice(0, 5).map((k) => (
+          {lab.keywords.slice(0, 5).map((keyword) => (
             <Badge
-              key={k}
+              key={keyword}
               variant="outline"
               className={cn(
                 "rounded-full border-border bg-[color:var(--surface)] font-normal text-foreground/70",
-                isMatch(k) &&
+                isMatch(keyword) &&
                   "border-[color:var(--point)]/40 bg-[color:var(--point)]/10 text-[color:var(--deep)]",
               )}
             >
-              {k}
+              {keyword}
             </Badge>
           ))}
         </div>
 
         <div className="mt-4 text-xs text-muted-foreground">
-          <span className="font-medium text-foreground/70">Recent topics · </span>
-          {lab.recentTopics.slice(0, 2).join(" / ")}
+          {recentTopics.length > 0 ? (
+            <>
+              <span className="font-medium text-foreground/70">Recent topics 쨌 </span>
+              {recentTopics.slice(0, 2).join(" / ")}
+            </>
+          ) : (
+            <>Last updated 쨌 {new Date(lab.updatedAt).toLocaleDateString()}</>
+          )}
         </div>
       </div>
 
       <div
         className={cn(
           "flex items-center justify-between gap-3 border-t border-border pt-4",
-          variant === "list" && "lg:w-56 lg:flex-col lg:items-stretch lg:justify-start lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0",
+          variant === "list" &&
+            "lg:w-56 lg:flex-col lg:items-stretch lg:justify-start lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0",
         )}
       >
-        <div>
-          <div className="text-[11px] uppercase tracking-wider text-muted-foreground">Profile match</div>
-          <div className="mt-1"><MatchBar score={lab.matchScore} /></div>
-        </div>
+        {score !== null ? (
+          <div>
+            <div className="text-[11px] uppercase tracking-wider text-muted-foreground">
+              Profile match
+            </div>
+            <div className="mt-1">
+              <MatchBar score={score} />
+            </div>
+          </div>
+        ) : (
+          <div className="text-xs text-muted-foreground">No profile score yet</div>
+        )}
         <div className="flex gap-2">
-          <Button asChild size="sm" variant="outline" className="rounded-full">
-            <a href={lab.homepage} target="_blank" rel="noreferrer" aria-label="Open homepage">
-              <ExternalLink className="h-3.5 w-3.5" />
-              Website
-            </a>
-          </Button>
-          <Button asChild size="sm" className="rounded-full bg-[color:var(--deep)] hover:bg-[color:var(--navy)]">
-            <Link to="/lab/$id" params={{ id: lab.id }}>Details</Link>
+          {homepage ? (
+            <Button asChild size="sm" variant="outline" className="rounded-full">
+              <a href={homepage} target="_blank" rel="noreferrer" aria-label="Open homepage">
+                <ExternalLink className="h-3.5 w-3.5" />
+                Website
+              </a>
+            </Button>
+          ) : null}
+          <Button
+            asChild
+            size="sm"
+            className="rounded-full bg-[color:var(--deep)] hover:bg-[color:var(--navy)]"
+          >
+            <Link to="/lab/$id" params={{ id: lab.id }}>
+              Details
+            </Link>
           </Button>
         </div>
       </div>

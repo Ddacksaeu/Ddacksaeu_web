@@ -80,9 +80,17 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: "Ddaksaeu · POSTECH Lab Discovery" },
-      { name: "description", content: "Discover POSTECH labs, get personalized recommendations, and manage graduate application deadlines." },
+      {
+        name: "description",
+        content:
+          "Discover POSTECH labs, get personalized recommendations, and manage graduate application deadlines.",
+      },
       { property: "og:title", content: "Ddaksaeu · POSTECH Lab Discovery" },
-      { property: "og:description", content: "Compare POSTECH labs that match your research interests and manage your application timeline in one place." },
+      {
+        property: "og:description",
+        content:
+          "Compare POSTECH labs that match your research interests and manage your application timeline in one place.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],

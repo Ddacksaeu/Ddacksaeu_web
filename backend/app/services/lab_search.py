@@ -9,6 +9,7 @@ from app.schemas.labs import (
     LabListItem,
     LabSearchResponse,
     PaperResponse,
+    SimilarLabsResponse,
 )
 
 
@@ -53,6 +54,13 @@ class LabSearchService:
                 )
                 for paper in lab.papers
             ],
+        )
+
+    def get_similar(self, lab_id: str, limit: int) -> SimilarLabsResponse | None:
+        if self.repository.get_by_id(lab_id) is None:
+            return None
+        return SimilarLabsResponse(
+            items=[self._list_item(*row) for row in self.repository.list_similar(lab_id, limit)]
         )
 
     @staticmethod

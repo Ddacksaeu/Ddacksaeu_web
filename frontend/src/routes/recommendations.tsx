@@ -17,13 +17,22 @@ export const Route = createFileRoute("/recommendations")({
   head: () => ({
     meta: [
       { title: "CV-Based Recommendations · Ddaksaeu" },
-      { name: "description", content: "Upload your CV to receive POSTECH lab recommendations matched to your interests." },
+      {
+        name: "description",
+        content: "Upload your CV to receive POSTECH lab recommendations matched to your interests.",
+      },
     ],
   }),
 });
 
 const DEMO_CV: CVAnalysis = {
-  keywords: ["Computer Vision", "Multimodal", "Diffusion Model", "3D Vision", "Representation Learning"],
+  keywords: [
+    "Computer Vision",
+    "Multimodal",
+    "Diffusion Model",
+    "3D Vision",
+    "Representation Learning",
+  ],
   skills: ["Python", "PyTorch", "OpenCV", "CUDA", "Git"],
   methodologies: ["Deep Learning", "Generative Models", "Representation Learning"],
   projects: USER_PROFILE.projects,
@@ -84,7 +93,9 @@ function RecPage() {
             ),
           );
           const missing = ["Reasoning", "Alignment", "Robotics"].filter(
-            (m) => l.keywords.some((k) => k.toLowerCase().includes(m.toLowerCase())) && !cv.keywords.some((u) => u.toLowerCase().includes(m.toLowerCase())),
+            (m) =>
+              l.keywords.some((k) => k.toLowerCase().includes(m.toLowerCase())) &&
+              !cv.keywords.some((u) => u.toLowerCase().includes(m.toLowerCase())),
           );
           const score = Math.min(99, 40 + matches.length * 12 + Math.round(l.matchScore * 0.3));
           return { lab: l, matches, missing, score };
@@ -221,7 +232,12 @@ function RecPage() {
               </div>
 
               <div className="mt-5 grid gap-4 sm:grid-cols-2">
-                <ChipGroup label="Research interests" items={cv.keywords} removable onRemove={removeKeyword} />
+                <ChipGroup
+                  label="Research interests"
+                  items={cv.keywords}
+                  removable
+                  onRemove={removeKeyword}
+                />
                 <ChipGroup label="Skills" items={cv.skills} />
                 <ChipGroup label="Research methods" items={cv.methodologies} />
                 <div>
@@ -247,7 +263,11 @@ function RecPage() {
                   placeholder="Add keyword (e.g. Multimodal)"
                   className="min-w-0 flex-1 border-0 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
                 />
-                <Button size="sm" onClick={addKeyword} className="gap-1 rounded-full bg-[color:var(--deep)] hover:bg-[color:var(--navy)]">
+                <Button
+                  size="sm"
+                  onClick={addKeyword}
+                  className="gap-1 rounded-full bg-[color:var(--deep)] hover:bg-[color:var(--navy)]"
+                >
                   <Plus className="h-3.5 w-3.5" /> Add
                 </Button>
               </div>
@@ -256,7 +276,9 @@ function RecPage() {
             <section>
               <div className="flex items-end justify-between">
                 <div>
-                  <h2 className="text-base font-semibold text-[color:var(--navy)]">Recommended labs</h2>
+                  <h2 className="text-base font-semibold text-[color:var(--navy)]">
+                    Recommended labs
+                  </h2>
                   <p className="mt-0.5 text-xs text-muted-foreground">
                     Ranked by match with your profile
                   </p>
@@ -273,7 +295,9 @@ function RecPage() {
                         <h3 className="mt-1 text-base font-semibold text-[color:var(--navy)]">
                           {r.lab.name}
                         </h3>
-                        <div className="mt-0.5 text-sm text-muted-foreground">{r.lab.professor}</div>
+                        <div className="mt-0.5 text-sm text-muted-foreground">
+                          {r.lab.professor}
+                        </div>
                       </div>
                       <div className="text-right">
                         <div className="text-2xl font-semibold tabular-nums text-[color:var(--navy)]">
@@ -307,9 +331,15 @@ function RecPage() {
                     </div>
                     <div className="mt-4 flex flex-wrap justify-end gap-2">
                       <Button asChild variant="outline" size="sm" className="rounded-full">
-                        <a href={r.lab.homepage} target="_blank" rel="noreferrer">Website</a>
+                        <a href={r.lab.homepage} target="_blank" rel="noreferrer">
+                          Website
+                        </a>
                       </Button>
-                      <Button asChild size="sm" className="rounded-full bg-[color:var(--deep)] hover:bg-[color:var(--navy)]">
+                      <Button
+                        asChild
+                        size="sm"
+                        className="rounded-full bg-[color:var(--deep)] hover:bg-[color:var(--navy)]"
+                      >
                         <a href={`/lab/${r.lab.id}`}>View details</a>
                       </Button>
                     </div>

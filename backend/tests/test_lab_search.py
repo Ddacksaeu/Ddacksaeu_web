@@ -86,6 +86,18 @@ def test_lab_detail_includes_favorite_and_provenance(client: TestClient, session
     assert payload["papers"][0]["sourceCheckedAt"] is not None
 
 
+def test_similar_labs_excludes_current_lab_and_prioritizes_same_field(
+    client: TestClient, session_factory
+) -> None:
+    seed_client_data(session_factory)
+
+    response = client.get("/api/v1/labs/fixture-vision-lab/similar", params={"limit": 3})
+
+    assert response.status_code == 200
+    assert "fixture-vision-lab" not in [item["id"] for item in response.json()["items"]]
+    assert len(response.json()["items"]) == 2
+
+
 def test_missing_lab_returns_common_404(client: TestClient, session_factory) -> None:
     seed_client_data(session_factory)
 
