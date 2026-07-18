@@ -38,7 +38,10 @@ export const Route = createFileRoute("/calendar")({
   head: () => ({
     meta: [
       { title: "Application Calendar · Ddaksaeu" },
-      { name: "description", content: "Manage applications, outreach, documents, and interviews at a glance." },
+      {
+        name: "description",
+        content: "Manage applications, outreach, documents, and interviews at a glance.",
+      },
     ],
   }),
 });
@@ -93,9 +96,7 @@ function CalendarPage() {
     return map;
   }, [filteredEvents]);
 
-  const upcoming = [...filteredEvents]
-    .sort((a, b) => a.date.localeCompare(b.date))
-    .slice(0, 8);
+  const upcoming = [...filteredEvents].sort((a, b) => a.date.localeCompare(b.date)).slice(0, 8);
 
   const submit = () => {
     if (!form.title.trim()) {
@@ -142,7 +143,10 @@ function CalendarPage() {
                 <ChevronLeft className="h-4 w-4" />
               </Button>
               <div className="min-w-[140px] text-center text-base font-semibold text-[color:var(--navy)]">
-                {new Date(year, month).toLocaleDateString("en-US", { month: "long", year: "numeric" })}
+                {new Date(year, month).toLocaleDateString("en-US", {
+                  month: "long",
+                  year: "numeric",
+                })}
               </div>
               <Button
                 variant="outline"
@@ -183,7 +187,8 @@ function CalendarPage() {
           </div>
           <div className="grid grid-cols-7 gap-1">
             {cells.map((d, i) => {
-              if (d === null) return <div key={i} className="h-24 rounded-lg bg-[color:var(--surface)]/40" />;
+              if (d === null)
+                return <div key={i} className="h-24 rounded-lg bg-[color:var(--surface)]/40" />;
               const key = iso(year, month, d);
               const dayEvents = eventsByDay.get(key) ?? [];
               const today = new Date();
@@ -241,7 +246,9 @@ function CalendarPage() {
         {/* Upcoming */}
         <aside className="rounded-2xl border border-border bg-white p-5">
           <h3 className="text-sm font-semibold text-[color:var(--navy)]">Upcoming events</h3>
-          <p className="mt-0.5 text-xs text-muted-foreground">Showing up to 8 events in chronological order</p>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            Showing up to 8 events in chronological order
+          </p>
           <ul className="mt-4 space-y-3">
             {upcoming.length === 0 && (
               <li className="rounded-xl border border-dashed border-border p-4 text-center text-xs text-muted-foreground">
@@ -295,7 +302,9 @@ function CalendarPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Add a new event</DialogTitle>
-            <DialogDescription>Add an application-related event to your calendar.</DialogDescription>
+            <DialogDescription>
+              Add an application-related event to your calendar.
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-1.5">

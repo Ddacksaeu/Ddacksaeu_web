@@ -5,9 +5,11 @@ from typing import Annotated, Literal
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
+from app.core.auth import optional_current_user
 from app.db.session import get_db_session
+from app.models import User
 from app.repositories.labs import LabSearchFilters
-from app.schemas.labs import LabDetail, LabSearchResponse
+from app.schemas.labs import LabDetail, LabSearchResponse, SimilarLabsResponse
 from app.services.lab_search import LabSearchService
 
 router = APIRouter(prefix="/labs", tags=["labs"])
@@ -42,6 +44,7 @@ LAB_SEARCH_EXAMPLE = {
 )
 def search_labs(
     session: Annotated[Session, Depends(get_db_session)],
+    user: Annotated[User | None, Depends(optional_current_user)],
     university: Annotated[str | None, Query(min_length=1)] = None,
     department: Annotated[str | None, Query(min_length=1)] = None,
     field: Annotated[list[str] | None, Query(min_length=1)] = None,
@@ -61,12 +64,29 @@ def search_labs(
         lab_name=lab_name,
         sort=sort,
     )
-    return LabSearchService(session).search(filters, page, page_size)
+    return LabSearchService(session, user.id if user else None).search(filters, page, page_size)
 
 
 @router.get("/{lab_id}", response_model=LabDetail)
-def get_lab(lab_id: str, session: Annotated[Session, Depends(get_db_session)]) -> LabDetail:
-    lab = LabSearchService(session).get_detail(lab_id)
+def get_lab(
+    lab_id: str,
+    session: Annotated[Session, Depends(get_db_session)],
+    user: Annotated[User | None, Depends(optional_current_user)],
+) -> LabDetail:
+    lab = LabSearchService(session, user.id if user else None).get_detail(lab_id)
     if lab is None:
         raise HTTPException(status_code=404)
     return lab
+
+
+@router.get("/{lab_id}/similar", response_model=SimilarLabsResponse)
+def get_similar_labs(
+    lab_id: str,
+    session: Annotated[Session, Depends(get_db_session)],
+    user: Annotated[User | None, Depends(optional_current_user)],
+    limit: Annotated[int, Query(ge=1, le=12)] = 3,
+) -> SimilarLabsResponse:
+    similar = LabSearchService(session, user.id if user else None).get_similar(lab_id, limit)
+    if similar is None:
+        raise HTTPException(status_code=404)
+    return similar

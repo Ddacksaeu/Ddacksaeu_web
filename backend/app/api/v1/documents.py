@@ -1,14 +1,15 @@
 from __future__ import annotations
 
-import re
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, File, Form, Request, UploadFile
+from fastapi import APIRouter, Depends, File, Request, UploadFile
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
+from app.core.auth import current_user
 from app.core.config import Settings
 from app.db.session import get_db_session
+from app.models import User
 from app.repositories.documents import (
     create_completed_analysis,
     create_failed_analysis,
@@ -22,7 +23,6 @@ from app.services.document_analysis import (
 )
 
 router = APIRouter(prefix="/documents", tags=["documents"])
-_USER_ID_PATTERN = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
 
 
 def _error_response(request: Request, error: DocumentProcessingError) -> JSONResponse:
@@ -63,20 +63,18 @@ def _save_private_upload(root: Path, storage_key: str, content: bytes) -> None:
 def analyze_document(
     request: Request,
     file: UploadFile = File(...),  # noqa: B008
-    user_id: str = Form(...),
+    user: User = Depends(current_user),  # noqa: B008
     db: Session = Depends(get_db_session),  # noqa: B008
 ) -> DocumentAnalysisResponse | JSONResponse:
     settings: Settings = request.app.state.settings
     document = None
     try:
-        if not _USER_ID_PATTERN.fullmatch(user_id):
-            raise DocumentProcessingError("invalid_user_id", 422, "Invalid user ID")
         content = file.file.read(settings.document_max_upload_bytes + 1)
         _validate_upload(file, content, settings)
         extracted_text = extract_pdf_text(content, settings.document_min_extracted_characters)
         document = create_uploaded_document(
             db,
-            user_id=user_id,
+            user_id=user.id,
             filename=file.filename or "document.pdf",
             content_type="application/pdf",
             byte_size=len(content),

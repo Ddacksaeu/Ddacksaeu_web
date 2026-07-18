@@ -1,5 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Check, Plus, X, Sparkles, Circle, Pencil, Info, GripVertical, ArrowUp, ArrowDown } from "lucide-react";
+import {
+  Check,
+  Plus,
+  X,
+  Sparkles,
+  Circle,
+  Pencil,
+  Info,
+  GripVertical,
+  ArrowUp,
+  ArrowDown,
+} from "lucide-react";
 import { useState } from "react";
 import { AppShell } from "@/components/layout/AppShell";
 import { Button } from "@/components/ui/button";
@@ -15,7 +26,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import {
   INTEREST_SUGGESTIONS,
@@ -33,7 +50,10 @@ export const Route = createFileRoute("/profile")({
   head: () => ({
     meta: [
       { title: "My Profile · Ddaksaeu" },
-      { name: "description", content: "Manage research interests, skills, and CV analysis results." },
+      {
+        name: "description",
+        content: "Manage research interests, skills, and CV analysis results.",
+      },
     ],
   }),
 });
@@ -47,7 +67,10 @@ function ProfilePage() {
 
   const checklist = [
     { label: "Add name and affiliation", done: !!profile.name && !!profile.affiliation },
-    { label: "Select current status and target program", done: !!profile.status && !!profile.program },
+    {
+      label: "Select current status and target program",
+      done: !!profile.status && !!profile.program,
+    },
     { label: "Add at least 3 research interests", done: interests.length >= 3 },
     { label: "Add at least 3 skills", done: skills.length >= 3 },
     { label: "Upload and analyze CV", done: !!cv },
@@ -94,7 +117,10 @@ function ProfilePage() {
                   </div>
                   <div className="text-sm text-muted-foreground">{profile.affiliation}</div>
                   <div className="mt-2 flex flex-wrap gap-1.5">
-                    <Badge variant="outline" className="rounded-full border-border bg-[color:var(--surface)] font-normal text-foreground/80">
+                    <Badge
+                      variant="outline"
+                      className="rounded-full border-border bg-[color:var(--surface)] font-normal text-foreground/80"
+                    >
                       {profile.status}
                     </Badge>
                     <Badge className="rounded-full border-[color:var(--point)]/30 bg-[color:var(--point)]/10 font-normal text-[color:var(--deep)] hover:bg-[color:var(--point)]/10">
@@ -114,7 +140,8 @@ function ProfilePage() {
             <div className="mt-4 flex items-start gap-2 rounded-xl border border-[color:var(--point)]/25 bg-[color:var(--point)]/5 px-3 py-2 text-xs text-[color:var(--deep)]">
               <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
               <p>
-                Your information is used only for lab recommendations and email drafts. It is never sent automatically to professors.
+                Your information is used only for lab recommendations and email drafts. It is never
+                sent automatically to professors.
               </p>
             </div>
           </section>
@@ -154,7 +181,9 @@ function ProfilePage() {
           <section className="rounded-2xl border border-border bg-white p-6">
             <div className="flex items-center justify-between">
               <h2 className="text-sm font-semibold text-[color:var(--navy)]">Skills</h2>
-              <span className="text-xs text-muted-foreground">Sorted by priority · {skills.length}</span>
+              <span className="text-xs text-muted-foreground">
+                Sorted by priority · {skills.length}
+              </span>
             </div>
             <ul className="mt-3 space-y-1.5">
               {skills.length === 0 && (
@@ -204,7 +233,9 @@ function ProfilePage() {
           <section className="rounded-2xl border border-border bg-white p-6">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-sm font-semibold text-[color:var(--navy)]">CV analysis summary</h2>
+                <h2 className="text-sm font-semibold text-[color:var(--navy)]">
+                  CV analysis summary
+                </h2>
                 <p className="mt-0.5 text-xs text-muted-foreground">
                   Information extracted from your latest CV
                 </p>
@@ -228,7 +259,11 @@ function ProfilePage() {
                   <Sparkles className="h-5 w-5" />
                 </div>
                 <p className="mt-3 text-sm text-foreground/80">No CV has been analyzed yet.</p>
-                <Button asChild size="sm" className="mt-3 rounded-full bg-[color:var(--point)] hover:bg-[color:var(--deep)]">
+                <Button
+                  asChild
+                  size="sm"
+                  className="mt-3 rounded-full bg-[color:var(--point)] hover:bg-[color:var(--deep)]"
+                >
                   <a href="/recommendations">Upload CV</a>
                 </Button>
               </div>
@@ -239,7 +274,9 @@ function ProfilePage() {
         <aside className="space-y-4">
           <section className="rounded-2xl border border-border bg-white p-5">
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-[color:var(--navy)]">Profile completeness</h3>
+              <h3 className="text-sm font-semibold text-[color:var(--navy)]">
+                Profile completeness
+              </h3>
               <span className="text-sm font-semibold text-[color:var(--deep)]">{completion}%</span>
             </div>
             <Progress value={completion} className="mt-3 h-1.5" />
@@ -390,8 +427,15 @@ function ProfileEditDialog({
 
         <div className="space-y-4">
           <div className="grid gap-2">
-            <Label htmlFor="pf-name" className="text-xs text-muted-foreground">Name</Label>
-            <Input id="pf-name" value={name} onChange={(e) => setName(e.target.value)} maxLength={40} />
+            <Label htmlFor="pf-name" className="text-xs text-muted-foreground">
+              Name
+            </Label>
+            <Input
+              id="pf-name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              maxLength={40}
+            />
           </div>
 
           <div className="grid gap-2">
@@ -417,7 +461,9 @@ function ProfileEditDialog({
                 </SelectTrigger>
                 <SelectContent>
                   {STATUS_OPTIONS.map((o) => (
-                    <SelectItem key={o} value={o}>{o}</SelectItem>
+                    <SelectItem key={o} value={o}>
+                      {o}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -430,7 +476,9 @@ function ProfileEditDialog({
                 </SelectTrigger>
                 <SelectContent>
                   {PROGRAM_OPTIONS.map((o) => (
-                    <SelectItem key={o} value={o}>{o}</SelectItem>
+                    <SelectItem key={o} value={o}>
+                      {o}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -439,7 +487,8 @@ function ProfileEditDialog({
 
           <div className="grid gap-2">
             <Label className="text-xs text-muted-foreground">
-              Research interests <span className="ml-1 text-[10px]">({interests.length} selected)</span>
+              Research interests{" "}
+              <span className="ml-1 text-[10px]">({interests.length} selected)</span>
             </Label>
             <div className="flex flex-wrap gap-1.5 rounded-xl border border-border bg-[color:var(--surface)]/60 p-3">
               {INTEREST_SUGGESTIONS.map((t) => {
@@ -493,7 +542,15 @@ function ProfileEditDialog({
   );
 }
 
-function SummaryBlock({ label, items, muted }: { label: string; items: string[]; muted?: boolean }) {
+function SummaryBlock({
+  label,
+  items,
+  muted,
+}: {
+  label: string;
+  items: string[];
+  muted?: boolean;
+}) {
   return (
     <div>
       <div className="text-[11px] uppercase tracking-widest text-muted-foreground">{label}</div>

@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Heart, X, ArrowRight, GitCompareArrows } from "lucide-react";
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { AppShell } from "@/components/layout/AppShell";
 import { Button } from "@/components/ui/button";
 import { LabCard, MatchBar } from "@/components/lab/LabCard";
@@ -11,7 +12,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { LABS } from "@/lib/mock-data";
+import { labsQueryOptions } from "@/lib/api/labs";
 import { useAppState } from "@/lib/app-state";
 import { cn } from "@/lib/utils";
 
@@ -28,9 +29,10 @@ export const Route = createFileRoute("/favorites")({
 function FavoritesPage() {
   const { favorites, compareIds, toggleCompare, clearCompare, toggleFavorite } = useAppState();
   const [compareOpen, setCompareOpen] = useState(false);
+  const labsQuery = useQuery(labsQueryOptions({ pageSize: 100 }));
 
-  const savedLabs = LABS.filter((l) => favorites.includes(l.id));
-  const compareLabs = LABS.filter((l) => compareIds.includes(l.id));
+  const savedLabs = (labsQuery.data?.items ?? []).filter((lab) => favorites.includes(lab.id));
+  const compareLabs = savedLabs.filter((lab) => compareIds.includes(lab.id));
 
   return (
     <AppShell
@@ -58,7 +60,10 @@ function FavoritesPage() {
           <p className="mt-1 text-sm text-muted-foreground">
             Select the heart on any lab card to save it for later.
           </p>
-          <Button asChild className="mt-4 gap-2 rounded-full bg-[color:var(--point)] hover:bg-[color:var(--deep)]">
+          <Button
+            asChild
+            className="mt-4 gap-2 rounded-full bg-[color:var(--point)] hover:bg-[color:var(--deep)]"
+          >
             <Link to="/">
               Explore labs <ArrowRight className="h-4 w-4" />
             </Link>
@@ -76,7 +81,8 @@ function FavoritesPage() {
                   <label
                     className={cn(
                       "absolute right-4 top-4 flex cursor-pointer items-center gap-1.5 rounded-full border border-border bg-white px-2.5 py-1 text-xs text-foreground/80 shadow-sm",
-                      inCompare && "border-[color:var(--point)] bg-[color:var(--point)]/10 text-[color:var(--deep)]",
+                      inCompare &&
+                        "border-[color:var(--point)] bg-[color:var(--point)]/10 text-[color:var(--deep)]",
                       compareFull && "cursor-not-allowed opacity-50",
                     )}
                   >
@@ -145,9 +151,7 @@ function FavoritesPage() {
         <DialogContent className="max-w-4xl">
           <DialogHeader>
             <DialogTitle>Compare labs</DialogTitle>
-            <DialogDescription>
-              {compareLabs.length} labs side by side.
-            </DialogDescription>
+            <DialogDescription>{compareLabs.length} labs side by side.</DialogDescription>
           </DialogHeader>
           <div className="overflow-x-auto">
             <table className="min-w-full border-separate border-spacing-0 text-sm">
@@ -167,7 +171,7 @@ function FavoritesPage() {
                 </tr>
               </thead>
               <tbody>
-                <Row label="Professor" values={compareLabs.map((l) => l.professor)} />
+                <Row label="Professor" values={compareLabs.map((l) => l.professorName)} />
                 <Row label="Department" values={compareLabs.map((l) => l.department)} />
                 <Row label="Research fields" values={compareLabs.map((l) => l.field)} />
                 <tr>
@@ -176,25 +180,29 @@ function FavoritesPage() {
                   </td>
                   {compareLabs.map((l) => (
                     <td key={l.id} className="border-b border-border px-3 py-3 align-top">
-                      <MatchBar score={l.matchScore} />
+                      {l.recommendationScore !== null ? (
+                        <MatchBar score={l.recommendationScore} />
+                      ) : (
+                        "Unavailable"
+                      )}
                     </td>
                   ))}
                 </tr>
                 <Row
                   label="Recent topics"
-                  values={compareLabs.map((l) => l.recentTopics.slice(0, 2).join(" / "))}
+                  values={compareLabs.map((l) => l.keywords.slice(0, 2).join(" / "))}
                 />
                 <tr>
                   <td className="px-3 py-3 align-top text-xs text-muted-foreground">Website</td>
                   {compareLabs.map((l) => (
                     <td key={l.id} className="px-3 py-3 align-top">
                       <a
-                        href={l.homepage}
+                        href={l.homepageUrl ?? "#"}
                         target="_blank"
                         rel="noreferrer"
                         className="text-[color:var(--deep)] hover:underline"
                       >
-                        Visit
+                        {l.homepageUrl ? "Visit" : "Unavailable"}
                       </a>
                     </td>
                   ))}

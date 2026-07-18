@@ -2,6 +2,22 @@
 
 조사 기준은 현재 `frontend/src` 구현이다. `frontend/`는 이번 설계 단계에서 수정하지 않는다. `mock-data.ts`의 모든 연구실, 교수, 이메일, 논문, 일정은 **fixture/mock**이며 실존 정보로 가정하지 않는다.
 
+## Authentication update (MVP, 2026-07-18)
+
+Personal routes use the authenticated JWT subject, never a client-supplied `user_id`.
+`POST /auth/signup` accepts `email`, `password`, and `name`; `POST /auth/login` accepts
+`email` and `password`; both return a bearer token. The frontend stores this session locally
+and attaches `Authorization: Bearer <token>` through its shared API client. `/me`, document
+analysis, recommendations, and email-draft requests require this token. Lab discovery stays
+public, but only an authenticated request receives that user's favorite/recommendation fields.
+
+| Frontend surface | API | Identity source |
+| --- | --- | --- |
+| `/login`, `/signup` | `POST /auth/login`, `POST /auth/signup` | Returned JWT |
+| `/profile`, `/favorites`, `/calendar` | `/me/*` | JWT `sub` |
+| `/recommendations` | `POST /documents/analyze`, `/recommendations/*` | JWT `sub` |
+| `/lab/$id/email` | `POST /email/draft` | JWT `sub` |
+
 ## 현재 라우트와 필요한 API
 
 | 화면 | 현재 데이터·상태 | MVP에서 바로 구현할 API | 해커톤 이후 구현 또는 확장 |
@@ -117,6 +133,24 @@ Results accept `sort=score|recent`, `page`, and `page_size`, and return
 the same list fields plus provenance-backed facts and papers. This is a
 backend-only implementation; no frontend files are changed.
 
+## Search and detail frontend integration (in progress, 2026-07-18)
+
+This integration replaces only the research-lab explorer and detail-page mock
+lookups. Profile, favorites, calendar, recommendations, and email state remain
+separate work items, so their local UI state is not treated as persisted data.
+
+| Frontend concern | API contract used in this task | Rendering rule |
+| --- | --- | --- |
+| Explorer search and filters | `GET /api/v1/labs?q=&department=&field=&sort=score|recent&page=&page_size=` | Filter changes preserve the current query; API loading, empty, and retry states are explicit. |
+| Lab detail | `GET /api/v1/labs/{lab_id}` | Missing contact, homepage, facts, or papers are rendered as unavailable, not invented from mock data. |
+| Similar labs | `GET /api/v1/labs/{lab_id}/similar?limit=3` | Server selects related labs using the same field first, then shared keyword terms; the current lab is never returned. |
+| Match score | Nullable `recommendationScore` on a lab response | The UI shows a score only when the API supplied a persisted value. It never derives a score from fixture data. |
+| Provenance | `sourceUrl`, `sourceCheckedAt`, fact and paper provenance | Fixture origins and verification timestamps remain visible to the user. |
+
+The frontend uses `VITE_API_BASE_URL` (default
+`http://127.0.0.1:8000/api/v1`) for this public API location. No server secret
+or OpenAI key is exposed to the browser.
+
 ## Document-analysis API (2026-07-18)
 
 The current frontend remains unchanged and has no live upload integration.
@@ -129,6 +163,41 @@ analysis prompt remain server-only. The existing schema stores the uploaded
 document plus keywords, skills, research interests (as methodologies), and
 projects; a later migration is required to persist every additional returned
 analysis field for retrieval.
+
+## CV analysis and recommendation frontend integration (in progress, 2026-07-18)
+
+The recommendation screen uses the MVP `demo-user` context until authentication
+is introduced. Its browser workflow is synchronous and has no mock fallback:
+
+1. Upload one text-based PDF (maximum 10 MiB) to
+   `POST /api/v1/documents/analyze` using `multipart/form-data` with
+   `user_id=demo-user`.
+2. Render the returned structured analysis, clearly labelling it as an
+   AI-generated extraction for user review.
+3. Call `POST /api/v1/recommendations/recompute?user_id=demo-user`, then show
+   server-provided score, confidence, matched/missing keywords, score
+   breakdown, and action. A failed request displays its API error and offers a
+   retry; it never substitutes demo results.
+
+The frontend accepts only `.pdf` files for this flow because the current
+backend intentionally rejects DOCX. The browser sends no OpenAI key and does
+not persist the original document outside the selected upload request.
+
+## Profile, favorites, and personal calendar integration (in progress, 2026-07-18)
+
+The MVP continues to use the server-owned `demo-user` context. The frontend
+must not send an arbitrary user identifier for these personal resources.
+
+| UI state | API contract | Client behavior |
+| --- | --- | --- |
+| Profile | `GET /api/v1/me/profile`, `PATCH /api/v1/me/profile` | Load on app start; retain the edit value and report an error if a save fails. |
+| Saved labs | `GET /api/v1/me/favorites`, `PUT` and `DELETE /api/v1/me/favorites/{lab_id}` | Optimistically update the heart, then roll back on failure. |
+| Personal calendar | `GET /api/v1/me/calendar-events?from=&to=`, `POST /api/v1/me/calendar-events`, `DELETE /api/v1/me/calendar-events/{event_id}` | Replace the in-memory event list with server records; restore the event if deletion fails. |
+
+Profile arrays preserve ordering. Calendar event `kind` is validated against the
+existing UI event kinds, while `labId` and `memo` remain optional. Comparison
+selection remains local-only because no server-side comparison collection is
+defined yet.
 
 ## Admission calendar API implementation (2026-07-18)
 

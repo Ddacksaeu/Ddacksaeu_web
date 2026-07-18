@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import { Search, SlidersHorizontal, LayoutGrid, List, Sparkles, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { AppShell } from "@/components/layout/AppShell";
@@ -13,7 +14,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { LABS, DEPARTMENTS, FIELDS } from "@/lib/mock-data";
+import { DEPARTMENTS, FIELDS } from "@/lib/mock-data";
+import { labsQueryOptions } from "@/lib/api/labs";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/")({
@@ -25,26 +27,17 @@ function ExplorePage() {
   const [q, setQ] = useState("");
   const [dept, setDept] = useState<string>("all");
   const [fields, setFields] = useState<string[]>([]);
-  const [sort, setSort] = useState<"match" | "recent" | "name">("match");
+  const [sort, setSort] = useState<"score" | "recent">("score");
   const [view, setView] = useState<"grid" | "list">("grid");
-
-  const filtered = useMemo(() => {
-    let out = LABS.filter((lab) => {
-      const query = q.trim().toLowerCase();
-      const matchQ =
-        !query ||
-        lab.name.toLowerCase().includes(query) ||
-        lab.professor.toLowerCase().includes(query) ||
-        lab.keywords.some((k) => k.toLowerCase().includes(query));
-      const matchDept = dept === "all" || lab.department === dept;
-      const matchField = fields.length === 0 || fields.includes(lab.field);
-      return matchQ && matchDept && matchField;
-    });
-    if (sort === "match") out = [...out].sort((a, b) => b.matchScore - a.matchScore);
-    if (sort === "recent") out = [...out].sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : -1));
-    if (sort === "name") out = [...out].sort((a, b) => a.name.localeCompare(b.name, "ko"));
-    return out;
-  }, [q, dept, fields, sort]);
+  const search = useQuery(
+    labsQueryOptions({
+      q: q.trim() || undefined,
+      department: dept === "all" ? undefined : dept,
+      fields,
+      sort,
+    }),
+  );
+  const filtered = search.data?.items ?? [];
 
   const toggleField = (f: string) =>
     setFields((s) => (s.includes(f) ? s.filter((x) => x !== f) : [...s, f]));
@@ -126,9 +119,8 @@ function ExplorePage() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="match">Best match</SelectItem>
+              <SelectItem value="score">Best match</SelectItem>
               <SelectItem value="recent">Recently updated</SelectItem>
-              <SelectItem value="name">Name</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -138,7 +130,10 @@ function ExplorePage() {
       <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-sm text-foreground/80">
-            <span className="font-semibold text-[color:var(--navy)]">{filtered.length}</span> labs
+            <span className="font-semibold text-[color:var(--navy)]">
+              {search.data?.total ?? 0}
+            </span>{" "}
+            labs
           </span>
           {activeChips.length > 0 && (
             <>
@@ -192,7 +187,23 @@ function ExplorePage() {
       </div>
 
       {/* Results */}
-      {filtered.length === 0 ? (
+      {search.isLoading ? (
+        <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {[0, 1, 2].map((item) => (
+            <div key={item} className="h-72 animate-pulse rounded-2xl bg-[color:var(--surface)]" />
+          ))}
+        </div>
+      ) : search.isError ? (
+        <div className="mt-8 rounded-2xl border border-dashed border-border bg-white p-12 text-center">
+          <h3 className="text-base font-semibold text-[color:var(--navy)]">Could not load labs</h3>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Check that the backend is running, then retry.
+          </p>
+          <Button variant="outline" className="mt-4 rounded-full" onClick={() => search.refetch()}>
+            Retry
+          </Button>
+        </div>
+      ) : filtered.length === 0 ? (
         <div className="mt-8 rounded-2xl border border-dashed border-border bg-white p-12 text-center">
           <div className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-[color:var(--surface)] text-[color:var(--deep)]">
             <Search className="h-5 w-5" />
@@ -229,13 +240,15 @@ function ExplorePage() {
       )}
 
       {/* Load more */}
-      {filtered.length > 0 && (
-        <div className="mt-8 flex justify-center">
-          <Button variant="outline" className="rounded-full px-6">
-            Show more
-          </Button>
-        </div>
-      )}
+      {filtered.length > 0 &&
+        search.data &&
+        search.data.page * search.data.pageSize < search.data.total && (
+          <div className="mt-8 flex justify-center">
+            <Button variant="outline" className="rounded-full px-6">
+              Show more
+            </Button>
+          </div>
+        )}
 
       {/* Featured recommendation CTA */}
       <section className="mt-10 overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-[color:var(--navy)] to-[color:var(--deep)] p-6 text-white sm:p-8">
@@ -248,14 +261,16 @@ function ExplorePage() {
               Upload your CV to discover labs that fit your background
             </h2>
             <p className="mt-2 max-w-xl text-sm text-white/70">
-              We analyze your interests, skills, and project experience to rank matching labs
-              for you.
+              We analyze your interests, skills, and project experience to rank matching labs for
+              you.
             </p>
           </div>
-          <Button asChild size="lg" className="rounded-full bg-white text-[color:var(--deep)] hover:bg-white/90">
-            <Link to="/recommendations">
-              Analyze my CV
-            </Link>
+          <Button
+            asChild
+            size="lg"
+            className="rounded-full bg-white text-[color:var(--deep)] hover:bg-white/90"
+          >
+            <Link to="/recommendations">Analyze my CV</Link>
           </Button>
         </div>
       </section>

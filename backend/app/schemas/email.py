@@ -12,7 +12,6 @@ class ApiSchema(BaseModel):
 
 class EmailDraftRequest(ApiSchema):
     lab_id: str = Field(min_length=1, max_length=120)
-    user_id: str = Field(default="demo-user", min_length=1, max_length=64)
     language: Literal["en", "ko"] = "en"
     tone: Literal["polite", "enthusiastic", "concise"] = "polite"
     length: Literal["short", "standard", "detailed"] = "standard"

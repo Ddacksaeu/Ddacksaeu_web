@@ -28,6 +28,8 @@ class Settings(BaseSettings):
     recommendation_semantic_provider: Literal["deterministic", "openai"] = "deterministic"
     recommendation_embedding_model: str = "text-embedding-3-small"
     recommendation_freshness_half_life_days: int = 365
+    auth_secret: str = "development-only-change-me"
+    auth_token_ttl_seconds: int = 60 * 60 * 24 * 7
 
     @property
     def allowed_origins(self) -> list[str]:
@@ -43,9 +45,11 @@ class Settings(BaseSettings):
         return []
 
     @model_validator(mode="after")
-    def reject_permissive_production_cors(self) -> Settings:
+    def validate_production_security(self) -> Settings:
         if self.app_env != "development" and "*" in self.allowed_origins:
             raise ValueError("CORS_ORIGINS cannot contain '*' outside development")
+        if self.app_env == "production" and self.auth_secret == "development-only-change-me":
+            raise ValueError("AUTH_SECRET must be set in production")
         return self
 
 

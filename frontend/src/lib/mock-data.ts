@@ -50,20 +50,49 @@ export const LABS: Lab[] = [
     field: "Computer Vision",
     summary:
       "We study deep learning methods for visual intelligence, with a focus on 3D scene understanding, video understanding, and multimodal learning.",
-    keywords: ["Computer Vision", "3D Scene", "Video Understanding", "Multimodal", "Diffusion Model"],
-    recentTopics: ["Multi-view 3D reconstruction", "Long-form video understanding", "Bias mitigation in text-to-image models"],
+    keywords: [
+      "Computer Vision",
+      "3D Scene",
+      "Video Understanding",
+      "Multimodal",
+      "Diffusion Model",
+    ],
+    recentTopics: [
+      "Multi-view 3D reconstruction",
+      "Long-form video understanding",
+      "Bias mitigation in text-to-image models",
+    ],
     matchScore: 92,
     homepage: "https://vislab.postech.example",
     location: "POSTECH Information Research Laboratories, 4F",
     email: "vislab@postech.example",
     updatedAt: "2025-07-01",
     papers: [
-      { title: "Long-Range Video Understanding via Sparse Memory", year: 2025, venue: "CVPR", keywords: ["Video", "Memory"] },
-      { title: "Debiasing Text-to-Image Diffusion", year: 2024, venue: "NeurIPS", keywords: ["Diffusion", "Fairness"] },
-      { title: "Multi-View 3D Reconstruction with Neural Fields", year: 2024, venue: "ICCV", keywords: ["3D", "NeRF"] },
+      {
+        title: "Long-Range Video Understanding via Sparse Memory",
+        year: 2025,
+        venue: "CVPR",
+        keywords: ["Video", "Memory"],
+      },
+      {
+        title: "Debiasing Text-to-Image Diffusion",
+        year: 2024,
+        venue: "NeurIPS",
+        keywords: ["Diffusion", "Fairness"],
+      },
+      {
+        title: "Multi-View 3D Reconstruction with Neural Fields",
+        year: 2024,
+        venue: "ICCV",
+        keywords: ["3D", "NeRF"],
+      },
     ],
     members: { professor: 1, phd: 6, ms: 5 },
-    requirements: ["Linear algebra and probability fundamentals", "PyTorch experience", "Consistent paper-review practice"],
+    requirements: [
+      "Linear algebra and probability fundamentals",
+      "PyTorch experience",
+      "Consistent paper-review practice",
+    ],
   },
   {
     id: "nlplab",
@@ -74,18 +103,36 @@ export const LABS: Lab[] = [
     summary:
       "We study reasoning, reliability, and domain adaptation in large language models, including Korean-specialized LLMs and medical and legal applications.",
     keywords: ["LLM", "Reasoning", "Alignment", "Korean NLP", "Retrieval"],
-    recentTopics: ["Long-context reasoning", "Hallucination detection", "Domain-specific fine-tuning"],
+    recentTopics: [
+      "Long-context reasoning",
+      "Hallucination detection",
+      "Domain-specific fine-tuning",
+    ],
     matchScore: 84,
     homepage: "https://nlp.postech.example",
     location: "POSTECH Mueunjae Memorial Hall, Room 501",
     email: "nlplab@postech.example",
     updatedAt: "2025-06-24",
     papers: [
-      { title: "Chain-of-Verification for Faithful LLM Reasoning", year: 2025, venue: "ACL", keywords: ["LLM", "Reasoning"] },
-      { title: "Hallucination Detection in Long-Form QA", year: 2024, venue: "EMNLP", keywords: ["QA", "Reliability"] },
+      {
+        title: "Chain-of-Verification for Faithful LLM Reasoning",
+        year: 2025,
+        venue: "ACL",
+        keywords: ["LLM", "Reasoning"],
+      },
+      {
+        title: "Hallucination Detection in Long-Form QA",
+        year: 2024,
+        venue: "EMNLP",
+        keywords: ["QA", "Reliability"],
+      },
     ],
     members: { professor: 1, phd: 4, ms: 6 },
-    requirements: ["Python and PyTorch", "Research paper implementation experience", "Academic English reading"],
+    requirements: [
+      "Python and PyTorch",
+      "Research paper implementation experience",
+      "Academic English reading",
+    ],
   },
   {
     id: "roblab",
@@ -96,18 +143,36 @@ export const LABS: Lab[] = [
     summary:
       "We study reinforcement learning, imitation learning, and sim-to-real transfer for manipulation and mobile robotics.",
     keywords: ["Manipulation", "Reinforcement Learning", "Sim2Real", "Imitation Learning"],
-    recentTopics: ["Deformable object manipulation", "Sim-to-real domain randomization", "Humanoid locomotion learning"],
+    recentTopics: [
+      "Deformable object manipulation",
+      "Sim-to-real domain randomization",
+      "Humanoid locomotion learning",
+    ],
     matchScore: 71,
     homepage: "https://roblab.postech.example",
     location: "POSTECH Mechanical Engineering Building, 2F",
     email: "roblab@postech.example",
     updatedAt: "2025-06-30",
     papers: [
-      { title: "Sim-to-Real Transfer via Adaptive Randomization", year: 2025, venue: "ICRA", keywords: ["Sim2Real"] },
-      { title: "Learning Dexterous Manipulation from Play Data", year: 2024, venue: "CoRL", keywords: ["Manipulation"] },
+      {
+        title: "Sim-to-Real Transfer via Adaptive Randomization",
+        year: 2025,
+        venue: "ICRA",
+        keywords: ["Sim2Real"],
+      },
+      {
+        title: "Learning Dexterous Manipulation from Play Data",
+        year: 2024,
+        venue: "CoRL",
+        keywords: ["Manipulation"],
+      },
     ],
     members: { professor: 1, phd: 5, ms: 4 },
-    requirements: ["Dynamics and control theory", "ROS experience preferred", "Reinforcement learning knowledge"],
+    requirements: [
+      "Dynamics and control theory",
+      "ROS experience preferred",
+      "Reinforcement learning knowledge",
+    ],
   },
   {
     id: "hcilab",
@@ -118,18 +183,31 @@ export const LABS: Lab[] = [
     summary:
       "We study how people work with AI tools, focusing on creative work, collaborative interfaces, and AI literacy.",
     keywords: ["HCI", "Human-AI Interaction", "Creativity Support", "Qualitative Study"],
-    recentTopics: ["LLM collaboration interfaces", "AI literacy education tools", "Creators' perceptions of copyright"],
+    recentTopics: [
+      "LLM collaboration interfaces",
+      "AI literacy education tools",
+      "Creators' perceptions of copyright",
+    ],
     matchScore: 66,
     homepage: "https://hci.postech.example",
     location: "POSTECH RIST Building, 6F",
     email: "hcilab@postech.example",
     updatedAt: "2025-05-20",
     papers: [
-      { title: "Designing LLM Copilots for Creative Writers", year: 2025, venue: "CHI", keywords: ["HCI", "LLM"] },
+      {
+        title: "Designing LLM Copilots for Creative Writers",
+        year: 2025,
+        venue: "CHI",
+        keywords: ["HCI", "LLM"],
+      },
       { title: "How Students Learn to Prompt", year: 2024, venue: "CSCW", keywords: ["Education"] },
     ],
     members: { professor: 1, phd: 3, ms: 5 },
-    requirements: ["Qualitative research and statistics fundamentals", "Prototyping experience", "Writing"],
+    requirements: [
+      "Qualitative research and statistics fundamentals",
+      "Prototyping experience",
+      "Writing",
+    ],
   },
   {
     id: "biolab",
@@ -140,18 +218,36 @@ export const LABS: Lab[] = [
     summary:
       "We develop computational methods to uncover disease mechanisms from single-cell omics and genomic data.",
     keywords: ["Single-cell", "Genomics", "Deep Learning", "Bioinformatics"],
-    recentTopics: ["Single-cell trajectory inference", "Multi-omics integration", "Disease gene prediction"],
+    recentTopics: [
+      "Single-cell trajectory inference",
+      "Multi-omics integration",
+      "Disease gene prediction",
+    ],
     matchScore: 58,
     homepage: "https://cbio.postech.example",
     location: "POSTECH Life Sciences Building, 3F",
     email: "cbio@postech.example",
     updatedAt: "2025-06-11",
     papers: [
-      { title: "Trajectory Inference for Single-Cell Data", year: 2025, venue: "Nature Methods", keywords: ["Single-cell"] },
-      { title: "Multi-omics Integration via Graph Neural Networks", year: 2024, venue: "Bioinformatics", keywords: ["Genomics"] },
+      {
+        title: "Trajectory Inference for Single-Cell Data",
+        year: 2025,
+        venue: "Nature Methods",
+        keywords: ["Single-cell"],
+      },
+      {
+        title: "Multi-omics Integration via Graph Neural Networks",
+        year: 2024,
+        venue: "Bioinformatics",
+        keywords: ["Genomics"],
+      },
     ],
     members: { professor: 1, phd: 4, ms: 3 },
-    requirements: ["Statistics and biology background", "R and Python", "Machine learning fundamentals"],
+    requirements: [
+      "Statistics and biology background",
+      "R and Python",
+      "Machine learning fundamentals",
+    ],
   },
   {
     id: "semilab",
@@ -162,14 +258,23 @@ export const LABS: Lab[] = [
     summary:
       "We design and simulate low-power neuromorphic devices and 3D integrated memory architectures.",
     keywords: ["Neuromorphic", "3D Integration", "Device Physics", "Low-power"],
-    recentTopics: ["Memristor-based neuromorphic arrays", "3D DRAM thermal management", "Heterogeneous integration"],
+    recentTopics: [
+      "Memristor-based neuromorphic arrays",
+      "3D DRAM thermal management",
+      "Heterogeneous integration",
+    ],
     matchScore: 41,
     homepage: "https://nano.postech.example",
     location: "POSTECH National Institute for Nanomaterials Technology, 5F",
     email: "nanolab@postech.example",
     updatedAt: "2025-06-02",
     papers: [
-      { title: "Memristor Arrays for In-Memory Computing", year: 2025, venue: "IEDM", keywords: ["Memristor"] },
+      {
+        title: "Memristor Arrays for In-Memory Computing",
+        year: 2025,
+        venue: "IEDM",
+        keywords: ["Memristor"],
+      },
       { title: "Thermal Modeling of 3D DRAM Stacks", year: 2024, venue: "ISSCC", keywords: ["3D"] },
     ],
     members: { professor: 1, phd: 7, ms: 4 },
@@ -184,18 +289,36 @@ export const LABS: Lab[] = [
     summary:
       "We study safe reinforcement learning, offline RL, and multi-agent collaboration for real-world applications.",
     keywords: ["Reinforcement Learning", "Offline RL", "Multi-agent", "Safe RL"],
-    recentTopics: ["Distribution-shift mitigation in offline RL", "Cooperative multi-agent systems", "Constrained policy optimization"],
+    recentTopics: [
+      "Distribution-shift mitigation in offline RL",
+      "Cooperative multi-agent systems",
+      "Constrained policy optimization",
+    ],
     matchScore: 76,
     homepage: "https://rl.postech.example",
     location: "POSTECH Information Research Laboratories, 6F",
     email: "rllab@postech.example",
     updatedAt: "2025-07-04",
     papers: [
-      { title: "Conservative Q-Learning Revisited", year: 2025, venue: "ICML", keywords: ["Offline RL"] },
-      { title: "Cooperative Multi-Agent RL with Communication", year: 2024, venue: "NeurIPS", keywords: ["Multi-agent"] },
+      {
+        title: "Conservative Q-Learning Revisited",
+        year: 2025,
+        venue: "ICML",
+        keywords: ["Offline RL"],
+      },
+      {
+        title: "Cooperative Multi-Agent RL with Communication",
+        year: 2024,
+        venue: "NeurIPS",
+        keywords: ["Multi-agent"],
+      },
     ],
     members: { professor: 1, phd: 3, ms: 4 },
-    requirements: ["Reinforcement learning fundamentals", "PyTorch", "Probability and optimization"],
+    requirements: [
+      "Reinforcement learning fundamentals",
+      "PyTorch",
+      "Probability and optimization",
+    ],
   },
   {
     id: "gfxlab",
@@ -206,18 +329,36 @@ export const LABS: Lab[] = [
     summary:
       "We study real-time rendering, physics-based simulation, and neural graphics in collaboration with the game and media industries.",
     keywords: ["Rendering", "Neural Graphics", "Simulation", "NeRF"],
-    recentTopics: ["Real-time neural rendering", "Accelerated fluid simulation", "Gaussian splatting"],
+    recentTopics: [
+      "Real-time neural rendering",
+      "Accelerated fluid simulation",
+      "Gaussian splatting",
+    ],
     matchScore: 64,
     homepage: "https://gfx.postech.example",
     location: "POSTECH Information Research Laboratories, 3F",
     email: "gfxlab@postech.example",
     updatedAt: "2025-06-18",
     papers: [
-      { title: "Real-Time Gaussian Splatting for AR", year: 2025, venue: "SIGGRAPH", keywords: ["Rendering"] },
-      { title: "Neural Fluid Simulation", year: 2024, venue: "SIGGRAPH Asia", keywords: ["Simulation"] },
+      {
+        title: "Real-Time Gaussian Splatting for AR",
+        year: 2025,
+        venue: "SIGGRAPH",
+        keywords: ["Rendering"],
+      },
+      {
+        title: "Neural Fluid Simulation",
+        year: 2024,
+        venue: "SIGGRAPH Asia",
+        keywords: ["Simulation"],
+      },
     ],
     members: { professor: 1, phd: 3, ms: 3 },
-    requirements: ["Linear algebra and calculus", "Understanding of graphics pipelines", "C++/GLSL preferred"],
+    requirements: [
+      "Linear algebra and calculus",
+      "Understanding of graphics pipelines",
+      "C++/GLSL preferred",
+    ],
   },
 ];
 
@@ -304,9 +445,11 @@ export const EVENT_KIND_LABEL: Record<EventKind, string> = {
 
 export const EVENT_KIND_COLOR: Record<EventKind, string> = {
   apply: "bg-[color:var(--point)]/12 text-[color:var(--deep)] border-[color:var(--point)]/30",
-  contact: "bg-[color:var(--success)]/12 text-[color:var(--success)] border-[color:var(--success)]/30",
+  contact:
+    "bg-[color:var(--success)]/12 text-[color:var(--success)] border-[color:var(--success)]/30",
   docs: "bg-[color:var(--warning)]/15 text-[color:oklch(0.5_0.11_75)] border-[color:var(--warning)]/40",
-  interview: "bg-[color:var(--info)]/15 text-[color:oklch(0.42_0.12_230)] border-[color:var(--info)]/40",
+  interview:
+    "bg-[color:var(--info)]/15 text-[color:oklch(0.42_0.12_230)] border-[color:var(--info)]/40",
 };
 
 export const EVENT_KIND_DOT: Record<EventKind, string> = {
@@ -326,9 +469,28 @@ export type CalendarEvent = {
 };
 
 export const INITIAL_EVENTS: CalendarEvent[] = [
-  { id: "e1", title: "Send outreach email to VisLab", kind: "contact", date: "2026-07-20", labId: "vislab", memo: "Introduce research interests + attach CV" },
-  { id: "e2", title: "Fall application deadline", kind: "apply", date: "2026-07-31", memo: "Online application closes at 23:59" },
+  {
+    id: "e1",
+    title: "Send outreach email to VisLab",
+    kind: "contact",
+    date: "2026-07-20",
+    labId: "vislab",
+    memo: "Introduce research interests + attach CV",
+  },
+  {
+    id: "e2",
+    title: "Fall application deadline",
+    kind: "apply",
+    date: "2026-07-31",
+    memo: "Online application closes at 23:59",
+  },
   { id: "e3", title: "Complete personal statement draft", kind: "docs", date: "2026-07-22" },
-  { id: "e4", title: "NLPLab introductory meeting", kind: "interview", date: "2026-07-27", labId: "nlplab" },
+  {
+    id: "e4",
+    title: "NLPLab introductory meeting",
+    kind: "interview",
+    date: "2026-07-27",
+    labId: "nlplab",
+  },
   { id: "e5", title: "Request recommendation letter", kind: "docs", date: "2026-07-16" },
 ];

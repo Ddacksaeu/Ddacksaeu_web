@@ -58,7 +58,9 @@
   --color-success: var(--success);
   --color-warning: var(--warning);
   --color-info: var(--info);
-  --font-sans: "Pretendard", "Pretendard Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-sans:
+    "Pretendard", "Pretendard Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI",
+    sans-serif;
 }
 
 :root {

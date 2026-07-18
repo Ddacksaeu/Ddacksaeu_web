@@ -32,6 +32,10 @@ class LabSearchResponse(ApiSchema):
     total: int = Field(ge=0)
 
 
+class SimilarLabsResponse(ApiSchema):
+    items: list[LabListItem]
+
+
 class LabFactResponse(ApiSchema):
     model_config = ConfigDict(alias_generator=to_camel, from_attributes=True, populate_by_name=True)
 

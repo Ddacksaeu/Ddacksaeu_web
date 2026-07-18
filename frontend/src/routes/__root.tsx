@@ -12,6 +12,7 @@ import { useEffect, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { AppStateProvider } from "../lib/app-state";
+import { isLoggedIn } from "../lib/auth";
 import { Toaster } from "../components/ui/sonner";
 import { TooltipProvider } from "../components/ui/tooltip";
 
@@ -80,9 +81,17 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: "Ddaksaeu · POSTECH Lab Discovery" },
-      { name: "description", content: "Discover POSTECH labs, get personalized recommendations, and manage graduate application deadlines." },
+      {
+        name: "description",
+        content:
+          "Discover POSTECH labs, get personalized recommendations, and manage graduate application deadlines.",
+      },
       { property: "og:title", content: "Ddaksaeu · POSTECH Lab Discovery" },
-      { property: "og:description", content: "Compare POSTECH labs that match your research interests and manage your application timeline in one place." },
+      {
+        property: "og:description",
+        content:
+          "Compare POSTECH labs that match your research interests and manage your application timeline in one place.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -121,6 +130,15 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const router = useRouter();
+  const pathname = router.state.location.pathname;
+  const needsLogin = ["/recommendations", "/favorites", "/calendar", "/profile"].some((path) => pathname.startsWith(path)) || pathname.endsWith("/email");
+
+  useEffect(() => {
+    if (needsLogin && !isLoggedIn()) void router.navigate({ to: "/login" });
+  }, [needsLogin, router]);
+
+  if (needsLogin && !isLoggedIn()) return null;
 
   return (
     <QueryClientProvider client={queryClient}>
