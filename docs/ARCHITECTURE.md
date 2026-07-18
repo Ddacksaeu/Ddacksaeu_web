@@ -157,3 +157,12 @@ CI는 OpenAI 키나 외부 DB를 요구하지 않는다.
 테스트를 단순하게 유지한다. PostgreSQL, Alembic, 명시적인 모델 경계는 실제
 운영 데이터와 기능 API를 추가할 때의 이관 경로를 제공한다. Redis, Celery,
 Kubernetes, 메시지 큐는 실제 병목이 확인될 때까지 도입하지 않는다.
+## Database layer extension (implemented 2026-07-18)
+
+The backend still exposes only the health route. Its synchronous SQLAlchemy
+data foundation now supports normalized university, department, professor,
+keyword, recommendation, crawl-provenance, and admission-event records. The
+new tables are created only by Alembic revision `20260718_0002`; application
+startup does not call `create_all()`. Future search, recommendation, and crawl
+APIs must use this data layer through repositories or services rather than
+accessing frontend mock data.

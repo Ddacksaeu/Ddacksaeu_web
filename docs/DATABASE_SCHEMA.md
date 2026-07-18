@@ -110,3 +110,51 @@ SQLite와 PostgreSQL 양쪽에서 배열 동작을 동일하게 유지하기 위
 - UUID는 DB 종속 타입 대신 문자열로 먼저 다루거나, 양 DB가 지원하는 SQLAlchemy 타입으로 추상화한다.
 - 시간은 UTC로 저장하고 날짜 일정은 date로 저장한다. SQLite의 느슨한 타입 강제를 보완하려고 Pydantic/API 계층에서 enum·길이·날짜 형식을 검증한다.
 - fixture는 `origin=fixture`로만 적재하고 운영 데이터와 섞지 않는다.
+## Implemented database extension (2026-07-18)
+
+The initial migration remains immutable. Alembic revision `20260718_0002`
+adds the following tables and columns, and has both upgrade and downgrade
+paths: `universities`, `departments`, `professors`, `keywords`,
+`lab_keywords`, `user_keywords`, `recommendations`, `admission_events`,
+`crawl_sources`, and `crawl_runs`; `users` gains nullable `email` and
+`password_hash`; `labs` gains required `professor_id`; `papers` gains
+abstract, summary, external ID, and crawl metadata.
+
+```mermaid
+erDiagram
+    UNIVERSITY ||--o{ DEPARTMENT : contains
+    UNIVERSITY ||--o{ PROFESSOR : employs
+    DEPARTMENT ||--o{ PROFESSOR : groups
+    PROFESSOR ||--o{ LAB : leads
+    LAB ||--o{ PAPER : publishes
+    LAB ||--o{ LAB_KEYWORD : tags
+    KEYWORD ||--o{ LAB_KEYWORD : maps
+    USER ||--o{ USER_KEYWORD : selects
+    KEYWORD ||--o{ USER_KEYWORD : maps
+    USER ||--o{ FAVORITE : saves
+    LAB ||--o{ FAVORITE : is_saved
+    USER ||--o{ RECOMMENDATION : receives
+    LAB ||--o{ RECOMMENDATION : ranks
+    CRAWL_SOURCE ||--o{ CRAWL_RUN : records
+    UNIVERSITY ||--o{ ADMISSION_EVENT : announces
+    DEPARTMENT ||--o{ ADMISSION_EVENT : announces
+    USER ||--o{ UPLOADED_DOCUMENT : owns
+    UPLOADED_DOCUMENT ||--o{ DOCUMENT_ANALYSIS : has
+```
+
+`favorites`, `lab_keywords`, and `user_keywords` use composite primary keys
+to prevent duplicates. `recommendations` is unique per `(user_id, lab_id)`;
+the row is updated for a refreshed result rather than retaining a history in
+this MVP. Its six scores are checked in the DB from 0 through 100 and are also
+validated by Pydantic schemas. Paper deduplication uses `(lab_id, external_id)`
+when an external ID is available, allowing independent labs to retain distinct
+records while preventing a repeated source record for one lab.
+
+Deletion policy: purely dependent new rows cascade from their owner (keyword
+links, recommendations, crawl runs); institution and professor links are
+restricted; optional crawl links become null. The legacy initial-table foreign
+keys are retained unchanged for migration history compatibility.
+
+All seed records are explicit fixtures: `example.invalid` provenance and a
+fixed `2026-07-18` verification time distinguish them from externally verified
+data. No real personal email, professor, paper, or admission claim is seeded.

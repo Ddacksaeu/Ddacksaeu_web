@@ -83,3 +83,22 @@
 ## 백엔드 구현 뒤 예상 프론트 수정
 
 `frontend/` 변경은 후속 통합 작업에서만 수행한다. API 클라이언트와 응답 스키마를 추가하고, TanStack Query의 query key·mutation invalidation을 정한 뒤 위 교체 대상 파일을 단계적으로 수정한다. 특히 `Lab.matchScore` 제거와 nullable 연구실 사실 처리, 기존 mock 상태의 제거는 한 번에 검증한다.
+## Database extension status (2026-07-18)
+
+The database layer preserves the existing UI-facing `labs`, `favorites`,
+`calendar_events`, and document tables while adding normalized institutional,
+keyword, recommendation, crawl, and admission-event records. This is a data
+foundation change only: the frontend remains unchanged and continues to use
+its Lovable mock state until a later API-integration task.
+
+| Frontend need | Database source | API status |
+| --- | --- | --- |
+| Lab university, department, professor filters | `universities`, `departments`, `professors`, `labs` | Planned |
+| Korean/English interest terms and lab topics | `keywords`, `user_keywords`, `lab_keywords` | Planned |
+| Per-user lab ranking with explanation | `recommendations` | Planned |
+| Admission-calendar source records | `admission_events` | Planned |
+| Crawl provenance and execution status | `crawl_sources`, `crawl_runs` | Planned |
+
+`Lab.matchScore` in the current frontend mock is not persisted on `labs`.
+Future API responses must read a user-specific `Recommendation` instead. All
+records inserted by the development seed are explicitly fictional fixtures.

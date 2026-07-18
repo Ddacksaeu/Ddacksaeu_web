@@ -1,7 +1,17 @@
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session, sessionmaker
 
-from app.models import Lab, LabFact, Paper, User
+from app.models import (
+    CrawlRun,
+    Department,
+    Keyword,
+    Lab,
+    LabFact,
+    Paper,
+    Recommendation,
+    University,
+    User,
+)
 from scripts.seed import seed_database
 
 
@@ -11,6 +21,11 @@ def test_fixture_seed_is_safe_to_rerun(session_factory: sessionmaker[Session]) -
         seed_database(session)
 
         assert session.scalar(select(func.count()).select_from(User)) == 1
-        assert session.scalar(select(func.count()).select_from(Lab)) == 1
+        assert session.scalar(select(func.count()).select_from(Lab)) == 3
         assert session.scalar(select(func.count()).select_from(LabFact)) == 1
         assert session.scalar(select(func.count()).select_from(Paper)) == 1
+        assert session.scalar(select(func.count()).select_from(University)) == 3
+        assert session.scalar(select(func.count()).select_from(Department)) == 3
+        assert session.scalar(select(func.count()).select_from(Keyword)) == 4
+        assert session.scalar(select(func.count()).select_from(Recommendation)) == 2
+        assert session.scalar(select(func.count()).select_from(CrawlRun)) == 1
