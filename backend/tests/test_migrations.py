@@ -15,8 +15,19 @@ def test_initial_migration_upgrades_and_downgrades_sqlite(tmp_path: Path) -> Non
 
     command.upgrade(config, "head")
     engine = create_engine(f"sqlite+pysqlite:///{database_path.as_posix()}")
-    assert {"users", "labs", "document_analyses"}.issubset(inspect(engine).get_table_names())
+    assert {
+        "users",
+        "universities",
+        "departments",
+        "professors",
+        "keywords",
+        "recommendations",
+        "crawl_runs",
+        "document_analyses",
+    }.issubset(inspect(engine).get_table_names())
 
     command.downgrade(config, "base")
     assert "users" not in inspect(engine).get_table_names()
+    command.upgrade(config, "head")
+    assert "recommendations" in inspect(engine).get_table_names()
     engine.dispose()

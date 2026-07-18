@@ -1,5 +1,18 @@
 # Ddacksaeu backend
 
+## Database and seed data
+
+`20260718_0002_database_seed_entities` extends the immutable initial schema
+with normalized universities, departments, professors, Korean/English
+keywords, recommendation scores, crawl provenance, and admission events. It
+also adds the needed relations to existing labs, users, and papers. It does
+not add CRUD APIs, crawlers, authentication, or frontend changes.
+
+The seed command is idempotent and inserts only clearly labelled fictional
+fixtures, including fixture versions of Seoul National University, KAIST, and
+POSTECH. Their source URL is `example.invalid`; no real email, professor,
+publication, or admission schedule is claimed.
+
 FastAPI and synchronous SQLAlchemy 2 foundation for the POSTECH Lab Finder MVP.
 Only `GET /api/v1/health` is exposed in this foundation stage. No crawler, CV
 analysis, recommendation engine, email drafting, OpenAI call, or frontend
