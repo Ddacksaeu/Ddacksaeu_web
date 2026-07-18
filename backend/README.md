@@ -84,3 +84,18 @@ docker compose up --build
 The backend container runs `alembic upgrade head` before Uvicorn. The compose
 configuration requires `POSTGRES_PASSWORD` from a non-committed local
 environment before it can start.
+
+## Admission calendar
+
+`GET /api/v1/admissions` and `/api/v1/admissions/export.ics` provide
+fixture-only, source-labelled admission events. They accept `start_at`,
+`end_at`, `university_id`, `department_id`, and `event_type` filters.
+
+## Recommendations
+
+Read persisted items with `GET /api/v1/recommendations` and explicitly refresh
+them with `POST /api/v1/recommendations/recompute`. The default semantic
+provider is deterministic and requires no network/API key. Set
+`RECOMMENDATION_SEMANTIC_PROVIDER=openai` and `OPENAI_API_KEY` only to use the
+embedding provider; provider failures safely fall back to deterministic lexical
+similarity.

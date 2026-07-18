@@ -129,3 +129,36 @@ analysis prompt remain server-only. The existing schema stores the uploaded
 document plus keywords, skills, research interests (as methodologies), and
 projects; a later migration is required to persist every additional returned
 analysis field for retrieval.
+
+## Admission calendar API implementation (2026-07-18)
+
+`GET /api/v1/admissions` and `GET /api/v1/admissions/export.ics` are backend-only;
+the frontend remains unchanged.
+The legacy `admission_events` schema stored only `title`, a single
+`event_date`, `source_url`, `source_checked_at`, and `origin`. The migration
+preserves existing dates as UTC midnight and marks migrated fixture events as
+estimated rather than presenting them as confirmed schedules.
+
+The approved migration adds these fields:
+
+| Required API field/function | Required persisted data |
+| --- | --- |
+| `event_type` filter | non-null, validated `event_type` |
+| `start_at`, `end_at`, date ordering, deadline calculation, ICS DTSTART/DTEND | timezone-aware `start_at` and nullable `end_at` (or an explicit all-day date/range representation) |
+| `application_url` | nullable `application_url` |
+| `description` | nullable `description` |
+| `is_estimated` | non-null boolean `is_estimated` |
+| source and last-verification display | existing `source_url` and `source_checked_at`, exposed as `last_verified_at` |
+
+The existing development admission record remains an explicitly fictional
+fixture. No real dates, event types, URLs, descriptions, or estimate flags may
+be inferred from it. After the schema migration, fixture seed rows must retain
+`origin="fixture"` and be labelled as fixture data in every API response.
+
+## Recommendation API implementation (2026-07-18)
+
+The backend now exposes `GET /api/v1/recommendations` for persisted results
+and `POST /api/v1/recommendations/recompute` for explicit refresh. The Lovable
+frontend remains unchanged. The response keeps labs separate from per-user
+scores and provides score breakdown, evidence, confidence, matched/missing
+terms, and a template action for later integration.

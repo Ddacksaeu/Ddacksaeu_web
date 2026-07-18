@@ -166,3 +166,11 @@ new tables are created only by Alembic revision `20260718_0002`; application
 startup does not call `create_all()`. Future search, recommendation, and crawl
 APIs must use this data layer through repositories or services rather than
 accessing frontend mock data.
+
+## Recommendation engine (implemented 2026-07-18)
+
+The service owns deterministic scoring and confidence, the repository owns
+loading/upsert, and the similarity module provides a provider boundary. The
+default lexical Jaccard provider requires no network. An explicitly configured
+OpenAI embedding provider is server-only and falls back to lexical similarity
+when unavailable. GET is read-only; POST recompute is the only write path.
