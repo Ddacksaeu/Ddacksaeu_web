@@ -148,6 +148,25 @@ document plus keywords, skills, research interests (as methodologies), and
 projects; a later migration is required to persist every additional returned
 analysis field for retrieval.
 
+## CV analysis and recommendation frontend integration (in progress, 2026-07-18)
+
+The recommendation screen uses the MVP `demo-user` context until authentication
+is introduced. Its browser workflow is synchronous and has no mock fallback:
+
+1. Upload one text-based PDF (maximum 10 MiB) to
+   `POST /api/v1/documents/analyze` using `multipart/form-data` with
+   `user_id=demo-user`.
+2. Render the returned structured analysis, clearly labelling it as an
+   AI-generated extraction for user review.
+3. Call `POST /api/v1/recommendations/recompute?user_id=demo-user`, then show
+   server-provided score, confidence, matched/missing keywords, score
+   breakdown, and action. A failed request displays its API error and offers a
+   retry; it never substitutes demo results.
+
+The frontend accepts only `.pdf` files for this flow because the current
+backend intentionally rejects DOCX. The browser sends no OpenAI key and does
+not persist the original document outside the selected upload request.
+
 ## Admission calendar API implementation (2026-07-18)
 
 `GET /api/v1/admissions` and `GET /api/v1/admissions/export.ics` are backend-only;
