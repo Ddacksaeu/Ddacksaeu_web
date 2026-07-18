@@ -154,3 +154,11 @@ The existing development admission record remains an explicitly fictional
 fixture. No real dates, event types, URLs, descriptions, or estimate flags may
 be inferred from it. After the schema migration, fixture seed rows must retain
 `origin="fixture"` and be labelled as fixture data in every API response.
+
+## Recommendation API implementation (2026-07-18)
+
+The backend now exposes `GET /api/v1/recommendations` for persisted results
+and `POST /api/v1/recommendations/recompute` for explicit refresh. The Lovable
+frontend remains unchanged. The response keeps labs separate from per-user
+scores and provides score breakdown, evidence, confidence, matched/missing
+terms, and a template action for later integration.

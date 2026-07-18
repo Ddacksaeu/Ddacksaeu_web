@@ -25,6 +25,9 @@ class Settings(BaseSettings):
     document_max_upload_bytes: int = 10 * 1024 * 1024
     document_min_extracted_characters: int = 100
     openai_timeout_seconds: float = 30.0
+    recommendation_semantic_provider: Literal["deterministic", "openai"] = "deterministic"
+    recommendation_embedding_model: str = "text-embedding-3-small"
+    recommendation_freshness_half_life_days: int = 365
 
     @property
     def allowed_origins(self) -> list[str]:
