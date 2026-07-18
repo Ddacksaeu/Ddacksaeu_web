@@ -1,4 +1,5 @@
 import { Link } from "@tanstack/react-router";
+import type { ReactNode } from "react";
 import { ExternalLink, Heart, Building2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -24,16 +25,20 @@ export function LabCard({
   lab,
   variant = "grid",
   highlight,
+  headerActions,
 }: {
   lab: Lab;
   variant?: "grid" | "list";
   highlight?: string[];
+  headerActions?: ReactNode;
 }) {
   const { isFavorite, toggleFavorite } = useAppState();
   const fav = isFavorite(lab.id);
 
   const isMatch = (k: string) =>
-    highlight?.some((h) => h.toLowerCase() === k.toLowerCase() || k.toLowerCase().includes(h.toLowerCase()));
+    highlight?.some(
+      (h) => h.toLowerCase() === k.toLowerCase() || k.toLowerCase().includes(h.toLowerCase()),
+    );
 
   return (
     <article
@@ -58,19 +63,22 @@ export function LabCard({
             </h3>
             <p className="mt-0.5 text-sm text-muted-foreground">{lab.professor}</p>
           </div>
-          <button
-            type="button"
-            aria-label={fav ? "Remove from saved" : "Save lab"}
-            onClick={() => toggleFavorite(lab.id)}
-            className={cn(
-              "grid h-9 w-9 shrink-0 place-items-center rounded-full border transition-colors",
-              fav
-                ? "border-[color:var(--point)]/40 bg-[color:var(--point)]/10 text-[color:var(--point)]"
-                : "border-border text-muted-foreground hover:text-[color:var(--point)]",
-            )}
-          >
-            <Heart className={cn("h-4 w-4", fav && "fill-current")} strokeWidth={1.8} />
-          </button>
+          <div className="flex shrink-0 items-center gap-2">
+            {headerActions}
+            <button
+              type="button"
+              aria-label={fav ? "Remove from saved" : "Save lab"}
+              onClick={() => toggleFavorite(lab.id)}
+              className={cn(
+                "grid h-9 w-9 place-items-center rounded-full border transition-colors",
+                fav
+                  ? "border-[color:var(--point)]/40 bg-[color:var(--point)]/10 text-[color:var(--point)]"
+                  : "border-border text-muted-foreground hover:text-[color:var(--point)]",
+              )}
+            >
+              <Heart className={cn("h-4 w-4", fav && "fill-current")} strokeWidth={1.8} />
+            </button>
+          </div>
         </div>
 
         <p className="mt-3 line-clamp-2 text-sm leading-relaxed text-foreground/80">
@@ -102,12 +110,17 @@ export function LabCard({
       <div
         className={cn(
           "flex items-center justify-between gap-3 border-t border-border pt-4",
-          variant === "list" && "lg:w-56 lg:flex-col lg:items-stretch lg:justify-start lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0",
+          variant === "list" &&
+            "lg:w-56 lg:flex-col lg:items-stretch lg:justify-start lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0",
         )}
       >
         <div>
-          <div className="text-[11px] uppercase tracking-wider text-muted-foreground">Profile match</div>
-          <div className="mt-1"><MatchBar score={lab.matchScore} /></div>
+          <div className="text-[11px] uppercase tracking-wider text-muted-foreground">
+            Profile match
+          </div>
+          <div className="mt-1">
+            <MatchBar score={lab.matchScore} />
+          </div>
         </div>
         <div className="flex gap-2">
           <Button asChild size="sm" variant="outline" className="rounded-full">
@@ -116,8 +129,14 @@ export function LabCard({
               Website
             </a>
           </Button>
-          <Button asChild size="sm" className="rounded-full bg-[color:var(--deep)] hover:bg-[color:var(--navy)]">
-            <Link to="/lab/$id" params={{ id: lab.id }}>Details</Link>
+          <Button
+            asChild
+            size="sm"
+            className="rounded-full bg-[color:var(--deep)] hover:bg-[color:var(--navy)]"
+          >
+            <Link to="/lab/$id" params={{ id: lab.id }}>
+              Details
+            </Link>
           </Button>
         </div>
       </div>

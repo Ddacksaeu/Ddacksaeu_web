@@ -1,4 +1,4 @@
-import { createContext, useContext, useMemo, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { INITIAL_EVENTS, USER_PROFILE, type CalendarEvent, type UserProfile } from "./mock-data";
 
 export type CVAnalysis = {
@@ -30,6 +30,9 @@ type AppState = {
 };
 
 const Ctx = createContext<AppState | null>(null);
+const STORAGE_KEY = "ddacksaeu.app-state.v1";
+
+type PersistedAppState = Pick<AppState, "favorites" | "compareIds" | "events" | "cv" | "profile">;
 
 export function AppStateProvider({ children }: { children: ReactNode }) {
   const [favorites, setFavorites] = useState<string[]>(["vislab", "nlplab"]);
@@ -37,6 +40,32 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const [events, setEvents] = useState<CalendarEvent[]>(INITIAL_EVENTS);
   const [cv, setCV] = useState<CVAnalysis | null>(null);
   const [profile, setProfile] = useState<UserProfile>(USER_PROFILE);
+  const [hasLoadedStorage, setHasLoadedStorage] = useState(false);
+
+  useEffect(() => {
+    try {
+      const stored = window.localStorage.getItem(STORAGE_KEY);
+      if (!stored) return;
+      const parsed = JSON.parse(stored) as Partial<PersistedAppState>;
+      if (Array.isArray(parsed.favorites)) setFavorites(parsed.favorites);
+      if (Array.isArray(parsed.compareIds)) setCompareIds(parsed.compareIds.slice(0, 3));
+      if (Array.isArray(parsed.events)) setEvents(parsed.events);
+      if (parsed.cv === null || typeof parsed.cv === "object") setCV(parsed.cv ?? null);
+      if (parsed.profile && typeof parsed.profile === "object") {
+        setProfile((current) => ({ ...current, ...parsed.profile }));
+      }
+    } catch {
+      window.localStorage.removeItem(STORAGE_KEY);
+    } finally {
+      setHasLoadedStorage(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!hasLoadedStorage) return;
+    const persisted: PersistedAppState = { favorites, compareIds, events, cv, profile };
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(persisted));
+  }, [favorites, compareIds, events, cv, profile, hasLoadedStorage]);
 
   const value = useMemo<AppState>(
     () => ({
