@@ -102,3 +102,17 @@ its Lovable mock state until a later API-integration task.
 `Lab.matchScore` in the current frontend mock is not persisted on `labs`.
 Future API responses must read a user-specific `Recommendation` instead. All
 records inserted by the development seed are explicitly fictional fixtures.
+
+## Lab search API implementation (2026-07-18)
+
+`GET /api/v1/labs` supports independent and composable `university`,
+`department`, repeated `field`, `q`, `professor_name`, and `lab_name` filters.
+The `q` filter matches lab, professor, field, summary, and Korean or English
+keyword terms. It uses the MVP `demo-user` context to expose `isFavorite` and
+the optional persisted `recommendationScore`, without deriving scores from
+frontend fixture data.
+
+Results accept `sort=score|recent`, `page`, and `page_size`, and return
+`items`, `page`, `pageSize`, and `total`. `GET /api/v1/labs/{lab_id}` returns
+the same list fields plus provenance-backed facts and papers. This is a
+backend-only implementation; no frontend files are changed.
