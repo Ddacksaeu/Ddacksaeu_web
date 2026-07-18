@@ -14,9 +14,10 @@ POSTECH. Their source URL is `example.invalid`; no real email, professor,
 publication, or admission schedule is claimed.
 
 FastAPI and synchronous SQLAlchemy 2 foundation for the POSTECH Lab Finder MVP.
-Only `GET /api/v1/health` is exposed in this foundation stage. No crawler, CV
-analysis, recommendation engine, email drafting, OpenAI call, or frontend
-integration is included.
+`POST /api/v1/documents/analyze` accepts a PDF CV or portfolio, extracts and
+normalizes its text, requests a structured OpenAI analysis, and stores the
+private upload plus the fields supported by the current document schema. The
+API has no frontend integration in this stage.
 
 ## Setup
 
@@ -64,6 +65,10 @@ OpenAPI docs at `http://127.0.0.1:8000/api/v1/docs`.
 | `DATABASE_URL` | `sqlite+pysqlite:///./ddacksaeu.db` | SQLite locally or `postgresql+psycopg://...` in production |
 | `CORS_ORIGINS` | `http://localhost:5173` in development | Comma-separated allowed origins |
 | `LOG_LEVEL` | `INFO` | Structured logger level |
+| `OPENAI_API_KEY` | unset | Required only for document analysis; read on the server |
+| `OPENAI_MODEL` | `gpt-4o-mini` | Model used for structured document analysis |
+| `DOCUMENT_UPLOAD_DIR` | `.document_uploads` | Private filesystem directory for uploads |
+| `DOCUMENT_MAX_UPLOAD_BYTES` | `10485760` | Maximum PDF size (10 MiB) |
 
 Production and test environments have no default CORS origins, and reject `*`.
 

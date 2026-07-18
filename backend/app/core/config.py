@@ -3,7 +3,7 @@ from __future__ import annotations
 from functools import lru_cache
 from typing import Literal
 
-from pydantic import model_validator
+from pydantic import SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -19,6 +19,12 @@ class Settings(BaseSettings):
     cors_origins: str = ""
     log_level: str = "INFO"
     app_version: str = "0.1.0"
+    openai_api_key: SecretStr | None = None
+    openai_model: str = "gpt-4o-mini"
+    document_upload_dir: str = ".document_uploads"
+    document_max_upload_bytes: int = 10 * 1024 * 1024
+    document_min_extracted_characters: int = 100
+    openai_timeout_seconds: float = 30.0
 
     @property
     def allowed_origins(self) -> list[str]:
