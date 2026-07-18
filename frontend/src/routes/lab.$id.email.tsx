@@ -30,13 +30,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
 import {
   Dialog,
@@ -62,12 +56,11 @@ export const Route = createFileRoute("/lab/$id/email")({
   head: ({ loaderData }) => ({
     meta: [
       {
-        title: loaderData ? `${loaderData.lab.name} 컨택 이메일 · 딱새우` : "컨택 이메일 · 딱새우",
+        title: loaderData
+          ? `${loaderData.lab.name} Outreach Email · Ddaksaeu`
+          : "Outreach Email · Ddaksaeu",
       },
-      {
-        name: "description",
-        content: "CV와 연구실 정보를 바탕으로 컨택 메일 초안을 작성하고 검토합니다.",
-      },
+      { name: "description", content: "Draft and review a personalized outreach email using your CV and lab information." },
     ],
   }),
 });
@@ -77,16 +70,30 @@ type Length = "short" | "normal" | "detailed";
 type Purpose = "apply" | "intern" | "meeting";
 type Lang = "ko" | "en";
 
-const TONE_LABEL: Record<Tone, string> = {
-  polite: "정중함",
-  concise: "간결함",
-  passionate: "열정적",
-};
-const LEN_LABEL: Record<Length, string> = { short: "짧게", normal: "보통", detailed: "자세히" };
+const TONE_LABEL: Record<Tone, string> = { polite: "Polite", concise: "Concise", passionate: "Enthusiastic" };
+const LEN_LABEL: Record<Length, string> = { short: "Short", normal: "Standard", detailed: "Detailed" };
 const PURPOSE_LABEL: Record<Purpose, string> = {
-  apply: "대학원 지원 문의",
-  intern: "인턴 문의",
-  meeting: "면담 요청",
+  apply: "Graduate application inquiry",
+  intern: "Research internship inquiry",
+  meeting: "Meeting request",
+};
+
+const EMAIL_API_URL =
+  import.meta.env.VITE_EMAIL_API_URL ?? "http://127.0.0.1:8000/api/v1/email/draft";
+
+const API_LAB_IDS: Record<string, string> = {
+  vislab: "fixture-vision-lab",
+  nlplab: "fixture-multimodal-lab",
+  roblab: "fixture-robotics-lab",
+};
+
+type EmailDraftApiResponse = {
+  labId: string;
+  subject: string;
+  body: string;
+  personalizationNotes: string[];
+  generationMode: "ai" | "demo";
+  model: string | null;
 };
 
 function makeDraft(
@@ -97,6 +104,62 @@ function makeDraft(
   const topic = lab.recentTopics[0];
   const topic2 = lab.recentTopics[1] ?? lab.recentTopics[0];
   const project = profile.projects[0];
+
+  if (opts.lang === "en") {
+    const purpose =
+      opts.purpose === "apply"
+        ? `I am preparing to apply to the ${profile.program}`
+        : opts.purpose === "intern"
+          ? "I am exploring undergraduate research internship opportunities"
+          : "I am writing to ask whether you might be available for a brief conversation about your research";
+    const detail =
+      opts.length === "detailed"
+        ? `\n\nI also read your recent paper, "${lab.papers[0]?.title ?? topic}." Its approach to ${topic2} stood out to me, and I see a meaningful connection to my experience with ${profile.projects[1] ?? project}.`
+        : opts.length === "short"
+          ? ""
+          : `\n\nI am especially interested in ${topic2} and have been reading related work to better understand the area.`;
+    const closing =
+      opts.tone === "passionate"
+        ? "I would be excited to learn from and contribute to your group."
+        : opts.tone === "concise"
+          ? "I would appreciate any guidance you may be able to share."
+          : "Thank you for your time. I would appreciate the opportunity to hear whether there may be a fit.";
+    const skills = profile.skills.slice(0, 2).join(" and ") || "relevant technical methods";
+
+    return `Dear ${lab.professor},
+
+My name is ${profile.name}, and I am ${profile.affiliation}. ${purpose}, and I am reaching out after learning about the work at ${lab.name}.
+
+Through projects using ${skills}, including "${project}," I have developed a strong interest in ${profile.interests[0] ?? lab.field}. Your group's work on ${topic} connects closely with the questions I hope to explore.${detail}
+
+If you are currently considering prospective students or interns, I would be grateful for the chance to briefly discuss your research and potential opportunities. I can provide my CV, transcript, portfolio, or any other materials that would be helpful.
+
+${closing}
+
+Best regards,
+${profile.name}`;
+  }
+
+  const koreanProfessor = lab.professor.replace(/^Professor\s+/, "");
+  const koreanAffiliation =
+    profile.affiliation === "an undergraduate in Computer Science at POSTECH"
+      ? "포항공대 컴퓨터공학과 학부"
+      : profile.affiliation;
+  const koreanStatus =
+    {
+      "Current undergraduate": "학부 재학생",
+      "Expected graduate": "졸업 예정자",
+      Graduate: "졸업생",
+      "Current master's student": "석사과정 재학생",
+      "Working professional": "직장인",
+    }[profile.status] ?? profile.status;
+  const koreanProgram =
+    {
+      "Master's program": "석사과정",
+      "PhD program": "박사과정",
+      "Integrated MS/PhD program": "석박사통합과정",
+      Undecided: "진학 과정 미정",
+    }[profile.program] ?? profile.program;
   const purposeLine =
     opts.purpose === "apply"
       ? "2026학년도 대학원 과정 지원을 준비하며"
@@ -118,15 +181,15 @@ function makeDraft(
 
   const skillsLine = profile.skills.slice(0, 2).join(", ") || "관련 기술";
   const interestsLine = profile.interests[0] ?? lab.field;
-  return `${lab.professor}님께,
+  return `${koreanProfessor} 교수님께,
 
-안녕하십니까. 저는 ${profile.interests.slice(0, 2).join(" · ") || lab.field}에 관심을 가지고 있는 ${profile.affiliation}의 ${profile.status} ${profile.name}입니다. ${purposeLine} ${lab.name}의 연구를 접하고 메일 드립니다.
+안녕하십니까. 저는 ${profile.interests.slice(0, 2).join(" · ") || lab.field}에 관심을 가지고 있는 ${koreanAffiliation}의 ${koreanStatus} ${profile.name}입니다. ${purposeLine} ${lab.name}의 연구를 접하고 메일 드립니다.
 
 저는 그동안 ${skillsLine}을(를) 활용해 연구·프로젝트를 수행해왔고, 최근에는 "${project}"를 진행하며 ${interestsLine} 관련 실험을 이어갔습니다. 이 과정에서 표현 학습과 방법론의 중요성을 체감하게 되었습니다.
 
 ${lab.name}에서 진행 중인 ${topic} 연구가 제가 관심 있는 방향과 밀접하게 맞닿아 있다고 생각합니다.${extra}
 
-또한 ${profile.program} 진학을 준비하고 있어, 가능하시다면 짧게라도 면담 기회를 주실 수 있을지 여쭙고자 합니다. 요청하시는 자료(CV, 성적표, 포트폴리오 등)는 언제든 회신드릴 수 있도록 준비되어 있습니다.
+또한 ${koreanProgram} 진학을 준비하고 있어, 가능하시다면 짧게라도 면담 기회를 주실 수 있을지 여쭙고자 합니다. 요청하시는 자료(CV, 성적표, 포트폴리오 등)는 언제든 회신드릴 수 있도록 준비되어 있습니다.
 
 ${closing}
 
@@ -135,8 +198,44 @@ ${profile.name} 드림
 연락처: 010-1234-5678`;
 }
 
+function applyNaturalStyle(draft: string, lab: Lab, profile: UserProfile) {
+  const personalAnchor = profile.projects[0] ?? profile.interests[0] ?? lab.field;
+  const researchAnchor = lab.recentTopics[0] ?? lab.keywords[0] ?? lab.field;
+
+  return draft
+    .replace(
+      "바쁘신 와중에 메일 읽어주셔서 감사드리며, 답장 주시면 큰 영광으로 생각하겠습니다.",
+      "읽어주셔서 감사합니다. 가능하실 때 답변 주시면 감사하겠습니다.",
+    )
+    .replace(
+      "교수님의 연구실에서 진행 중인",
+      `연구실 홈페이지와 최근 연구 내용을 살펴보면서 ${personalAnchor} 경험과 연결해 생각해 본`,
+    )
+    .replace(
+      "연구가 제가 관심 있는 방향과 밀접하게 맞닿아 있다고 생각합니다.",
+      `${researchAnchor} 연구가 제가 해 온 경험과 어떻게 이어질 수 있을지 더 알아보고 싶었습니다.`,
+    )
+    .replace("진심으로 희망합니다.", "관심을 갖고 준비하고 있습니다.");
+}
+
 // Mock spellcheck corrections applied to the initial draft.
 function makeCorrections(_body: string) {
+  if (!/[가-힣]/.test(_body)) {
+    return [
+      {
+        id: "e1",
+        original: "I am writing to ask whether you might be available",
+        suggestion: "I would appreciate the opportunity to ask whether you may be available",
+        reason: "This keeps the request courteous without sounding formulaic.",
+      },
+      {
+        id: "e2",
+        original: "connects closely with the questions I hope to explore",
+        suggestion: "aligns with the research questions I hope to investigate",
+        reason: "The revision is more specific and academically focused.",
+      },
+    ];
+  }
   return [
     {
       id: "c1",
@@ -164,15 +263,19 @@ function EmailComposer() {
   const navigate = useNavigate();
   const { profile } = useAppState();
 
-  const [lang, setLang] = useState<Lang>("ko");
+  const [lang, setLang] = useState<Lang>("en");
   const [tone, setTone] = useState<Tone>("polite");
   const [length, setLength] = useState<Length>("normal");
   const [purpose, setPurpose] = useState<Purpose>("apply");
+  const [naturalStyle, setNaturalStyle] = useState(true);
 
   const [subject, setSubject] = useState(
-    `[대학원 지원 문의] ${profile.name} — ${lab.name} 컨택드립니다`,
+    `Prospective Graduate Student Inquiry — ${profile.name} · ${lab.name}`,
   );
-  const initial = useMemo(() => makeDraft(lab, profile, { tone, length, purpose, lang }), []); // eslint-disable-line react-hooks/exhaustive-deps
+  const initial = useMemo(
+    () => applyNaturalStyle(makeDraft(lab, profile, { tone, length, purpose, lang }), lab, profile),
+    [],
+  ); // eslint-disable-line react-hooks/exhaustive-deps
   const [body, setBody] = useState(initial);
   const historyRef = useRef<{ stack: string[]; index: number }>({ stack: [initial], index: 0 });
   const [lastEdited, setLastEdited] = useState<Date>(new Date());
@@ -206,9 +309,7 @@ function EmailComposer() {
   // Export dialog
   const [exportOpen, setExportOpen] = useState(false);
   // Diff preview dialog
-  const [diffOpen, setDiffOpen] = useState<null | { before: string; after: string; label: string }>(
-    null,
-  );
+  const [diffOpen, setDiffOpen] = useState<null | { before: string; after: string; label: string }>(null);
 
   const pushHistory = (next: string) => {
     const h = historyRef.current;
@@ -241,15 +342,62 @@ function EmailComposer() {
   const totalChecks = Object.keys(checks).length;
   const canExport = doneChecks === totalChecks;
 
+  const regenerateFromApi = async () => {
+    setRegenLoading(true);
+    try {
+      const response = await fetch(EMAIL_API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          labId: API_LAB_IDS[lab.id] ?? lab.id,
+          userId: "demo-user",
+          language: lang,
+          tone: tone === "passionate" ? "enthusiastic" : tone,
+          length: length === "normal" ? "standard" : length,
+          purpose:
+            purpose === "apply"
+              ? "graduate_application"
+              : purpose === "intern"
+                ? "internship"
+                : "meeting",
+        }),
+      });
+      if (!response.ok) {
+        throw new Error(`Email API returned ${response.status}`);
+      }
+      const draft = (await response.json()) as EmailDraftApiResponse;
+      updateBody(draft.body);
+      setSubject(draft.subject);
+      setCorrections([]);
+      setAiRan(false);
+      toast.success(
+        draft.generationMode === "ai"
+          ? "AI draft generated from your profile and lab data"
+          : "DB-backed demo draft generated",
+      );
+    } catch {
+      regenerate();
+      toast.error("Backend unavailable — showing a local fallback draft");
+    } finally {
+      setRegenLoading(false);
+    }
+  };
+
   const regenerate = () => {
     setRegenLoading(true);
     setTimeout(() => {
-      const next = makeDraft(lab, profile, { tone, length, purpose, lang });
+      const generated = makeDraft(lab, profile, { tone, length, purpose, lang });
+      const next = naturalStyle ? applyNaturalStyle(generated, lab, profile) : generated;
       updateBody(next);
+      setSubject(
+        lang === "ko"
+          ? `[대학원 지원 문의] ${profile.name} — ${lab.name} 컨택드립니다`
+          : `Prospective Graduate Student Inquiry — ${profile.name} · ${lab.name}`,
+      );
       setRegenLoading(false);
       setCorrections([]);
       setAiRan(false);
-      toast.success("초안을 다시 생성했어요");
+      toast.success("Draft regenerated");
     }, 900);
   };
 
@@ -278,7 +426,7 @@ function EmailComposer() {
     const next = body.replace(c.original, c.suggestion);
     updateBody(next);
     setCorrections((s) => s.filter((x) => x.id !== id));
-    toast.success("수정을 적용했어요");
+    toast.success("Suggestion applied");
   };
   const dismissCorrection = (id: string) => {
     setDismissed((s) => [...s, id]);
@@ -291,7 +439,7 @@ function EmailComposer() {
     });
     if (next !== body) {
       updateBody(next);
-      toast.success(`${corrections.length}건의 수정을 모두 적용했어요`);
+      toast.success(`${corrections.length} suggestions applied`);
     }
     setCorrections([]);
   };
@@ -301,7 +449,7 @@ function EmailComposer() {
     corrections.forEach((c) => {
       if (after.includes(c.original)) after = after.replace(c.original, c.suggestion);
     });
-    setDiffOpen({ before: body, after, label: "맞춤법 · 표현 수정" });
+    setDiffOpen({ before: body, after, label: "Grammar and wording" });
   };
 
   // Toolbar helpers: wrap selection in textarea
@@ -311,7 +459,7 @@ function EmailComposer() {
     if (!ta) return;
     const s = ta.selectionStart;
     const e = ta.selectionEnd;
-    const sel = body.slice(s, e) || "텍스트";
+    const sel = body.slice(s, e) || "text";
     const next = body.slice(0, s) + l + sel + r + body.slice(e);
     updateBody(next);
     requestAnimationFrame(() => {
@@ -343,7 +491,10 @@ function EmailComposer() {
     return parts.map((p, i) => ({ text: p, hit: i % 2 === 1 }));
   }, [body, highlightTerms]);
 
-  const openAssistant = (tab: "settings" | "ai", tool?: "spell" | "style") => {
+  const openAssistant = (
+    tab: "settings" | "ai",
+    tool?: "spell" | "style",
+  ) => {
     setHelperTab(tab);
     if (tool) {
       setAiTool(tool);
@@ -360,31 +511,26 @@ function EmailComposer() {
   return (
     <TooltipProvider delayDuration={200}>
       <AppShell
-        title="컨택 이메일 작성"
+        title="Write Outreach Email"
         description={`${lab.name} · ${lab.professor}`}
         actions={
           <span className="hidden items-center gap-2 text-xs text-muted-foreground lg:flex">
             <span className="grid h-5 w-5 place-items-center rounded-full bg-[color:var(--success)]/15 text-[color:var(--success)]">
               <Check className="h-3 w-3" />
             </span>
-            자동 저장됨 · 방금 전
+            Autosaved · just now
           </span>
         }
       >
         {/* Breadcrumb */}
-        <nav
-          aria-label="breadcrumb"
-          className="mb-4 flex items-center gap-1.5 text-xs text-muted-foreground"
-        >
-          <Link to="/" className="hover:text-[color:var(--deep)]">
-            연구실 탐색
-          </Link>
+        <nav aria-label="breadcrumb" className="mb-4 flex items-center gap-1.5 text-xs text-muted-foreground">
+          <Link to="/" className="hover:text-[color:var(--deep)]">Explore Labs</Link>
           <ChevronRight className="h-3 w-3" />
           <Link to="/lab/$id" params={{ id: lab.id }} className="hover:text-[color:var(--deep)]">
             {lab.name}
           </Link>
           <ChevronRight className="h-3 w-3" />
-          <span className="text-[color:var(--navy)]">컨택 이메일 작성</span>
+          <span className="text-[color:var(--navy)]">Write Outreach Email</span>
         </nav>
 
         {/* Send-safety notice — always visible at top */}
@@ -395,102 +541,164 @@ function EmailComposer() {
             </div>
             <div className="min-w-0">
               <p className="text-sm font-semibold text-[color:oklch(0.36_0.09_75)]">
-                딱새우는 초안 작성만 도와드리며, 교수님께 이메일을 직접 발송하지 않습니다.
+                Ddaksaeu helps you draft and review emails, but never sends them to professors.
               </p>
               <p className="mt-1 text-xs leading-relaxed text-[color:oklch(0.42_0.09_75)]">
-                최종 검토와 발송은 반드시 본인이 사용하는 메일 앱(예: Gmail, Outlook)에서 직접
-                진행해주세요. 교수님 성함·소속·논문 인용 등 사실관계는 발송 전에 스스로 한 번 더
-                확인해야 합니다.
+                Complete the final review and send the message from your own email app, such as Gmail or Outlook.
+                Verify names, affiliations, paper references, and all other facts before sending.
               </p>
             </div>
           </div>
         </section>
 
-        {/* Intro */}
-        <section className="mt-4 rounded-2xl border border-border bg-white p-5">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div className="min-w-0">
-              <h2 className="text-lg font-semibold text-[color:var(--navy)]">
-                교수님께 보낼 컨택 이메일을 준비해보세요
-              </h2>
-              <p className="mt-1 text-sm text-muted-foreground">
-                내 프로필과 연구실 정보를 바탕으로 초안을 만들고, 직접 검토한 뒤 내가 사용하는 메일
-                앱으로 옮겨 발송하세요.
-              </p>
-            </div>
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-[color:var(--surface)] px-2.5 py-1 text-[11px] text-muted-foreground">
-              <Info className="h-3 w-3" /> 초안 작성 및 검토 전용 도구
+        <p className="mt-3 flex items-center gap-2 px-1 text-sm text-muted-foreground">
+          <Info className="h-4 w-4 shrink-0 text-[color:var(--deep)]" />
+          Draft from your profile and lab data, edit it in your own voice, and review every fact before sending.
+        </p>
+
+        <section className="mt-3 rounded-2xl border border-border bg-white p-4" aria-label="Email settings">
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <SettingRow label="Email language">
+              <SegSelect
+                value={lang}
+                onChange={(v) => setLang(v as Lang)}
+                options={[
+                  { v: "ko", l: "Korean" },
+                  { v: "en", l: "English" },
+                ]}
+              />
+            </SettingRow>
+            <SettingRow label="Tone">
+              <SegSelect
+                value={tone}
+                onChange={(v) => setTone(v as Tone)}
+                options={[
+                  { v: "polite", l: "Polite" },
+                  { v: "concise", l: "Concise" },
+                  { v: "passionate", l: "Enthusiastic" },
+                ]}
+              />
+            </SettingRow>
+            <SettingRow label="Length">
+              <SegSelect
+                value={length}
+                onChange={(v) => setLength(v as Length)}
+                options={[
+                  { v: "short", l: "Short" },
+                  { v: "normal", l: "Standard" },
+                  { v: "detailed", l: "Detailed" },
+                ]}
+              />
+            </SettingRow>
+            <SettingRow label="Purpose">
+              <Select value={purpose} onValueChange={(v) => setPurpose(v as Purpose)}>
+                <SelectTrigger className="h-9 w-full rounded-lg text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {(Object.keys(PURPOSE_LABEL) as Purpose[]).map((k) => (
+                    <SelectItem key={k} value={k}>{PURPOSE_LABEL[k]}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </SettingRow>
+          </div>
+          <label className="mt-3 flex cursor-pointer items-center gap-2 border-t border-border pt-3">
+            <Checkbox
+              checked={naturalStyle}
+              onCheckedChange={(checked) => setNaturalStyle(checked === true)}
+            />
+            <span className="text-sm font-medium text-[color:var(--navy)]">Natural, personal style</span>
+            <Badge className="rounded-full bg-[color:var(--point)]/10 px-1.5 py-0 text-[10px] font-medium text-[color:var(--deep)] hover:bg-[color:var(--point)]/10">
+              Recommended
+            </Badge>
+          </label>
+        </section>
+
+        <section className="mt-3 rounded-2xl border border-border bg-white px-4 py-3" aria-label="Attachments">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="mr-1 flex items-center gap-1.5 text-xs font-semibold text-[color:var(--navy)]">
+              <Paperclip className="h-3.5 w-3.5" /> Attachments
             </span>
+            {attachments.map((a) => (
+              <span key={a.id} className="inline-flex h-8 items-center gap-2 rounded-lg border border-border bg-[color:var(--surface)] px-2.5 text-xs">
+                <Checkbox
+                  checked={a.checked}
+                  onCheckedChange={(v) =>
+                    setAttachments((s) =>
+                      s.map((x) => (x.id === a.id ? { ...x, checked: v === true } : x)),
+                    )
+                  }
+                />
+                <span className="max-w-52 truncate font-medium text-[color:var(--navy)]">{a.name}</span>
+                <button
+                  type="button"
+                  onClick={() => setAttachments((s) => s.filter((x) => x.id !== a.id))}
+                  aria-label={`Remove ${a.name}`}
+                  className="text-muted-foreground hover:text-[color:var(--navy)]"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </span>
+            ))}
+            <label className="inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-lg border border-dashed border-[color:var(--point)]/50 px-3 text-xs font-medium text-[color:var(--deep)] hover:bg-[color:var(--point)]/5">
+              <Plus className="h-3.5 w-3.5" /> Add CV or portfolio
+              <input
+                type="file"
+                accept=".pdf"
+                multiple
+                className="sr-only"
+                onChange={(event) => {
+                  const files = Array.from(event.target.files ?? []);
+                  if (files.length === 0) return;
+                  setAttachments((current) => [
+                    ...current,
+                    ...files.map((file, index) => ({
+                      id: `upload-${Date.now()}-${index}`,
+                      name: file.name,
+                      checked: true,
+                      size: `${Math.max(1, Math.round(file.size / 1024))} KB`,
+                    })),
+                  ]);
+                  event.target.value = "";
+                  toast.success(`${files.length} file${files.length > 1 ? "s" : ""} added`);
+                }}
+              />
+            </label>
+            <span className="ml-auto text-[11px] text-muted-foreground">PDF only · Review before export</span>
           </div>
         </section>
 
-        {/* AI feature shortcuts — UI-first, ready for a real model later */}
-        <section className="mt-4 grid gap-3 md:grid-cols-3" aria-label="AI 이메일 도구">
-          <button
-            type="button"
-            onClick={() => openAssistant("settings")}
-            className="rounded-2xl border border-border bg-white p-4 text-left transition hover:border-[color:var(--point)]/40 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--point)]"
-          >
-            <span className="grid h-9 w-9 place-items-center rounded-xl bg-[color:var(--point)]/10 text-[color:var(--deep)]">
-              <Sparkles className="h-4 w-4" />
-            </span>
-            <strong className="mt-3 block text-sm text-[color:var(--navy)]">
-              AI로 이메일 초안 작성
-            </strong>
-            <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">
-              내 CV와 연구실 정보를 조합해 목적·문체별 초안을 준비합니다.
-            </span>
-            <span className="mt-3 inline-flex text-xs font-medium text-[color:var(--deep)]">
-              설정 열기 →
-            </span>
+        <section className="hidden" aria-label="AI email tools">
+          <button type="button" onClick={() => openAssistant("settings")} className="rounded-2xl border border-border bg-white p-4 text-left transition hover:border-[color:var(--point)]/40 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--point)]">
+            <span className="grid h-9 w-9 place-items-center rounded-xl bg-[color:var(--point)]/10 text-[color:var(--deep)]"><Sparkles className="h-4 w-4" /></span>
+            <strong className="mt-3 block text-sm text-[color:var(--navy)]">Draft with AI</strong>
+            <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">Combine your CV and lab information into a draft tailored by purpose and tone.</span>
+            <span className="mt-3 inline-flex text-xs font-medium text-[color:var(--deep)]">Open settings →</span>
           </button>
-          <button
-            type="button"
-            onClick={() => openAssistant("ai", "spell")}
-            className="rounded-2xl border border-border bg-white p-4 text-left transition hover:border-[color:var(--point)]/40 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--point)]"
-          >
-            <span className="grid h-9 w-9 place-items-center rounded-xl bg-[color:var(--point)]/10 text-[color:var(--deep)]">
-              <Check className="h-4 w-4" />
-            </span>
-            <strong className="mt-3 block text-sm text-[color:var(--navy)]">
-              맞춤법과 표현 검사
-            </strong>
-            <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">
-              오탈자와 어색한 표현을 찾아 수정안을 나란히 보여줍니다.
-            </span>
-            <span className="mt-3 inline-flex text-xs font-medium text-[color:var(--deep)]">
-              검사 도구 열기 →
-            </span>
+          <button type="button" onClick={() => openAssistant("ai", "spell")} className="rounded-2xl border border-border bg-white p-4 text-left transition hover:border-[color:var(--point)]/40 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--point)]">
+            <span className="grid h-9 w-9 place-items-center rounded-xl bg-[color:var(--point)]/10 text-[color:var(--deep)]"><Check className="h-4 w-4" /></span>
+            <strong className="mt-3 block text-sm text-[color:var(--navy)]">Check grammar and wording</strong>
+            <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">Find typos and awkward phrases, then compare suggested edits side by side.</span>
+            <span className="mt-3 inline-flex text-xs font-medium text-[color:var(--deep)]">Open checker →</span>
           </button>
-          <button
-            type="button"
-            onClick={() => openAssistant("ai", "style")}
-            className="rounded-2xl border border-border bg-white p-4 text-left transition hover:border-[color:var(--point)]/40 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--point)]"
-          >
-            <span className="grid h-9 w-9 place-items-center rounded-xl bg-[color:var(--point)]/10 text-[color:var(--deep)]">
-              <ShieldCheck className="h-4 w-4" />
-            </span>
-            <strong className="mt-3 block text-sm text-[color:var(--navy)]">AI로 메일 점검</strong>
-            <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">
-              정중함·명확성·구체성과 과장 표현 여부를 발송 전에 확인합니다.
-            </span>
-            <span className="mt-3 inline-flex text-xs font-medium text-[color:var(--deep)]">
-              점검 도구 열기 →
-            </span>
+          <button type="button" onClick={() => openAssistant("ai", "style")} className="rounded-2xl border border-border bg-white p-4 text-left transition hover:border-[color:var(--point)]/40 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--point)]">
+            <span className="grid h-9 w-9 place-items-center rounded-xl bg-[color:var(--point)]/10 text-[color:var(--deep)]"><ShieldCheck className="h-4 w-4" /></span>
+            <strong className="mt-3 block text-sm text-[color:var(--navy)]">Review with AI</strong>
+            <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">Review politeness, clarity, specificity, and exaggerated wording before sending.</span>
+            <span className="mt-3 inline-flex text-xs font-medium text-[color:var(--deep)]">Open review →</span>
           </button>
         </section>
 
         {/* Main */}
-        <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
+        <div className="mt-5 grid gap-4">
           {/* Editor column */}
           <div className="min-w-0 space-y-5">
             <section className="rounded-2xl border border-border bg-white">
               {/* Header meta */}
               <div className="space-y-3 border-b border-border p-5">
                 <div className="grid gap-2">
-                  <Label htmlFor="to" className="text-xs text-muted-foreground">
-                    받는 사람
-                  </Label>
+                  <Label htmlFor="to" className="text-xs text-muted-foreground">To</Label>
                   <div className="flex items-center gap-2">
                     <Input
                       id="to"
@@ -506,21 +714,19 @@ function EmailComposer() {
                           className="h-10 w-10 shrink-0 rounded-lg"
                           onClick={() => {
                             navigator.clipboard?.writeText(lab.email);
-                            toast.success("이메일 주소를 복사했어요");
+                            toast.success("Email address copied");
                           }}
-                          aria-label="이메일 주소 복사"
+                          aria-label="Copy email address"
                         >
                           <Copy className="h-4 w-4" />
                         </Button>
                       </TooltipTrigger>
-                      <TooltipContent>이메일 주소 복사</TooltipContent>
+                      <TooltipContent>Copy email address</TooltipContent>
                     </Tooltip>
                   </div>
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="subject" className="text-xs text-muted-foreground">
-                    제목
-                  </Label>
+                  <Label htmlFor="subject" className="text-xs text-muted-foreground">Subject</Label>
                   <Input
                     id="subject"
                     value={subject}
@@ -535,31 +741,23 @@ function EmailComposer() {
 
               {/* Toolbar */}
               <div className="flex flex-wrap items-center gap-1 border-b border-border px-3 py-2">
-                <ToolBtn label="실행 취소" onClick={undo} disabled={historyRef.current.index <= 0}>
+                <ToolBtn label="Undo" onClick={undo} disabled={historyRef.current.index <= 0}>
                   <Undo2 className="h-4 w-4" />
                 </ToolBtn>
                 <ToolBtn
-                  label="다시 실행"
+                  label="Run again"
                   onClick={redo}
                   disabled={historyRef.current.index >= historyRef.current.stack.length - 1}
                 >
                   <Redo2 className="h-4 w-4" />
                 </ToolBtn>
                 <span className="mx-1 h-4 w-px bg-border" />
-                <ToolBtn label="굵게" onClick={() => wrapSelection("**")}>
-                  <Bold className="h-4 w-4" />
-                </ToolBtn>
-                <ToolBtn label="밑줄" onClick={() => wrapSelection("__")}>
-                  <Underline className="h-4 w-4" />
-                </ToolBtn>
-                <ToolBtn label="글머리 기호" onClick={() => wrapSelection("\n- ", "")}>
-                  <List className="h-4 w-4" />
-                </ToolBtn>
-                <ToolBtn label="링크" onClick={() => wrapSelection("[", "](https://)")}>
-                  <Link2 className="h-4 w-4" />
-                </ToolBtn>
+                <ToolBtn label="Bold" onClick={() => wrapSelection("**")}><Bold className="h-4 w-4" /></ToolBtn>
+                <ToolBtn label="Underline" onClick={() => wrapSelection("__")}><Underline className="h-4 w-4" /></ToolBtn>
+                <ToolBtn label="Bulleted list" onClick={() => wrapSelection("\n- ", "")}><List className="h-4 w-4" /></ToolBtn>
+                <ToolBtn label="Link" onClick={() => wrapSelection("[", "](https://)")}><Link2 className="h-4 w-4" /></ToolBtn>
                 <div className="ml-auto flex items-center gap-1 text-[11px] text-muted-foreground">
-                  <span className="hidden sm:inline">본문 편집</span>
+                  <span className="hidden sm:inline">Edit message</span>
                 </div>
               </div>
 
@@ -567,10 +765,9 @@ function EmailComposer() {
               <details className="border-b border-border" open>
                 <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-5 py-2.5 text-xs text-muted-foreground hover:bg-[color:var(--surface)]">
                   <span className="flex items-center gap-1.5">
-                    <Eye className="h-3.5 w-3.5" /> 개인화 미리보기 · 삽입된 정보를 하이라이트로
-                    확인
+                    <Eye className="h-3.5 w-3.5" /> Personalization preview · highlighted profile and lab details
                   </span>
-                  <span className="text-[11px]">펼치기/접기</span>
+                  <span className="text-[11px]">Expand/collapse</span>
                 </summary>
                 <div className="max-h-40 overflow-y-auto whitespace-pre-wrap px-5 pb-4 text-[13px] leading-relaxed text-foreground/85">
                   {personalizedPreview.map((p, i) =>
@@ -590,32 +787,56 @@ function EmailComposer() {
 
               {/* Body */}
               <div className="p-5">
-                <Label htmlFor="body" className="sr-only">
-                  본문
-                </Label>
+                <Label htmlFor="body" className="sr-only">Message body</Label>
                 <Textarea
                   id="body"
                   ref={textareaRef}
                   value={body}
                   onChange={(e) => updateBody(e.target.value)}
                   className="min-h-[420px] resize-y rounded-lg font-sans text-sm leading-relaxed"
-                  aria-label="이메일 본문"
+                  aria-label="Email body"
                 />
                 <div className="mt-3 flex flex-wrap items-center justify-between gap-3 text-[11px] text-muted-foreground">
                   <div className="flex flex-wrap items-center gap-3 tabular-nums">
-                    <span>{charCount.toLocaleString()}자</span>
+                    <span>{charCount.toLocaleString()} characters</span>
                     <span className="text-border">·</span>
-                    <span>예상 읽기 {readMin}분</span>
+                    <span>Estimated read: {readMin} min</span>
                     <span className="text-border">·</span>
-                    <span>
-                      마지막 수정{" "}
-                      {lastEdited.toLocaleTimeString("ko-KR", {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </span>
+                    <span>Last edited {lastEdited.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}</span>
                   </div>
                 </div>
+              </div>
+
+              <div className="hidden" aria-label="AI email tools">
+                <span className="mr-1 text-xs font-medium text-muted-foreground">AI tools</span>
+                <Button
+                  type="button"
+                  size="sm"
+                  className="h-8 gap-1.5 rounded-lg bg-[color:var(--deep)] text-xs hover:bg-[color:var(--navy)]"
+                  onClick={regenerateFromApi}
+                  disabled={regenLoading}
+                >
+                  {regenLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+                  Draft with AI
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="h-8 gap-1.5 rounded-lg bg-white text-xs"
+                  onClick={() => openAssistant("ai", "spell")}
+                >
+                  <Check className="h-3.5 w-3.5" /> Check grammar
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="h-8 gap-1.5 rounded-lg bg-white text-xs"
+                  onClick={() => openAssistant("ai", "style")}
+                >
+                  <ShieldCheck className="h-3.5 w-3.5" /> Review with AI
+                </Button>
               </div>
 
               {/* Actions */}
@@ -623,19 +844,19 @@ function EmailComposer() {
                 <Button
                   variant="ghost"
                   className="gap-2 rounded-lg text-muted-foreground hover:text-[color:var(--navy)]"
-                  onClick={() => toast.success("초안을 저장했어요")}
+                  onClick={() => toast.success("Draft saved")}
                 >
-                  <Save className="h-4 w-4" /> 초안 저장
+                  <Save className="h-4 w-4" /> Save draft
                 </Button>
                 <Button
                   variant="outline"
                   className="gap-2 rounded-lg"
                   onClick={() => {
                     navigator.clipboard?.writeText(`${subject}\n\n${body}`);
-                    toast.success("클립보드에 복사했어요");
+                    toast.success("Copied to clipboard");
                   }}
                 >
-                  <Copy className="h-4 w-4" /> 클립보드에 복사
+                  <Copy className="h-4 w-4" /> Copy to clipboard
                 </Button>
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -648,14 +869,13 @@ function EmailComposer() {
                         disabled={!canExport}
                         onClick={() => setExportOpen(true)}
                       >
-                        <Send className="h-4 w-4" /> 이메일로 내보내기
+                        <Send className="h-4 w-4" /> Export to email
                       </Button>
                     </span>
                   </TooltipTrigger>
                   {!canExport && (
                     <TooltipContent side="top">
-                      아래 검토 체크리스트를 모두 확인해야 내보낼 수 있어요 ({doneChecks}/
-                      {totalChecks})
+                      Complete every review item before exporting ({doneChecks}/{totalChecks})
                     </TooltipContent>
                   )}
                 </Tooltip>
@@ -663,14 +883,12 @@ function EmailComposer() {
             </section>
 
             {/* Review checklist */}
-            <section className="rounded-2xl border border-border bg-white p-5">
+            <section className="hidden">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <h3 className="text-sm font-semibold text-[color:var(--navy)]">
-                    발송 전 검토 체크리스트
-                  </h3>
+                  <h3 className="text-sm font-semibold text-[color:var(--navy)]">Pre-send checklist</h3>
                   <p className="mt-0.5 text-xs text-muted-foreground">
-                    실제 발송 전에 아래 항목을 한 번 더 확인해주세요.
+                    Review each item before sending.
                   </p>
                 </div>
                 <div className="flex items-center gap-3">
@@ -682,7 +900,7 @@ function EmailComposer() {
                   </span>
                   {canExport && (
                     <span className="inline-flex items-center gap-1 rounded-full border border-[color:var(--success)]/30 bg-[color:var(--success)]/10 px-2 py-0.5 text-[11px] font-medium text-[color:var(--success)]">
-                      <Check className="h-3 w-3" /> 검토 완료
+                      <Check className="h-3 w-3" /> Review complete
                     </span>
                   )}
                 </div>
@@ -690,11 +908,11 @@ function EmailComposer() {
               <ul className="mt-4 space-y-2">
                 {(
                   [
-                    ["name", "교수님 성함과 연구실명이 정확한지 확인했어요"],
-                    ["facts", "언급한 논문·연구 주제의 사실관계를 확인했어요"],
-                    ["files", "CV와 포트폴리오 첨부 준비를 확인했어요"],
-                    ["schedule", "면담 요청 일정과 연락처를 확인했어요"],
-                    ["tone", "개인정보 노출·과장 표현이 없는지 검토했어요"],
+                    ["name", "Professor and lab names are correct"],
+                    ["facts", "Paper and research-topic references are accurate"],
+                    ["files", "CV and portfolio attachments are ready"],
+                    ["schedule", "Meeting availability and contact details are correct"],
+                    ["tone", "No unnecessary personal data or exaggerated claims"],
                   ] as const
                 ).map(([key, label]) => (
                   <li
@@ -707,10 +925,7 @@ function EmailComposer() {
                       onCheckedChange={(v) => setChecks((s) => ({ ...s, [key]: v === true }))}
                       className="mt-0.5"
                     />
-                    <Label
-                      htmlFor={`chk-${key}`}
-                      className="cursor-pointer text-sm leading-relaxed text-foreground/85"
-                    >
+                    <Label htmlFor={`chk-${key}`} className="cursor-pointer text-sm leading-relaxed text-foreground/85">
                       {label}
                     </Label>
                   </li>
@@ -721,44 +936,25 @@ function EmailComposer() {
 
           {/* Right assistant panel */}
           <aside id="email-ai-tools" className="min-w-0 scroll-mt-24">
-            <div className="sticky top-24 rounded-2xl border border-border bg-white">
+            <div className="rounded-2xl border border-border bg-white">
               <Tabs value={helperTab} onValueChange={(v) => setHelperTab(v as typeof helperTab)}>
-                <TabsList className="grid w-full grid-cols-4 rounded-none rounded-t-2xl border-b border-border bg-[color:var(--surface)] p-1">
-                  <TabsTrigger
-                    value="context"
-                    className="rounded-lg text-xs data-[state=active]:bg-white data-[state=active]:text-[color:var(--navy)] data-[state=active]:shadow-sm"
-                  >
-                    사용된 정보
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="settings"
-                    className="rounded-lg text-xs data-[state=active]:bg-white data-[state=active]:text-[color:var(--navy)] data-[state=active]:shadow-sm"
-                  >
-                    메일 설정
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="attach"
-                    className="rounded-lg text-xs data-[state=active]:bg-white data-[state=active]:text-[color:var(--navy)] data-[state=active]:shadow-sm"
-                  >
-                    첨부
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="ai"
-                    className="rounded-lg text-xs data-[state=active]:bg-white data-[state=active]:text-[color:var(--navy)] data-[state=active]:shadow-sm"
-                  >
-                    <Wand2 className="mr-1 h-3.5 w-3.5" />
-                    도우미
+                <TabsList className="grid w-full grid-cols-2 rounded-none rounded-t-2xl border-b border-border bg-[color:var(--surface)] p-1">
+                  <TabsTrigger value="context" className="rounded-lg text-xs data-[state=active]:bg-white data-[state=active]:text-[color:var(--navy)] data-[state=active]:shadow-sm">Context</TabsTrigger>
+                  <TabsTrigger value="settings" className="hidden">Email settings</TabsTrigger>
+                  <TabsTrigger value="attach" className="hidden">Attachments</TabsTrigger>
+                  <TabsTrigger value="ai" className="rounded-lg text-xs data-[state=active]:bg-white data-[state=active]:text-[color:var(--navy)] data-[state=active]:shadow-sm">
+                    <Wand2 className="mr-1 h-3.5 w-3.5" />Assistant
                   </TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="context" className="space-y-4 p-4">
-                  <PanelSection title="내 CV">
+                  <PanelSection title="My CV">
                     <ul className="space-y-1.5 text-sm">
                       {[
-                        "관심 분야: 컴퓨터 비전, 멀티모달",
-                        "기술 스택: PyTorch, OpenCV",
-                        "프로젝트: 의료 영상 분류, 비디오 이해",
-                        "학부 연구 인턴 경험",
+                        "Interests: Computer Vision, Multimodal Learning",
+                        "Skills: PyTorch, OpenCV",
+                        "Projects: Medical image classification, video understanding",
+                        "Undergraduate research internship",
                       ].map((t) => (
                         <li key={t} className="flex items-start gap-2 text-foreground/85">
                           <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[color:var(--success)]" />
@@ -770,24 +966,22 @@ function EmailComposer() {
                       to="/profile"
                       className="mt-2 inline-flex items-center gap-1 text-xs text-[color:var(--deep)] hover:underline"
                     >
-                      정보 수정 <ChevronRight className="h-3 w-3" />
+                      Edit profile <ChevronRight className="h-3 w-3" />
                     </Link>
                   </PanelSection>
-                  <PanelSection title="연구실 정보">
+                  <PanelSection title="Lab information">
                     <ul className="space-y-1.5 text-sm">
                       <li className="flex items-start gap-2 text-foreground/85">
                         <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[color:var(--success)]" />
-                        <span>
-                          {lab.professor} · {lab.name}
-                        </span>
+                        <span>{lab.professor} · {lab.name}</span>
                       </li>
                       <li className="flex items-start gap-2 text-foreground/85">
                         <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[color:var(--success)]" />
-                        <span>키워드: {lab.keywords.slice(0, 4).join(", ")}</span>
+                        <span>Keywords: {lab.keywords.slice(0, 4).join(", ")}</span>
                       </li>
                       <li className="flex items-start gap-2 text-foreground/85">
                         <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[color:var(--success)]" />
-                        <span>최근 주제: {lab.recentTopics[0]}</span>
+                        <span>Recent topic: {lab.recentTopics[0]}</span>
                       </li>
                     </ul>
                     <Link
@@ -795,73 +989,86 @@ function EmailComposer() {
                       params={{ id: lab.id }}
                       className="mt-2 inline-flex items-center gap-1 text-xs text-[color:var(--deep)] hover:underline"
                     >
-                      연구실 정보 보기 <ChevronRight className="h-3 w-3" />
+                      View lab details <ChevronRight className="h-3 w-3" />
                     </Link>
                   </PanelSection>
                 </TabsContent>
 
                 <TabsContent value="settings" className="space-y-4 p-4">
-                  <SettingRow label="언어">
+                  <SettingRow label="Email language">
                     <SegSelect
                       value={lang}
                       onChange={(v) => setLang(v as Lang)}
                       options={[
-                        { v: "ko", l: "한국어" },
-                        { v: "en", l: "영어" },
+                        { v: "ko", l: "Korean" },
+                        { v: "en", l: "English" },
                       ]}
                     />
                   </SettingRow>
-                  <SettingRow label="문체">
+                  <SettingRow label="Tone">
                     <SegSelect
                       value={tone}
                       onChange={(v) => setTone(v as Tone)}
                       options={[
-                        { v: "polite", l: "정중함" },
-                        { v: "concise", l: "간결함" },
-                        { v: "passionate", l: "열정적" },
+                        { v: "polite", l: "Polite" },
+                        { v: "concise", l: "Concise" },
+                        { v: "passionate", l: "Enthusiastic" },
                       ]}
                     />
                   </SettingRow>
-                  <SettingRow label="길이">
+                  <SettingRow label="Length">
                     <SegSelect
                       value={length}
                       onChange={(v) => setLength(v as Length)}
                       options={[
-                        { v: "short", l: "짧게" },
-                        { v: "normal", l: "보통" },
-                        { v: "detailed", l: "자세히" },
+                        { v: "short", l: "Short" },
+                        { v: "normal", l: "Standard" },
+                        { v: "detailed", l: "Detailed" },
                       ]}
                     />
                   </SettingRow>
-                  <SettingRow label="목적">
+                  <SettingRow label="Purpose">
                     <Select value={purpose} onValueChange={(v) => setPurpose(v as Purpose)}>
                       <SelectTrigger className="h-9 w-full rounded-lg text-sm">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
                         {(Object.keys(PURPOSE_LABEL) as Purpose[]).map((k) => (
-                          <SelectItem key={k} value={k}>
-                            {PURPOSE_LABEL[k]}
-                          </SelectItem>
+                          <SelectItem key={k} value={k}>{PURPOSE_LABEL[k]}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </SettingRow>
+                  <div className="rounded-xl border border-[color:var(--point)]/30 bg-[color:var(--point)]/5 p-3">
+                    <label className="flex cursor-pointer items-start gap-3">
+                      <Checkbox
+                        checked={naturalStyle}
+                        onCheckedChange={(checked) => setNaturalStyle(checked === true)}
+                        className="mt-0.5"
+                      />
+                      <span>
+                        <span className="flex items-center gap-1.5 text-sm font-medium text-[color:var(--navy)]">
+                          Natural, personal style
+                          <Badge className="rounded-full bg-[color:var(--point)]/10 px-1.5 py-0 text-[10px] font-medium text-[color:var(--deep)] hover:bg-[color:var(--point)]/10">
+                            On by default
+                          </Badge>
+                        </span>
+                        <span className="mt-1 block text-[11px] leading-relaxed text-muted-foreground">
+                          Use specific projects and research interests while reducing repetitive greetings, exaggerated wording, and formulaic sentences.
+                        </span>
+                      </span>
+                    </label>
+                  </div>
                   <Button
                     className="w-full gap-2 rounded-lg bg-[color:var(--deep)] hover:bg-[color:var(--navy)]"
-                    onClick={regenerate}
+                    onClick={regenerateFromApi}
                     disabled={regenLoading}
                   >
-                    {regenLoading ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Sparkles className="h-4 w-4" />
-                    )}
-                    초안 다시 생성
+                    {regenLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                    Regenerate draft
                   </Button>
                   <p className="text-[11px] leading-relaxed text-muted-foreground">
-                    설정을 바꾸면 기존 편집 내용이 새 초안으로 덮어써집니다. 실행 취소로 되돌릴 수
-                    있어요.
+                    Regenerating replaces your current edits with a new draft. You can restore them with Undo.
                   </p>
                 </TabsContent>
 
@@ -883,14 +1090,12 @@ function EmailComposer() {
                         <Paperclip className="h-4 w-4" />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <div className="truncate text-sm font-medium text-[color:var(--navy)]">
-                          {a.name}
-                        </div>
+                        <div className="truncate text-sm font-medium text-[color:var(--navy)]">{a.name}</div>
                         <div className="text-[11px] text-muted-foreground">{a.size}</div>
                       </div>
                       <button
                         onClick={() => setAttachments((s) => s.filter((x) => x.id !== a.id))}
-                        aria-label="첨부 제거"
+                        aria-label="Remove attachment"
                         className="text-muted-foreground hover:text-[color:var(--navy)]"
                       >
                         <X className="h-4 w-4" />
@@ -903,32 +1108,48 @@ function EmailComposer() {
                         ...s,
                         {
                           id: `pf${s.length}`,
-                          name: `포트폴리오_${s.length}.pdf`,
+                          name: `Portfolio_${s.length}.pdf`,
                           checked: true,
                           size: "1.2 MB",
                         },
                       ]);
-                      toast.success("포트폴리오를 추가했어요");
+                      toast.success("Portfolio added");
                     }}
                     className="flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-border px-3 py-3 text-sm text-muted-foreground transition-colors hover:border-[color:var(--point)]/40 hover:bg-[color:var(--point)]/5 hover:text-[color:var(--deep)]"
                   >
-                    <Plus className="h-4 w-4" /> 포트폴리오 추가
+                    <Plus className="h-4 w-4" /> Add portfolio
                   </button>
                   <p className="text-[11px] text-muted-foreground">
-                    프로토타입에서는 파일 업로드가 로컬 UI에만 반영됩니다.
+                    In this prototype, uploaded files are shown only in the local UI.
                   </p>
                 </TabsContent>
 
                 <TabsContent value="ai" className="p-4">
+                  <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[color:var(--point)]/25 bg-[color:var(--point)]/5 p-3">
+                    <div>
+                      <p className="text-sm font-medium text-[color:var(--navy)]">Generate a new draft</p>
+                      <p className="text-[11px] text-muted-foreground">Uses the settings and attachments shown above.</p>
+                    </div>
+                    <Button
+                      type="button"
+                      size="sm"
+                      className="h-8 gap-1.5 rounded-lg bg-[color:var(--deep)] text-xs hover:bg-[color:var(--navy)]"
+                      onClick={regenerateFromApi}
+                      disabled={regenLoading}
+                    >
+                      {regenLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+                      Draft with AI
+                    </Button>
+                  </div>
                   <div className="mb-3 flex flex-wrap gap-1">
                     {(
                       [
-                        ["spell", "맞춤법 검사"],
-                        ["polish", "문장 다듬기"],
-                        ["duplicate", "중복 표현"],
-                        ["style", "문체 점검"],
-                        ["shorten", "길이 줄이기"],
-                        ["translate", "영문 변환"],
+                        ["spell", "Grammar check"],
+                        ["polish", "Polish writing"],
+                        ["duplicate", "Repetition"],
+                        ["style", "Tone review"],
+                        ["shorten", "Shorten"],
+                        ["translate", "Translate to English"],
                       ] as const
                     ).map(([k, l]) => (
                       <button
@@ -954,12 +1175,8 @@ function EmailComposer() {
                     onClick={runAi}
                     disabled={aiLoading}
                   >
-                    {aiLoading ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Wand2 className="h-4 w-4" />
-                    )}
-                    실행
+                    {aiLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
+                    Run
                   </Button>
 
                   {/* Results */}
@@ -975,8 +1192,8 @@ function EmailComposer() {
                       <EmptyResult
                         label={
                           dismissed.length > 0
-                            ? "모든 제안을 처리했어요."
-                            : "발견된 문제가 없습니다. 훌륭해요."
+                            ? "All suggestions have been resolved."
+                            : "No issues found."
                         }
                         onRetry={runAi}
                       />
@@ -986,20 +1203,20 @@ function EmailComposer() {
                       <>
                         <div className="flex items-center justify-between">
                           <span className="text-xs text-muted-foreground">
-                            {corrections.length}개의 제안
+                            {corrections.length} suggestions
                           </span>
                           <div className="flex gap-1">
                             <button
                               onClick={openDiff}
                               className="rounded-md px-2 py-1 text-[11px] text-[color:var(--deep)] hover:bg-[color:var(--point)]/10"
                             >
-                              변경 미리보기
+                              Preview changes
                             </button>
                             <button
                               onClick={applyAll}
                               className="rounded-md bg-[color:var(--deep)] px-2 py-1 text-[11px] font-medium text-white hover:bg-[color:var(--navy)]"
                             >
-                              모두 적용
+                              Apply all
                             </button>
                           </div>
                         </div>
@@ -1022,13 +1239,13 @@ function EmailComposer() {
                                 onClick={() => dismissCorrection(c.id)}
                                 className="rounded-md px-2 py-1 text-[11px] text-muted-foreground hover:bg-[color:var(--surface)]"
                               >
-                                무시
+                                Dismiss
                               </button>
                               <button
                                 onClick={() => applyCorrection(c.id)}
                                 className="rounded-md bg-[color:var(--point)] px-2 py-1 text-[11px] font-medium text-white hover:bg-[color:var(--deep)]"
                               >
-                                적용
+                                Apply
                               </button>
                             </div>
                           </div>
@@ -1038,38 +1255,32 @@ function EmailComposer() {
 
                     {!aiLoading && aiTool === "polish" && polishResult && (
                       <div className="rounded-lg border border-border p-3">
-                        <div className="text-[11px] uppercase tracking-widest text-muted-foreground">
-                          원문
-                        </div>
+                        <div className="text-[11px] uppercase tracking-widest text-muted-foreground">Original</div>
                         <p className="mt-1 text-xs text-foreground/80">{polishResult.before}</p>
-                        <div className="mt-3 text-[11px] uppercase tracking-widest text-muted-foreground">
-                          제안
-                        </div>
-                        <p className="mt-1 text-xs text-[color:var(--navy)]">
-                          {polishResult.after}
-                        </p>
+                        <div className="mt-3 text-[11px] uppercase tracking-widest text-muted-foreground">Suggestion</div>
+                        <p className="mt-1 text-xs text-[color:var(--navy)]">{polishResult.after}</p>
                         <div className="mt-3 flex justify-end gap-1">
                           <button
                             onClick={() =>
                               setDiffOpen({
                                 before: body,
                                 after: body.replace(polishResult.before, polishResult.after),
-                                label: "문장 다듬기",
+                                label: "Polish writing",
                               })
                             }
                             className="rounded-md px-2 py-1 text-[11px] text-[color:var(--deep)] hover:bg-[color:var(--point)]/10"
                           >
-                            변경 미리보기
+                            Preview changes
                           </button>
                           <button
                             onClick={() => {
                               updateBody(body.replace(polishResult.before, polishResult.after));
                               setPolishResult(null);
-                              toast.success("다듬은 문장을 적용했어요");
+                              toast.success("Polished sentence applied");
                             }}
                             className="rounded-md bg-[color:var(--point)] px-2 py-1 text-[11px] font-medium text-white hover:bg-[color:var(--deep)]"
                           >
-                            적용
+                            Apply
                           </button>
                         </div>
                       </div>
@@ -1077,12 +1288,10 @@ function EmailComposer() {
 
                     {!aiLoading && aiTool === "duplicate" && aiRan && (
                       <div className="rounded-lg border border-border p-3 text-xs text-foreground/80">
-                        <p className="font-medium text-[color:var(--navy)]">중복 표현 2건</p>
+                        <p className="font-medium text-[color:var(--navy)]">2 repeated phrases</p>
                         <ul className="mt-2 space-y-1.5 text-muted-foreground">
-                          <li>
-                            · "관심" 표현이 3회 이상 반복됩니다. 다른 표현으로 대체를 권장합니다.
-                          </li>
-                          <li>· "짧게라도"가 두 문장에 등장합니다.</li>
+                          <li>· "The word "interest" appears several times. Consider varying the wording.</li>
+                          <li>· "A similar request phrase appears twice.</li>
                         </ul>
                       </div>
                     )}
@@ -1090,20 +1299,20 @@ function EmailComposer() {
                     {!aiLoading && aiTool === "style" && aiRan && (
                       <div className="space-y-3 rounded-lg border border-border p-3">
                         {[
-                          ["정중함", 88],
-                          ["명확성", 74],
-                          ["구체성", 62],
+                          ["Polite", 88],
+                          ["Clarity", 74],
+                          ["Specificity", 62],
                         ].map(([l, v]) => (
                           <div key={l as string}>
                             <div className="mb-1 flex items-center justify-between text-xs">
                               <span className="text-foreground/80">{l}</span>
-                              <span className="tabular-nums text-muted-foreground">{v}점</span>
+                              <span className="tabular-nums text-muted-foreground">{v}</span>
                             </div>
                             <Progress value={v as number} className="h-1.5" />
                           </div>
                         ))}
                         <p className="text-[11px] text-muted-foreground">
-                          구체성을 높이려면 관심 있는 논문·주제를 한 문단 더 언급해보세요.
+                          Mention a specific paper or topic to make the message more concrete.
                         </p>
                       </div>
                     )}
@@ -1115,14 +1324,12 @@ function EmailComposer() {
                             .split("\n\n")
                             .filter((_, i) => i < 4)
                             .join("\n\n");
-                          setDiffOpen({ before: body, after: short, label: "길이 줄이기" });
+                          setDiffOpen({ before: body, after: short, label: "Shorten" });
                         }}
                         className="w-full rounded-lg border border-border p-3 text-left text-xs hover:bg-[color:var(--surface)]"
                       >
-                        <p className="font-medium text-[color:var(--navy)]">
-                          약 30% 짧은 초안 준비 완료
-                        </p>
-                        <p className="mt-1 text-muted-foreground">클릭하여 변경 미리보기 열기</p>
+                        <p className="font-medium text-[color:var(--navy)]">A draft about 30% shorter is ready</p>
+                        <p className="mt-1 text-muted-foreground">Select to preview the changes</p>
                       </button>
                     )}
 
@@ -1130,18 +1337,18 @@ function EmailComposer() {
                       <button
                         onClick={() => {
                           const en = `Dear Prof. ${lab.professor.replace(" 교수", "")},\n\nI hope this email finds you well. I am ${profile.name}, interested in ${lab.field}. I was drawn to your work on ${lab.recentTopics[0]} and would appreciate the chance to discuss potential graduate study in your lab.\n\nBest regards,\n${profile.name}`;
-                          setDiffOpen({ before: body, after: en, label: "영문 변환" });
+                          setDiffOpen({ before: body, after: en, label: "Translate to English" });
                         }}
                         className="w-full rounded-lg border border-border p-3 text-left text-xs hover:bg-[color:var(--surface)]"
                       >
-                        <p className="font-medium text-[color:var(--navy)]">영문 초안 준비 완료</p>
-                        <p className="mt-1 text-muted-foreground">클릭하여 변경 미리보기 열기</p>
+                        <p className="font-medium text-[color:var(--navy)]">English draft ready</p>
+                        <p className="mt-1 text-muted-foreground">Select to preview the changes</p>
                       </button>
                     )}
 
                     {!aiRan && !aiLoading && (
                       <p className="rounded-lg border border-dashed border-border p-4 text-center text-xs text-muted-foreground">
-                        원하는 도구를 선택하고 실행을 눌러주세요.
+                        Choose a tool, then select Run.
                       </p>
                     )}
                   </div>
@@ -1151,54 +1358,86 @@ function EmailComposer() {
           </aside>
         </div>
 
+        <section className="mt-4 rounded-2xl border border-border bg-white p-5">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h3 className="text-sm font-semibold text-[color:var(--navy)]">Final review before sending</h3>
+              <p className="mt-0.5 text-xs text-muted-foreground">Complete this checklist after writing and AI review.</p>
+            </div>
+            <div className="flex items-center gap-3">
+              <Progress value={(doneChecks / totalChecks) * 100} className="h-2 w-28" />
+              <span className="text-xs tabular-nums text-muted-foreground">{doneChecks}/{totalChecks}</span>
+            </div>
+          </div>
+          <ul className="mt-4 grid gap-2 md:grid-cols-2">
+            {(
+              [
+                ["name", "Professor and lab names are correct"],
+                ["facts", "Paper and research-topic references are accurate"],
+                ["files", "CV and portfolio attachments are ready"],
+                ["schedule", "Meeting availability and contact details are correct"],
+                ["tone", "No unnecessary personal data or exaggerated claims"],
+              ] as const
+            ).map(([key, label]) => (
+              <li key={key} className="flex items-start gap-2 rounded-lg bg-[color:var(--surface)]/60 px-3 py-2.5">
+                <Checkbox
+                  id={`final-${key}`}
+                  checked={checks[key]}
+                  onCheckedChange={(v) => setChecks((s) => ({ ...s, [key]: v === true }))}
+                  className="mt-0.5"
+                />
+                <Label htmlFor={`final-${key}`} className="cursor-pointer text-sm leading-relaxed text-foreground/85">
+                  {label}
+                </Label>
+              </li>
+            ))}
+          </ul>
+        </section>
+
         {/* Export confirmation */}
         <Dialog open={exportOpen} onOpenChange={setExportOpen}>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
-              <DialogTitle>내 메일 앱으로 옮기기</DialogTitle>
+              <DialogTitle>Move to my email app</DialogTitle>
               <DialogDescription>
-                딱새우는 메일을 대신 보내지 않습니다. 아래 요약을 확인하고, 내가 사용하는 메일
-                앱에서 최종 검토 후 직접 발송해주세요.
+                Ddaksaeu does not send email for you. Review the summary, then send it yourself from your email app.
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-3 rounded-xl border border-border bg-[color:var(--surface)] p-3 text-sm">
-              <SummaryRow k="받는 사람" v={`${lab.professor} <${lab.email}>`} />
-              <SummaryRow k="제목" v={subject} />
+              <SummaryRow k="To" v={`${lab.professor} <${lab.email}>`} />
+              <SummaryRow k="Subject" v={subject} />
               <SummaryRow
-                k="첨부"
+                k="Attachments"
                 v={
-                  attachments
-                    .filter((a) => a.checked)
-                    .map((a) => a.name)
-                    .join(", ") || "첨부 없음"
+                  attachments.filter((a) => a.checked).map((a) => a.name).join(", ") ||
+                  "No attachments"
                 }
               />
             </div>
             <div className="flex items-start gap-2 rounded-lg border border-[color:var(--warning)]/40 bg-[color:var(--warning)]/10 px-3 py-2 text-[11px] text-[color:oklch(0.42_0.09_75)]">
               <Info className="mt-0.5 h-3 w-3 shrink-0" />
               <p>
-                발송의 최종 책임은 본인에게 있습니다. 첨부 파일과 수신자 주소를 다시 한 번
-                확인해주세요.
+                You are responsible for the final message. Double-check the recipient and attachments before sending.
               </p>
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setExportOpen(false)} className="rounded-lg">
-                취소
+                Cancel
               </Button>
               <Button
                 className="gap-2 rounded-lg bg-[color:var(--point)] hover:bg-[color:var(--deep)]"
                 onClick={() => {
                   setExportOpen(false);
-                  toast.success("메일 앱을 여는 것으로 표시했어요", {
-                    description: "프로토타입에서는 외부 앱을 실제로 열지 않아요.",
+                  toast.success("Marked as opened in an email app", {
+                    description: "The prototype does not open an external app.",
                     action: {
-                      label: "캘린더로 이동",
+                      label: "Go to calendar",
                       onClick: () => navigate({ to: "/calendar" }),
                     },
                   });
                 }}
               >
-                <Send className="h-4 w-4" /> 메일 앱에서 열기
+                <Send className="h-4 w-4" /> Open in email app
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -1208,24 +1447,20 @@ function EmailComposer() {
         <Dialog open={!!diffOpen} onOpenChange={(o) => !o && setDiffOpen(null)}>
           <DialogContent className="sm:max-w-2xl">
             <DialogHeader>
-              <DialogTitle>{diffOpen?.label} · 변경 미리보기</DialogTitle>
+              <DialogTitle>{diffOpen?.label} · Preview changes</DialogTitle>
               <DialogDescription>
-                변경 전과 변경 후를 비교하고 적용 여부를 결정하세요.
+                Compare the original and revised versions before applying the change.
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="rounded-lg border border-border bg-[color:var(--surface)] p-3">
-                <div className="mb-2 text-[11px] uppercase tracking-widest text-muted-foreground">
-                  변경 전
-                </div>
+                <div className="mb-2 text-[11px] uppercase tracking-widest text-muted-foreground">Before</div>
                 <pre className="max-h-72 overflow-auto whitespace-pre-wrap text-[12px] leading-relaxed text-foreground/85">
                   {diffOpen?.before}
                 </pre>
               </div>
               <div className="rounded-lg border border-[color:var(--point)]/30 bg-[color:var(--point)]/5 p-3">
-                <div className="mb-2 text-[11px] uppercase tracking-widest text-[color:var(--deep)]">
-                  변경 후
-                </div>
+                <div className="mb-2 text-[11px] uppercase tracking-widest text-[color:var(--deep)]">After</div>
                 <pre className="max-h-72 overflow-auto whitespace-pre-wrap text-[12px] leading-relaxed text-[color:var(--navy)]">
                   {diffOpen?.after}
                 </pre>
@@ -1233,19 +1468,19 @@ function EmailComposer() {
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setDiffOpen(null)} className="rounded-lg">
-                취소
+                Cancel
               </Button>
               <Button
                 className="rounded-lg bg-[color:var(--point)] hover:bg-[color:var(--deep)]"
                 onClick={() => {
                   if (diffOpen) {
                     updateBody(diffOpen.after);
-                    toast.success("변경 사항을 적용했어요");
+                    toast.success("Changes applied");
                   }
                   setDiffOpen(null);
                 }}
               >
-                적용
+                Apply
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -1278,8 +1513,7 @@ function ToolBtn({
             "grid h-8 w-8 place-items-center rounded-md text-muted-foreground transition-colors",
             "hover:bg-[color:var(--surface)] hover:text-[color:var(--navy)]",
             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--point)]",
-            disabled &&
-              "cursor-not-allowed opacity-40 hover:bg-transparent hover:text-muted-foreground",
+            disabled && "cursor-not-allowed opacity-40 hover:bg-transparent hover:text-muted-foreground",
           )}
         >
           {children}
@@ -1347,7 +1581,7 @@ function EmptyResult({ label, onRetry }: { label: string; onRetry: () => void })
         onClick={onRetry}
         className="mt-2 rounded-md px-2 py-1 text-[11px] text-[color:var(--deep)] hover:bg-[color:var(--point)]/10"
       >
-        다시 실행
+        Run again
       </button>
     </div>
   );
@@ -1356,9 +1590,7 @@ function EmptyResult({ label, onRetry }: { label: string; onRetry: () => void })
 function SummaryRow({ k, v }: { k: string; v: string }) {
   return (
     <div className="flex items-start gap-3">
-      <div className="w-16 shrink-0 text-[11px] uppercase tracking-widest text-muted-foreground">
-        {k}
-      </div>
+      <div className="w-16 shrink-0 text-[11px] uppercase tracking-widest text-muted-foreground">{k}</div>
       <div className="min-w-0 flex-1 break-words text-foreground/85">{v}</div>
     </div>
   );

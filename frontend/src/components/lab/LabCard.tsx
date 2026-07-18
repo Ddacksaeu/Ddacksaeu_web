@@ -33,9 +33,7 @@ export function LabCard({
   const fav = isFavorite(lab.id);
 
   const isMatch = (k: string) =>
-    highlight?.some(
-      (h) => h.toLowerCase() === k.toLowerCase() || k.toLowerCase().includes(h.toLowerCase()),
-    );
+    highlight?.some((h) => h.toLowerCase() === k.toLowerCase() || k.toLowerCase().includes(h.toLowerCase()));
 
   return (
     <article
@@ -62,7 +60,7 @@ export function LabCard({
           </div>
           <button
             type="button"
-            aria-label={fav ? "관심 해제" : "관심 저장"}
+            aria-label={fav ? "Remove from saved" : "Save lab"}
             onClick={() => toggleFavorite(lab.id)}
             className={cn(
               "grid h-9 w-9 shrink-0 place-items-center rounded-full border transition-colors",
@@ -96,7 +94,7 @@ export function LabCard({
         </div>
 
         <div className="mt-4 text-xs text-muted-foreground">
-          <span className="font-medium text-foreground/70">최근 연구 주제 · </span>
+          <span className="font-medium text-foreground/70">Recent topics · </span>
           {lab.recentTopics.slice(0, 2).join(" / ")}
         </div>
       </div>
@@ -104,33 +102,22 @@ export function LabCard({
       <div
         className={cn(
           "flex items-center justify-between gap-3 border-t border-border pt-4",
-          variant === "list" &&
-            "lg:w-56 lg:flex-col lg:items-stretch lg:justify-start lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0",
+          variant === "list" && "lg:w-56 lg:flex-col lg:items-stretch lg:justify-start lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0",
         )}
       >
         <div>
-          <div className="text-[11px] uppercase tracking-wider text-muted-foreground">
-            추천 일치율
-          </div>
-          <div className="mt-1">
-            <MatchBar score={lab.matchScore} />
-          </div>
+          <div className="text-[11px] uppercase tracking-wider text-muted-foreground">Profile match</div>
+          <div className="mt-1"><MatchBar score={lab.matchScore} /></div>
         </div>
         <div className="flex gap-2">
           <Button asChild size="sm" variant="outline" className="rounded-full">
-            <a href={lab.homepage} target="_blank" rel="noreferrer" aria-label="홈페이지 열기">
+            <a href={lab.homepage} target="_blank" rel="noreferrer" aria-label="Open homepage">
               <ExternalLink className="h-3.5 w-3.5" />
-              홈페이지
+              Website
             </a>
           </Button>
-          <Button
-            asChild
-            size="sm"
-            className="rounded-full bg-[color:var(--deep)] hover:bg-[color:var(--navy)]"
-          >
-            <Link to="/lab/$id" params={{ id: lab.id }}>
-              자세히
-            </Link>
+          <Button asChild size="sm" className="rounded-full bg-[color:var(--deep)] hover:bg-[color:var(--navy)]">
+            <Link to="/lab/$id" params={{ id: lab.id }}>Details</Link>
           </Button>
         </div>
       </div>

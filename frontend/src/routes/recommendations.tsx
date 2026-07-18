@@ -16,25 +16,16 @@ export const Route = createFileRoute("/recommendations")({
   component: RecPage,
   head: () => ({
     meta: [
-      { title: "CV 기반 맞춤 추천 · 딱새우" },
-      {
-        name: "description",
-        content: "CV를 업로드하면 연구 관심사에 맞는 포스텍 연구실을 추천해드립니다.",
-      },
+      { title: "CV-Based Recommendations · Ddaksaeu" },
+      { name: "description", content: "Upload your CV to receive POSTECH lab recommendations matched to your interests." },
     ],
   }),
 });
 
 const DEMO_CV: CVAnalysis = {
-  keywords: [
-    "Computer Vision",
-    "Multimodal",
-    "Diffusion Model",
-    "3D Vision",
-    "Representation Learning",
-  ],
+  keywords: ["Computer Vision", "Multimodal", "Diffusion Model", "3D Vision", "Representation Learning"],
   skills: ["Python", "PyTorch", "OpenCV", "CUDA", "Git"],
-  methodologies: ["딥러닝", "생성 모델", "표현 학습"],
+  methodologies: ["Deep Learning", "Generative Models", "Representation Learning"],
   projects: USER_PROFILE.projects,
   completeness: 82,
 };
@@ -58,7 +49,7 @@ function RecPage() {
         clearInterval(iv);
         setCV(DEMO_CV);
         setStatus("done");
-        toast.success("분석이 완료됐어요");
+        toast.success("Analysis complete");
       }
     }, 80);
     return () => clearInterval(iv);
@@ -93,9 +84,7 @@ function RecPage() {
             ),
           );
           const missing = ["Reasoning", "Alignment", "Robotics"].filter(
-            (m) =>
-              l.keywords.some((k) => k.toLowerCase().includes(m.toLowerCase())) &&
-              !cv.keywords.some((u) => u.toLowerCase().includes(m.toLowerCase())),
+            (m) => l.keywords.some((k) => k.toLowerCase().includes(m.toLowerCase())) && !cv.keywords.some((u) => u.toLowerCase().includes(m.toLowerCase())),
           );
           const score = Math.min(99, 40 + matches.length * 12 + Math.round(l.matchScore * 0.3));
           return { lab: l, matches, missing, score };
@@ -106,12 +95,12 @@ function RecPage() {
 
   return (
     <AppShell
-      title="CV 기반 맞춤 추천"
-      description="이력서와 자소서를 분석해 나에게 맞는 연구실을 골라드립니다."
+      title="CV-Based Recommendations"
+      description="Analyze your CV and personal statement to find labs that fit you."
       actions={
         status === "done" ? (
           <Button variant="outline" className="rounded-full" onClick={reset}>
-            다시 분석하기
+            Analyze again
           </Button>
         ) : undefined
       }
@@ -123,10 +112,10 @@ function RecPage() {
               <Upload className="h-6 w-6" />
             </div>
             <h2 className="mt-4 text-lg font-semibold text-[color:var(--navy)]">
-              CV 또는 자기소개서를 업로드하세요
+              Upload your CV or personal statement
             </h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              PDF · DOCX 형식을 지원합니다. 개인정보는 이 데모에서 서버로 전송되지 않습니다.
+              PDF and DOCX are supported. Personal data is not sent to a server in this demo.
             </p>
 
             <label
@@ -141,9 +130,9 @@ function RecPage() {
             >
               <FileText className="h-6 w-6 text-[color:var(--deep)]" />
               <div className="text-sm font-medium text-[color:var(--navy)]">
-                파일을 여기로 끌어다 놓기
+                Drop your file here
               </div>
-              <div className="text-xs text-muted-foreground">또는 클릭하여 선택 · 최대 10MB</div>
+              <div className="text-xs text-muted-foreground">or click to browse · up to 10 MB</div>
               <input
                 id="cv-upload"
                 type="file"
@@ -162,10 +151,10 @@ function RecPage() {
                 size="lg"
                 className="gap-2 rounded-full bg-[color:var(--point)] px-6 hover:bg-[color:var(--deep)]"
               >
-                <Sparkles className="h-4 w-4" /> 데모 CV로 분석해보기
+                <Sparkles className="h-4 w-4" /> Analyze demo CV
               </Button>
               <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
-                <Info className="h-3 w-3" /> 데모 데이터를 사용해 분석 화면을 미리 볼 수 있어요
+                <Info className="h-3 w-3" /> Preview the analysis with demo data
               </p>
             </div>
           </div>
@@ -179,16 +168,16 @@ function RecPage() {
               <Sparkles className="h-6 w-6 animate-pulse" />
             </div>
             <h2 className="mt-4 text-lg font-semibold text-[color:var(--navy)]">
-              {status === "uploading" ? "파일 업로드 중" : "CV를 분석하고 있어요"}
+              {status === "uploading" ? "Uploading file" : "Analyzing your CV"}
             </h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              연구 관심사와 기술 스택을 추출하고 있어요…
+              Extracting research interests and skills…
             </p>
             <div className="mt-6">
               <Progress value={status === "analyzing" ? progress : 30} className="h-1.5" />
             </div>
             <div className="mt-6 grid gap-2 text-left">
-              {["텍스트 추출", "키워드 인식", "연구실 매칭"].map((s, i) => (
+              {["Extract text", "Identify keywords", "Match labs"].map((s, i) => (
                 <div key={s} className="flex items-center gap-2 text-sm">
                   <span
                     className={cn(
@@ -220,29 +209,24 @@ function RecPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <h2 className="text-base font-semibold text-[color:var(--navy)]">
-                    분석된 내 프로필
+                    Analyzed profile
                   </h2>
                   <p className="mt-0.5 text-xs text-muted-foreground">
-                    키워드는 추가하거나 삭제할 수 있어요
+                    You can add or remove keywords
                   </p>
                 </div>
                 <Badge className="rounded-full border border-[color:var(--point)]/30 bg-[color:var(--point)]/10 text-[color:var(--deep)] hover:bg-[color:var(--point)]/10">
-                  완성도 {cv.completeness}%
+                  Completeness {cv.completeness}%
                 </Badge>
               </div>
 
               <div className="mt-5 grid gap-4 sm:grid-cols-2">
-                <ChipGroup
-                  label="연구 관심사"
-                  items={cv.keywords}
-                  removable
-                  onRemove={removeKeyword}
-                />
-                <ChipGroup label="기술 스택" items={cv.skills} />
-                <ChipGroup label="연구 방법론" items={cv.methodologies} />
+                <ChipGroup label="Research interests" items={cv.keywords} removable onRemove={removeKeyword} />
+                <ChipGroup label="Skills" items={cv.skills} />
+                <ChipGroup label="Research methods" items={cv.methodologies} />
                 <div>
                   <div className="text-[11px] uppercase tracking-widest text-muted-foreground">
-                    프로젝트 경험
+                    Project experience
                   </div>
                   <ul className="mt-2 space-y-1.5 text-sm">
                     {cv.projects.map((p) => (
@@ -260,15 +244,11 @@ function RecPage() {
                   value={newKeyword}
                   onChange={(e) => setNewKeyword(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && addKeyword()}
-                  placeholder="키워드 추가 (예: Multimodal)"
+                  placeholder="Add keyword (e.g. Multimodal)"
                   className="min-w-0 flex-1 border-0 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
                 />
-                <Button
-                  size="sm"
-                  onClick={addKeyword}
-                  className="gap-1 rounded-full bg-[color:var(--deep)] hover:bg-[color:var(--navy)]"
-                >
-                  <Plus className="h-3.5 w-3.5" /> 추가
+                <Button size="sm" onClick={addKeyword} className="gap-1 rounded-full bg-[color:var(--deep)] hover:bg-[color:var(--navy)]">
+                  <Plus className="h-3.5 w-3.5" /> Add
                 </Button>
               </div>
             </section>
@@ -276,9 +256,9 @@ function RecPage() {
             <section>
               <div className="flex items-end justify-between">
                 <div>
-                  <h2 className="text-base font-semibold text-[color:var(--navy)]">추천 연구실</h2>
+                  <h2 className="text-base font-semibold text-[color:var(--navy)]">Recommended labs</h2>
                   <p className="mt-0.5 text-xs text-muted-foreground">
-                    내 프로필과 일치율이 높은 순서로 정렬돼 있어요
+                    Ranked by match with your profile
                   </p>
                 </div>
               </div>
@@ -293,9 +273,7 @@ function RecPage() {
                         <h3 className="mt-1 text-base font-semibold text-[color:var(--navy)]">
                           {r.lab.name}
                         </h3>
-                        <div className="mt-0.5 text-sm text-muted-foreground">
-                          {r.lab.professor}
-                        </div>
+                        <div className="mt-0.5 text-sm text-muted-foreground">{r.lab.professor}</div>
                       </div>
                       <div className="text-right">
                         <div className="text-2xl font-semibold tabular-nums text-[color:var(--navy)]">
@@ -306,7 +284,7 @@ function RecPage() {
                     </div>
                     <div className="mt-3 rounded-xl bg-[color:var(--surface)] p-3">
                       <div className="text-[11px] font-medium uppercase tracking-widest text-muted-foreground">
-                        왜 추천되었나요?
+                        Why this recommendation?
                       </div>
                       <div className="mt-2 flex flex-wrap gap-1.5">
                         {r.matches.slice(0, 5).map((k) => (
@@ -322,23 +300,17 @@ function RecPage() {
                             key={k}
                             className="inline-flex items-center gap-1 rounded-full border border-dashed border-border bg-white px-2.5 py-0.5 text-[11px] text-muted-foreground"
                           >
-                            보완 · {k}
+                            Gap · {k}
                           </span>
                         ))}
                       </div>
                     </div>
                     <div className="mt-4 flex flex-wrap justify-end gap-2">
                       <Button asChild variant="outline" size="sm" className="rounded-full">
-                        <a href={r.lab.homepage} target="_blank" rel="noreferrer">
-                          홈페이지
-                        </a>
+                        <a href={r.lab.homepage} target="_blank" rel="noreferrer">Website</a>
                       </Button>
-                      <Button
-                        asChild
-                        size="sm"
-                        className="rounded-full bg-[color:var(--deep)] hover:bg-[color:var(--navy)]"
-                      >
-                        <a href={`/lab/${r.lab.id}`}>자세히 보기</a>
+                      <Button asChild size="sm" className="rounded-full bg-[color:var(--deep)] hover:bg-[color:var(--navy)]">
+                        <a href={`/lab/${r.lab.id}`}>View details</a>
                       </Button>
                     </div>
                   </div>
@@ -349,12 +321,12 @@ function RecPage() {
 
           <aside className="space-y-4">
             <section className="rounded-2xl border border-border bg-white p-5">
-              <h3 className="text-sm font-semibold text-[color:var(--navy)]">분석 요약</h3>
+              <h3 className="text-sm font-semibold text-[color:var(--navy)]">Analysis summary</h3>
               <div className="mt-3 space-y-3 text-sm">
-                <SummaryRow label="추출 키워드" value={`${cv.keywords.length}개`} />
-                <SummaryRow label="기술 스택" value={`${cv.skills.length}개`} />
-                <SummaryRow label="프로젝트" value={`${cv.projects.length}건`} />
-                <SummaryRow label="추천 연구실" value={`${recs.length}개`} />
+                <SummaryRow label="Extracted keywords" value={`${cv.keywords.length}`} />
+                <SummaryRow label="Skills" value={`${cv.skills.length}`} />
+                <SummaryRow label="Projects" value={`${cv.projects.length}`} />
+                <SummaryRow label="Recommended labs" value={`${recs.length}`} />
               </div>
             </section>
             <section className="rounded-2xl border border-[color:var(--point)]/30 bg-[color:var(--point)]/5 p-5">
@@ -362,7 +334,7 @@ function RecPage() {
                 Tip
               </div>
               <p className="mt-1 text-sm text-foreground/85">
-                프로필에 대표 프로젝트를 2개 이상 추가하면 추천 정확도가 크게 올라갑니다.
+                Add at least two representative projects to improve recommendation accuracy.
               </p>
             </section>
           </aside>
@@ -396,7 +368,7 @@ function ChipGroup({
             {removable && (
               <button
                 onClick={() => onRemove?.(k)}
-                aria-label={`${k} 제거`}
+                aria-label={`${k} Remove`}
                 className="text-muted-foreground hover:text-destructive"
               >
                 <X className="h-3 w-3" />

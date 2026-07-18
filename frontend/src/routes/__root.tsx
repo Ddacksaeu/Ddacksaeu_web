@@ -36,7 +36,6 @@ function NotFoundComponent() {
     </div>
   );
 }
-
 function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   console.error(error);
   const router = useRouter();
@@ -80,16 +79,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "딱새우 · 포스텍 연구실 탐색" },
-      {
-        name: "description",
-        content: "포스텍 대학원 지원자를 위한 연구실 탐색 · 맞춤 추천 · 지원 일정 관리 서비스",
-      },
-      { property: "og:title", content: "딱새우 · 포스텍 연구실 탐색" },
-      {
-        property: "og:description",
-        content: "연구 관심사에 맞는 포스텍 연구실을 한곳에서 비교하고 지원 일정을 관리하세요.",
-      },
+      { title: "Ddaksaeu · POSTECH Lab Discovery" },
+      { name: "description", content: "Discover POSTECH labs, get personalized recommendations, and manage graduate application deadlines." },
+      { property: "og:title", content: "Ddaksaeu · POSTECH Lab Discovery" },
+      { property: "og:description", content: "Compare POSTECH labs that match your research interests and manage your application timeline in one place." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],

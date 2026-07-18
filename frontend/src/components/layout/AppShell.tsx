@@ -1,5 +1,13 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Search, Sparkles, Heart, Calendar as CalendarIcon, User, Menu, X } from "lucide-react";
+import {
+  Search,
+  Sparkles,
+  Heart,
+  Calendar as CalendarIcon,
+  User,
+  Menu,
+  X,
+} from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
@@ -11,11 +19,11 @@ type NavItem = {
 };
 
 const NAV: NavItem[] = [
-  { to: "/", label: "연구실 탐색", icon: Search, exact: true },
-  { to: "/recommendations", label: "맞춤 추천", icon: Sparkles },
-  { to: "/favorites", label: "관심 연구실", icon: Heart },
-  { to: "/calendar", label: "지원 캘린더", icon: CalendarIcon },
-  { to: "/profile", label: "내 프로필", icon: User },
+  { to: "/", label: "Explore Labs", icon: Search, exact: true },
+  { to: "/recommendations", label: "Recommendations", icon: Sparkles },
+  { to: "/favorites", label: "Saved Labs", icon: Heart },
+  { to: "/calendar", label: "Application Calendar", icon: CalendarIcon },
+  { to: "/profile", label: "My Profile", icon: User },
 ];
 
 function Logo({ compact = false }: { compact?: boolean }) {
@@ -35,7 +43,7 @@ function Logo({ compact = false }: { compact?: boolean }) {
       </div>
       {!compact && (
         <div className="min-w-0">
-          <div className="text-base font-semibold tracking-tight text-white">딱새우</div>
+          <div className="text-base font-semibold tracking-tight text-white">Ddaksaeu</div>
           <div className="text-[11px] leading-none text-white/60">POSTECH Lab Finder</div>
         </div>
       )}
@@ -78,11 +86,11 @@ function UserCard() {
   return (
     <div className="mx-3 mb-3 flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 p-3">
       <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-gradient-to-br from-[color:var(--point)] to-[color:var(--deep)] text-sm font-semibold text-white">
-        김
+        AK
       </div>
       <div className="min-w-0">
-        <div className="truncate text-sm font-medium text-white">김딱새우</div>
-        <div className="truncate text-[11px] text-white/60">AI · 컴퓨터 비전</div>
+        <div className="truncate text-sm font-medium text-white">Alex Kim</div>
+        <div className="truncate text-[11px] text-white/60">AI · Computer Vision</div>
       </div>
     </div>
   );
@@ -111,7 +119,7 @@ export function AppShell({
         </div>
         <div className="mt-2 flex-1 overflow-y-auto">
           <div className="px-5 pb-2 text-[11px] font-medium uppercase tracking-widest text-white/40">
-            메뉴
+            Menu
           </div>
           <NavList />
         </div>
@@ -122,13 +130,13 @@ export function AppShell({
       <header className="sticky top-0 z-20 flex items-center justify-between border-b border-border bg-white/90 px-4 py-3 backdrop-blur lg:hidden">
         <div className="flex items-center gap-2">
           <button
-            aria-label="메뉴 열기"
+            aria-label="Open menu"
             onClick={() => setMobileOpen(true)}
             className="grid h-9 w-9 place-items-center rounded-lg border border-border text-foreground"
           >
             <Menu className="h-4 w-4" />
           </button>
-          <span className="text-sm font-semibold text-[color:var(--navy)]">딱새우</span>
+          <span className="text-sm font-semibold text-[color:var(--navy)]">Ddaksaeu</span>
         </div>
       </header>
 
@@ -140,7 +148,7 @@ export function AppShell({
             <div className="flex items-center justify-between px-5 py-5">
               <Logo />
               <button
-                aria-label="메뉴 닫기"
+                aria-label="Close menu"
                 onClick={() => setMobileOpen(false)}
                 className="grid h-8 w-8 place-items-center rounded-lg text-white/70 hover:bg-white/10"
               >
@@ -163,7 +171,9 @@ export function AppShell({
               <h1 className="truncate text-xl font-semibold tracking-tight text-[color:var(--navy)]">
                 {title}
               </h1>
-              {description && <p className="mt-1 text-sm text-muted-foreground">{description}</p>}
+              {description && (
+                <p className="mt-1 text-sm text-muted-foreground">{description}</p>
+              )}
             </div>
             {actions && <div className="flex shrink-0 items-center gap-2">{actions}</div>}
           </div>
@@ -174,7 +184,9 @@ export function AppShell({
             <h1 className="text-xl font-semibold tracking-tight text-[color:var(--navy)]">
               {title}
             </h1>
-            {description && <p className="mt-1 text-sm text-muted-foreground">{description}</p>}
+            {description && (
+              <p className="mt-1 text-sm text-muted-foreground">{description}</p>
+            )}
             {actions && <div className="mt-3 flex flex-wrap gap-2">{actions}</div>}
           </div>
           {children}
@@ -193,7 +205,9 @@ export function AppShell({
                 to={item.to}
                 className={cn(
                   "flex flex-col items-center gap-1 py-2 text-[11px]",
-                  active ? "text-[color:var(--point)]" : "text-muted-foreground",
+                  active
+                    ? "text-[color:var(--point)]"
+                    : "text-muted-foreground",
                 )}
               >
                 <Icon className="h-5 w-5" strokeWidth={active ? 2.2 : 1.6} />

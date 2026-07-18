@@ -24,6 +24,7 @@ htmlcov/
 build/
 dist/
 *.egg-info/
+*.db
 
 # Node.js
 node_modules/
