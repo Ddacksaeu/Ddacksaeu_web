@@ -1,0 +1,8 @@
+requests>=2.31.0
+beautifulsoup4>=4.12.3
+lxml>=5.2.0
+urllib3>=2.2.0
+
+# JavaScript 렌더링 사이트가 있을 때만 추가 설치:
+# playwright>=1.45.0
+# 설치 후: playwright install chromium
