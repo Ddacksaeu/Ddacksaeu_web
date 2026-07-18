@@ -328,9 +328,14 @@ class AdmissionEvent(TimestampedModel, Base):
         ForeignKey("departments.id", ondelete="CASCADE"), index=True
     )
     title: Mapped[str] = mapped_column(String(200), nullable=False)
-    event_date: Mapped[date] = mapped_column(Date, nullable=False)
+    event_type: Mapped[str] = mapped_column(String(32), nullable=False, index=True)
+    start_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, index=True)
+    end_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    application_url: Mapped[str | None] = mapped_column(String(500))
+    description: Mapped[str | None] = mapped_column(Text)
+    is_estimated: Mapped[bool] = mapped_column(nullable=False, default=False)
     source_url: Mapped[str] = mapped_column(String(500), nullable=False)
-    source_checked_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    last_verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     origin: Mapped[str] = mapped_column(String(32), default="fixture", nullable=False)
 
     department: Mapped[Department | None] = relationship(back_populates="admission_events")
