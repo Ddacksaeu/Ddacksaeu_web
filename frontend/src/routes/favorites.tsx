@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Heart, X, ArrowRight, GitCompareArrows } from "lucide-react";
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { AppShell } from "@/components/layout/AppShell";
 import { Button } from "@/components/ui/button";
 import { LabCard, MatchBar } from "@/components/lab/LabCard";
@@ -11,7 +12,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { LABS } from "@/lib/mock-data";
+import { labsQueryOptions } from "@/lib/api/labs";
 import { useAppState } from "@/lib/app-state";
 import { cn } from "@/lib/utils";
 
@@ -28,9 +29,10 @@ export const Route = createFileRoute("/favorites")({
 function FavoritesPage() {
   const { favorites, compareIds, toggleCompare, clearCompare, toggleFavorite } = useAppState();
   const [compareOpen, setCompareOpen] = useState(false);
+  const labsQuery = useQuery(labsQueryOptions({ pageSize: 100 }));
 
-  const savedLabs = LABS.filter((l) => favorites.includes(l.id));
-  const compareLabs = LABS.filter((l) => compareIds.includes(l.id));
+  const savedLabs = (labsQuery.data?.items ?? []).filter((lab) => favorites.includes(lab.id));
+  const compareLabs = savedLabs.filter((lab) => compareIds.includes(lab.id));
 
   return (
     <AppShell
@@ -169,7 +171,7 @@ function FavoritesPage() {
                 </tr>
               </thead>
               <tbody>
-                <Row label="Professor" values={compareLabs.map((l) => l.professor)} />
+                <Row label="Professor" values={compareLabs.map((l) => l.professorName)} />
                 <Row label="Department" values={compareLabs.map((l) => l.department)} />
                 <Row label="Research fields" values={compareLabs.map((l) => l.field)} />
                 <tr>
@@ -178,25 +180,29 @@ function FavoritesPage() {
                   </td>
                   {compareLabs.map((l) => (
                     <td key={l.id} className="border-b border-border px-3 py-3 align-top">
-                      <MatchBar score={l.matchScore} />
+                      {l.recommendationScore !== null ? (
+                        <MatchBar score={l.recommendationScore} />
+                      ) : (
+                        "Unavailable"
+                      )}
                     </td>
                   ))}
                 </tr>
                 <Row
                   label="Recent topics"
-                  values={compareLabs.map((l) => l.recentTopics.slice(0, 2).join(" / "))}
+                  values={compareLabs.map((l) => l.keywords.slice(0, 2).join(" / "))}
                 />
                 <tr>
                   <td className="px-3 py-3 align-top text-xs text-muted-foreground">Website</td>
                   {compareLabs.map((l) => (
                     <td key={l.id} className="px-3 py-3 align-top">
                       <a
-                        href={l.homepage}
+                        href={l.homepageUrl ?? "#"}
                         target="_blank"
                         rel="noreferrer"
                         className="text-[color:var(--deep)] hover:underline"
                       >
-                        Visit
+                        {l.homepageUrl ? "Visit" : "Unavailable"}
                       </a>
                     </td>
                   ))}

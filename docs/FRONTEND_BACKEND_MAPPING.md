@@ -167,6 +167,22 @@ The frontend accepts only `.pdf` files for this flow because the current
 backend intentionally rejects DOCX. The browser sends no OpenAI key and does
 not persist the original document outside the selected upload request.
 
+## Profile, favorites, and personal calendar integration (in progress, 2026-07-18)
+
+The MVP continues to use the server-owned `demo-user` context. The frontend
+must not send an arbitrary user identifier for these personal resources.
+
+| UI state | API contract | Client behavior |
+| --- | --- | --- |
+| Profile | `GET /api/v1/me/profile`, `PATCH /api/v1/me/profile` | Load on app start; retain the edit value and report an error if a save fails. |
+| Saved labs | `GET /api/v1/me/favorites`, `PUT` and `DELETE /api/v1/me/favorites/{lab_id}` | Optimistically update the heart, then roll back on failure. |
+| Personal calendar | `GET /api/v1/me/calendar-events?from=&to=`, `POST /api/v1/me/calendar-events`, `DELETE /api/v1/me/calendar-events/{event_id}` | Replace the in-memory event list with server records; restore the event if deletion fails. |
+
+Profile arrays preserve ordering. Calendar event `kind` is validated against the
+existing UI event kinds, while `labId` and `memo` remain optional. Comparison
+selection remains local-only because no server-side comparison collection is
+defined yet.
+
 ## Admission calendar API implementation (2026-07-18)
 
 `GET /api/v1/admissions` and `GET /api/v1/admissions/export.ics` are backend-only;
