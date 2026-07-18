@@ -158,3 +158,12 @@ keys are retained unchanged for migration history compatibility.
 All seed records are explicit fixtures: `example.invalid` provenance and a
 fixed `2026-07-18` verification time distinguish them from externally verified
 data. No real personal email, professor, paper, or admission claim is seeded.
+
+## Admission calendar extension (2026-07-18)
+
+Revision `20260718_0003` replaces legacy `event_date` and
+`source_checked_at` with `start_at`, nullable `end_at`, and
+`last_verified_at`; it adds `event_type`, nullable application URL and
+description, and `is_estimated`. Existing dates migrate to UTC midnight and
+are explicitly marked estimated, preserving fixture rows without claiming a
+real schedule.

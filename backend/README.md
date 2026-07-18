@@ -84,3 +84,9 @@ docker compose up --build
 The backend container runs `alembic upgrade head` before Uvicorn. The compose
 configuration requires `POSTGRES_PASSWORD` from a non-committed local
 environment before it can start.
+
+## Admission calendar
+
+`GET /api/v1/admissions` and `/api/v1/admissions/export.ics` provide
+fixture-only, source-labelled admission events. They accept `start_at`,
+`end_at`, `university_id`, `department_id`, and `event_type` filters.
