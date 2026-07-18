@@ -12,6 +12,7 @@ import { useEffect, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { AppStateProvider } from "../lib/app-state";
+import { isLoggedIn } from "../lib/auth";
 import { Toaster } from "../components/ui/sonner";
 import { TooltipProvider } from "../components/ui/tooltip";
 
@@ -129,6 +130,15 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const router = useRouter();
+  const pathname = router.state.location.pathname;
+  const needsLogin = ["/recommendations", "/favorites", "/calendar", "/profile"].some((path) => pathname.startsWith(path)) || pathname.endsWith("/email");
+
+  useEffect(() => {
+    if (needsLogin && !isLoggedIn()) void router.navigate({ to: "/login" });
+  }, [needsLogin, router]);
+
+  if (needsLogin && !isLoggedIn()) return null;
 
   return (
     <QueryClientProvider client={queryClient}>

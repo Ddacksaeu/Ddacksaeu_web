@@ -33,9 +33,17 @@ def _analysis() -> StructuredDocumentAnalysis:
 
 
 def _upload(client: TestClient):
+    account = client.post(
+        "/api/v1/auth/signup",
+        json={
+            "email": "cv-owner@example.com",
+            "password": "secure-password-123",
+            "name": "CV owner",
+        },
+    ).json()
     return client.post(
         "/api/v1/documents/analyze",
-        data={"user_id": "test-user"},
+        headers={"Authorization": f"Bearer {account['access_token']}"},
         files={"file": ("cv.pdf", b"%PDF-1.7 test", "application/pdf")},
     )
 

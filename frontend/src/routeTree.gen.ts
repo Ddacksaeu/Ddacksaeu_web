@@ -9,27 +9,24 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as IndexRouteImport } from './routes/index'
-import { Route as CalendarRouteImport } from './routes/calendar'
-import { Route as FavoritesRouteImport } from './routes/favorites'
-import { Route as ProfileRouteImport } from './routes/profile'
+import { Route as SignupRouteImport } from './routes/signup'
 import { Route as RecommendationsRouteImport } from './routes/recommendations'
+import { Route as ProfileRouteImport } from './routes/profile'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as FavoritesRouteImport } from './routes/favorites'
+import { Route as CalendarRouteImport } from './routes/calendar'
+import { Route as IndexRouteImport } from './routes/index'
 import { Route as LabIdRouteImport } from './routes/lab.$id'
 import { Route as LabIdEmailRouteImport } from './routes/lab.$id.email'
 
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const SignupRoute = SignupRouteImport.update({
+  id: '/signup',
+  path: '/signup',
   getParentRoute: () => rootRouteImport,
 } as any)
-const CalendarRoute = CalendarRouteImport.update({
-  id: '/calendar',
-  path: '/calendar',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const FavoritesRoute = FavoritesRouteImport.update({
-  id: '/favorites',
-  path: '/favorites',
+const RecommendationsRoute = RecommendationsRouteImport.update({
+  id: '/recommendations',
+  path: '/recommendations',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProfileRoute = ProfileRouteImport.update({
@@ -37,9 +34,24 @@ const ProfileRoute = ProfileRouteImport.update({
   path: '/profile',
   getParentRoute: () => rootRouteImport,
 } as any)
-const RecommendationsRoute = RecommendationsRouteImport.update({
-  id: '/recommendations',
-  path: '/recommendations',
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FavoritesRoute = FavoritesRouteImport.update({
+  id: '/favorites',
+  path: '/favorites',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CalendarRoute = CalendarRouteImport.update({
+  id: '/calendar',
+  path: '/calendar',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LabIdRoute = LabIdRouteImport.update({
@@ -57,8 +69,10 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/calendar': typeof CalendarRoute
   '/favorites': typeof FavoritesRoute
+  '/login': typeof LoginRoute
   '/profile': typeof ProfileRoute
   '/recommendations': typeof RecommendationsRoute
+  '/signup': typeof SignupRoute
   '/lab/$id': typeof LabIdRouteWithChildren
   '/lab/$id/email': typeof LabIdEmailRoute
 }
@@ -66,8 +80,10 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/calendar': typeof CalendarRoute
   '/favorites': typeof FavoritesRoute
+  '/login': typeof LoginRoute
   '/profile': typeof ProfileRoute
   '/recommendations': typeof RecommendationsRoute
+  '/signup': typeof SignupRoute
   '/lab/$id': typeof LabIdRouteWithChildren
   '/lab/$id/email': typeof LabIdEmailRoute
 }
@@ -76,8 +92,10 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/calendar': typeof CalendarRoute
   '/favorites': typeof FavoritesRoute
+  '/login': typeof LoginRoute
   '/profile': typeof ProfileRoute
   '/recommendations': typeof RecommendationsRoute
+  '/signup': typeof SignupRoute
   '/lab/$id': typeof LabIdRouteWithChildren
   '/lab/$id/email': typeof LabIdEmailRoute
 }
@@ -87,8 +105,10 @@ export interface FileRouteTypes {
     | '/'
     | '/calendar'
     | '/favorites'
+    | '/login'
     | '/profile'
     | '/recommendations'
+    | '/signup'
     | '/lab/$id'
     | '/lab/$id/email'
   fileRoutesByTo: FileRoutesByTo
@@ -96,8 +116,10 @@ export interface FileRouteTypes {
     | '/'
     | '/calendar'
     | '/favorites'
+    | '/login'
     | '/profile'
     | '/recommendations'
+    | '/signup'
     | '/lab/$id'
     | '/lab/$id/email'
   id:
@@ -105,8 +127,10 @@ export interface FileRouteTypes {
     | '/'
     | '/calendar'
     | '/favorites'
+    | '/login'
     | '/profile'
     | '/recommendations'
+    | '/signup'
     | '/lab/$id'
     | '/lab/$id/email'
   fileRoutesById: FileRoutesById
@@ -115,32 +139,27 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   CalendarRoute: typeof CalendarRoute
   FavoritesRoute: typeof FavoritesRoute
+  LoginRoute: typeof LoginRoute
   ProfileRoute: typeof ProfileRoute
   RecommendationsRoute: typeof RecommendationsRoute
+  SignupRoute: typeof SignupRoute
   LabIdRoute: typeof LabIdRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/signup': {
+      id: '/signup'
+      path: '/signup'
+      fullPath: '/signup'
+      preLoaderRoute: typeof SignupRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/calendar': {
-      id: '/calendar'
-      path: '/calendar'
-      fullPath: '/calendar'
-      preLoaderRoute: typeof CalendarRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/favorites': {
-      id: '/favorites'
-      path: '/favorites'
-      fullPath: '/favorites'
-      preLoaderRoute: typeof FavoritesRouteImport
+    '/recommendations': {
+      id: '/recommendations'
+      path: '/recommendations'
+      fullPath: '/recommendations'
+      preLoaderRoute: typeof RecommendationsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/profile': {
@@ -150,11 +169,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProfileRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/recommendations': {
-      id: '/recommendations'
-      path: '/recommendations'
-      fullPath: '/recommendations'
-      preLoaderRoute: typeof RecommendationsRouteImport
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/favorites': {
+      id: '/favorites'
+      path: '/favorites'
+      fullPath: '/favorites'
+      preLoaderRoute: typeof FavoritesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/calendar': {
+      id: '/calendar'
+      path: '/calendar'
+      fullPath: '/calendar'
+      preLoaderRoute: typeof CalendarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/lab/$id': {
@@ -188,8 +228,10 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CalendarRoute: CalendarRoute,
   FavoritesRoute: FavoritesRoute,
+  LoginRoute: LoginRoute,
   ProfileRoute: ProfileRoute,
   RecommendationsRoute: RecommendationsRoute,
+  SignupRoute: SignupRoute,
   LabIdRoute: LabIdRouteWithChildren,
 }
 export const routeTree = rootRouteImport

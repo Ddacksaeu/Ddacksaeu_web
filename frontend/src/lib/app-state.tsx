@@ -9,6 +9,7 @@ import {
   saveFavorite,
   saveProfile,
 } from "./api/me";
+import { isLoggedIn } from "./auth";
 
 export type CVAnalysis = {
   keywords: string[];
@@ -48,6 +49,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<UserProfile>(USER_PROFILE);
 
   useEffect(() => {
+    if (!isLoggedIn()) return;
     void Promise.all([getProfile(), getFavorites(), getEvents()])
       .then(([nextProfile, nextFavorites, nextEvents]) => {
         setProfile(nextProfile);

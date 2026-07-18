@@ -7,11 +7,9 @@ from sqlalchemy.orm import Session
 
 from app.models import CalendarEvent, Favorite, Lab, User, UserProfile
 
-DEMO_USER_ID = "demo-user"
-
 
 class MeRepository:
-    def __init__(self, session: Session, user_id: str = DEMO_USER_ID) -> None:
+    def __init__(self, session: Session, user_id: str) -> None:
         self.session = session
         self.user_id = user_id
 

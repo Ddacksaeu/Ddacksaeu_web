@@ -1,10 +1,7 @@
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? "http://127.0.0.1:8000/api/v1").replace(
-  /\/$/,
-  "",
-);
+import { apiFetch } from "./client";
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(`${API_BASE_URL}${path}`, init);
+  const response = await apiFetch(path, init);
   if (!response.ok) throw new Error("Your changes could not be saved.");
   return response.status === 204 ? (undefined as T) : ((await response.json()) as T);
 }

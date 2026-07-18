@@ -4,8 +4,10 @@ from fastapi import APIRouter, Depends, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
+from app.core.auth import current_user
 from app.core.config import Settings
 from app.db.session import get_db_session
+from app.models import User
 from app.schemas.email import EmailDraftRequest, EmailDraftResponse
 from app.services.email_drafting import EmailDraftingError, create_email_draft
 
@@ -16,6 +18,7 @@ router = APIRouter(prefix="/email", tags=["email"])
 def draft_email(
     payload: EmailDraftRequest,
     request: Request,
+    user: User = Depends(current_user),  # noqa: B008
     db: Session = Depends(get_db_session),  # noqa: B008
 ) -> EmailDraftResponse | JSONResponse:
     settings: Settings = request.app.state.settings
@@ -23,6 +26,7 @@ def draft_email(
         return create_email_draft(
             db,
             payload,
+            user_id=user.id,
             api_key=(
                 settings.openai_api_key.get_secret_value() if settings.openai_api_key else None
             ),

@@ -14,8 +14,8 @@ from app.schemas.labs import (
 
 
 class LabSearchService:
-    def __init__(self, session: Session) -> None:
-        self.repository = LabRepository(session)
+    def __init__(self, session: Session, user_id: str | None = None) -> None:
+        self.repository = LabRepository(session, user_id)
 
     def search(self, filters: LabSearchFilters, page: int, page_size: int) -> LabSearchResponse:
         rows, total = self.repository.search(filters, page, page_size)

@@ -38,6 +38,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
+import { apiFetch } from "@/lib/api/client";
 import {
   Dialog,
   DialogContent,
@@ -96,8 +97,6 @@ const PURPOSE_LABEL: Record<Purpose, string> = {
   meeting: "Meeting request",
 };
 
-const EMAIL_API_URL =
-  import.meta.env.VITE_EMAIL_API_URL ?? "http://127.0.0.1:8000/api/v1/email/draft";
 
 const API_LAB_IDS: Record<string, string> = {
   vislab: "fixture-vision-lab",
@@ -363,12 +362,11 @@ function EmailComposer() {
   const regenerateFromApi = async () => {
     setRegenLoading(true);
     try {
-      const response = await fetch(EMAIL_API_URL, {
+      const response = await apiFetch("/email/draft", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           labId: API_LAB_IDS[lab.id] ?? lab.id,
-          userId: "demo-user",
           language: lang,
           tone: tone === "passionate" ? "enthusiastic" : tone,
           length: length === "normal" ? "standard" : length,

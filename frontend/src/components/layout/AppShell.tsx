@@ -2,6 +2,7 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import { Search, Sparkles, Heart, Calendar as CalendarIcon, User, Menu, X } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
+import { clearSession, getSession } from "@/lib/auth";
 
 type NavItem = {
   to: "/" | "/recommendations" | "/favorites" | "/calendar" | "/profile";
@@ -75,14 +76,15 @@ function NavList({ onNavigate }: { onNavigate?: () => void }) {
 }
 
 function UserCard() {
+  const session = getSession();
   return (
     <div className="mx-3 mb-3 flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 p-3">
       <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-gradient-to-br from-[color:var(--point)] to-[color:var(--deep)] text-sm font-semibold text-white">
-        AK
+        {(session?.name || "U").slice(0, 1).toUpperCase()}
       </div>
       <div className="min-w-0">
-        <div className="truncate text-sm font-medium text-white">Alex Kim</div>
-        <div className="truncate text-[11px] text-white/60">AI · Computer Vision</div>
+        <div className="truncate text-sm font-medium text-white">{session?.name || "Guest"}</div>
+        <button onClick={() => { clearSession(); window.location.assign("/login"); }} className="text-left text-[11px] text-white/60 underline">로그아웃</button>
       </div>
     </div>
   );

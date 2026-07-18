@@ -21,6 +21,7 @@ class EmailDraftingError(Exception):
 def create_email_draft(
     session: Session,
     request: EmailDraftRequest,
+    user_id: str,
     *,
     api_key: str | None,
     model: str,
@@ -30,7 +31,7 @@ def create_email_draft(
     if lab is None:
         raise EmailDraftingError("lab_not_found", 404, "The selected lab was not found")
 
-    profile = session.get(UserProfile, request.user_id)
+    profile = session.get(UserProfile, user_id)
     if profile is None:
         raise EmailDraftingError("profile_not_found", 404, "The user profile was not found")
 

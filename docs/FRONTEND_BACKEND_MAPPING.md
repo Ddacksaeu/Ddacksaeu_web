@@ -2,6 +2,22 @@
 
 조사 기준은 현재 `frontend/src` 구현이다. `frontend/`는 이번 설계 단계에서 수정하지 않는다. `mock-data.ts`의 모든 연구실, 교수, 이메일, 논문, 일정은 **fixture/mock**이며 실존 정보로 가정하지 않는다.
 
+## Authentication update (MVP, 2026-07-18)
+
+Personal routes use the authenticated JWT subject, never a client-supplied `user_id`.
+`POST /auth/signup` accepts `email`, `password`, and `name`; `POST /auth/login` accepts
+`email` and `password`; both return a bearer token. The frontend stores this session locally
+and attaches `Authorization: Bearer <token>` through its shared API client. `/me`, document
+analysis, recommendations, and email-draft requests require this token. Lab discovery stays
+public, but only an authenticated request receives that user's favorite/recommendation fields.
+
+| Frontend surface | API | Identity source |
+| --- | --- | --- |
+| `/login`, `/signup` | `POST /auth/login`, `POST /auth/signup` | Returned JWT |
+| `/profile`, `/favorites`, `/calendar` | `/me/*` | JWT `sub` |
+| `/recommendations` | `POST /documents/analyze`, `/recommendations/*` | JWT `sub` |
+| `/lab/$id/email` | `POST /email/draft` | JWT `sub` |
+
 ## 현재 라우트와 필요한 API
 
 | 화면 | 현재 데이터·상태 | MVP에서 바로 구현할 API | 해커톤 이후 구현 또는 확장 |

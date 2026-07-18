@@ -1,7 +1,4 @@
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? "http://127.0.0.1:8000/api/v1").replace(
-  /\/$/,
-  "",
-);
+import { apiFetch } from "./client";
 
 export class RecommendationApiError extends Error {
   constructor(
@@ -47,20 +44,16 @@ async function parseError(response: Response) {
   return payload?.error?.message ?? "The request could not be completed.";
 }
 
-export async function analyzeDocument(file: File, userId = "demo-user"): Promise<DocumentAnalysis> {
+export async function analyzeDocument(file: File): Promise<DocumentAnalysis> {
   const form = new FormData();
   form.set("file", file);
-  form.set("user_id", userId);
-  const response = await fetch(`${API_BASE_URL}/documents/analyze`, { method: "POST", body: form });
+  const response = await apiFetch("/documents/analyze", { method: "POST", body: form });
   if (!response.ok) throw new RecommendationApiError(await parseError(response), response.status);
   return response.json() as Promise<DocumentAnalysis>;
 }
 
-export async function recomputeRecommendations(userId = "demo-user"): Promise<Recommendation[]> {
-  const response = await fetch(
-    `${API_BASE_URL}/recommendations/recompute?user_id=${encodeURIComponent(userId)}`,
-    { method: "POST" },
-  );
+export async function recomputeRecommendations(): Promise<Recommendation[]> {
+  const response = await apiFetch("/recommendations/recompute", { method: "POST" });
   if (!response.ok) throw new RecommendationApiError(await parseError(response), response.status);
   const payload = (await response.json()) as { items: Recommendation[] };
   return payload.items;
