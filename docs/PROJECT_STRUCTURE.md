@@ -5,7 +5,11 @@ repository-root/
 ├── frontend/              # Lovable 기반 React/TypeScript 프론트엔드
 ├── backend/               # Python FastAPI 백엔드
 ├── docs/                  # 운영 및 설계 문서
+│   ├── API_CONTRACT.md
+│   ├── BACKEND_ROADMAP.md
 │   ├── BRANCH_STRATEGY.md
+│   ├── DATABASE_SCHEMA.md
+│   ├── FRONTEND_BACKEND_MAPPING.md
 │   └── PROJECT_STRUCTURE.md
 ├── AGENTS.md              # 자동화 작업 규칙
 ├── README.md              # 프로젝트 안내
