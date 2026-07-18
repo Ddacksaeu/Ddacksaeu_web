@@ -1,4 +1,11 @@
-import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
+import {
+  createFileRoute,
+  Link,
+  notFound,
+  Outlet,
+  useNavigate,
+  useRouterState,
+} from "@tanstack/react-router";
 import {
   ExternalLink,
   Heart,
@@ -38,6 +45,7 @@ function LabDetail() {
   const { lab } = Route.useLoaderData() as { lab: Lab };
   const { isFavorite, toggleFavorite, addEvent } = useAppState();
   const navigate = useNavigate();
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
   const fav = isFavorite(lab.id);
   const similar = LABS.filter((l) => l.id !== lab.id && l.field === lab.field).slice(0, 3).length
     ? LABS.filter((l) => l.id !== lab.id && l.field === lab.field).slice(0, 3)
@@ -45,6 +53,10 @@ function LabDetail() {
   const matchedKeywords = ["Computer Vision", "Multimodal", "Diffusion Model"].filter((k) =>
     lab.keywords.some((lk) => lk.toLowerCase().includes(k.toLowerCase())),
   );
+
+  if (pathname.startsWith(`/lab/${lab.id}/email`)) {
+    return <Outlet />;
+  }
 
   return (
     <AppShell
