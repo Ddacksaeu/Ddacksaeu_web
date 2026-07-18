@@ -1,0 +1,584 @@
+.page {
+  width: min(1160px, calc(100% - 48px));
+  margin: 0 auto;
+  padding: 48px 0 104px;
+  color: var(--ink);
+}
+
+.pageHeader {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 32px;
+}
+
+.pageHeader h1 {
+  margin: 0;
+  font-size: 32px;
+  line-height: 1.3;
+  letter-spacing: -.045em;
+}
+
+.pageHeader p {
+  margin: 8px 0 0;
+  color: var(--text-secondary);
+  font-size: 16px;
+  line-height: 1.65;
+}
+
+.headerLinks {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px 20px;
+}
+
+.headerLinks a,
+.sectionAction,
+.railAction,
+.overviewHeading a {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  color: var(--blue-dark);
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.headerLinks a:hover,
+.sectionAction:hover,
+.railAction:hover,
+.overviewHeading a:hover {
+  color: var(--ink);
+}
+
+.statusStrip {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(180px, 280px) auto;
+  gap: 28px;
+  align-items: center;
+  margin-top: 28px;
+  padding: 18px 20px;
+  border-radius: 12px;
+  background: var(--soft);
+}
+
+.statusCopy {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.statusCopy span {
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.statusCopy strong {
+  overflow-wrap: anywhere;
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.progressTrack {
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--blue-pale);
+}
+
+.progressTrack i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--blue);
+  transition: width 180ms ease-out;
+}
+
+.readinessValue {
+  color: var(--blue-dark);
+  font-size: 13px;
+  font-weight: 750;
+  white-space: nowrap;
+}
+
+.workspaceGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 64px;
+  align-items: start;
+  margin-top: 48px;
+}
+
+.mainColumn {
+  display: grid;
+  gap: 52px;
+  min-width: 0;
+}
+
+.feedSection {
+  min-width: 0;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--line);
+}
+
+.sectionHeader h2,
+.overviewHeading h2 {
+  margin: 0;
+  font-size: 24px;
+  line-height: 1.4;
+  letter-spacing: -.035em;
+}
+
+.sectionHeader p {
+  max-width: 620px;
+  margin: 8px 0 0;
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.5;
+  text-wrap: pretty;
+}
+
+.sectionAction {
+  flex: 0 0 auto;
+}
+
+.professorList,
+.recruitmentList,
+.deadlineList,
+.checklist {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.professorRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 156px;
+  gap: 28px;
+  align-items: center;
+  min-height: 132px;
+  padding: 22px 4px;
+  border-bottom: 1px solid var(--line);
+  color: inherit;
+  text-decoration: none;
+  transition: background 160ms ease-out;
+}
+
+.professorRow:hover {
+  background: var(--soft);
+}
+
+.professorInfo {
+  min-width: 0;
+}
+
+.professorTopline {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.professorTopline h3 {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-size: 18px;
+  line-height: 1.45;
+  letter-spacing: -.02em;
+}
+
+.professorTopline > span {
+  flex: 0 0 auto;
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.professorInfo > p {
+  margin: 5px 0 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.topicRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 13px;
+}
+
+.topicRow span {
+  padding: 5px 9px;
+  border-radius: 999px;
+  color: var(--blue-dark);
+  background: var(--blue-soft);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.rowAction {
+  display: grid;
+  justify-items: end;
+  gap: 8px;
+  text-align: right;
+}
+
+.rowAction strong {
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.rowAction span {
+  color: var(--blue-dark);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.recruitmentList a {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 20px;
+  align-items: center;
+  min-height: 82px;
+  padding: 16px 4px;
+  border-bottom: 1px solid var(--line);
+  color: inherit;
+  text-decoration: none;
+  transition: background 160ms ease-out;
+}
+
+.recruitmentList a:hover {
+  background: var(--soft);
+}
+
+.recruitmentList strong,
+.recruitmentList span {
+  display: block;
+}
+
+.recruitmentList strong {
+  overflow-wrap: anywhere;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.recruitmentList span {
+  margin-top: 4px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.recruitmentList small {
+  color: var(--blue-dark);
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.overview {
+  position: sticky;
+  top: 88px;
+  overflow: hidden;
+  border-radius: 16px;
+  background: var(--soft);
+}
+
+.overviewSection {
+  padding: 24px;
+}
+
+.overviewSection + .overviewSection {
+  border-top: 1px solid var(--line);
+}
+
+.overviewHeading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.overviewHeading h2 {
+  font-size: 18px;
+  line-height: 1.45;
+}
+
+.overviewHeading > strong {
+  color: var(--blue-dark);
+  font-size: 18px;
+  font-variant-numeric: tabular-nums;
+}
+
+.overviewHeading a {
+  min-height: 44px;
+  font-size: 12px;
+}
+
+.checklist {
+  display: grid;
+  margin-top: 18px;
+}
+
+.checklist li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 40px;
+  border-bottom: 1px solid var(--line);
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.checklist li:last-child {
+  border-bottom: 0;
+}
+
+.checklist strong {
+  color: var(--blue-dark);
+  font-size: 11px;
+}
+
+.checklist li[data-complete="true"] strong {
+  color: var(--success);
+}
+
+.railAction {
+  margin-top: 12px;
+}
+
+.deadlineList {
+  display: grid;
+  gap: 14px;
+  margin-top: 18px;
+}
+
+.deadlineList li {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+}
+
+.deadlineList time {
+  color: var(--blue-dark);
+  font-size: 12px;
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
+}
+
+.deadlineList div {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.deadlineList strong {
+  overflow-wrap: anywhere;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.deadlineList span,
+.demoNote {
+  color: var(--text-secondary);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.demoNote {
+  margin: 16px 0 0;
+}
+
+.savedStats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 16px 0 0;
+}
+
+.savedStats div {
+  min-width: 0;
+  padding: 14px;
+  border-radius: 10px;
+  background: var(--white);
+}
+
+.savedStats dt {
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+
+.savedStats dd {
+  margin: 6px 0 0;
+  color: var(--ink);
+  font-size: 18px;
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
+}
+
+.headerLinks a:focus-visible,
+.sectionAction:focus-visible,
+.professorRow:focus-visible,
+.recruitmentList a:focus-visible,
+.railAction:focus-visible,
+.overviewHeading a:focus-visible {
+  border-radius: 8px;
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 3px;
+}
+
+@media (max-width: 900px) {
+  .workspaceGrid {
+    grid-template-columns: 1fr;
+    gap: 48px;
+  }
+
+  .mainColumn,
+  .overview {
+    display: contents;
+  }
+
+  .profileOverview {
+    order: 1;
+  }
+
+  .recommendationSection {
+    order: 2;
+  }
+
+  .recruitmentSection {
+    order: 3;
+  }
+
+  .datesOverview {
+    order: 4;
+  }
+
+  .savedOverview {
+    order: 5;
+  }
+
+  .overviewSection {
+    overflow: hidden;
+    border-radius: 16px;
+    background: var(--soft);
+  }
+
+  .overviewSection + .overviewSection {
+    border-top: 0;
+  }
+}
+
+@media (max-width: 800px) {
+  .pageHeader {
+    display: grid;
+    align-items: start;
+  }
+
+  .headerLinks {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 720px) {
+
+  .statusStrip {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 14px 20px;
+  }
+
+  .progressTrack {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  .readinessValue {
+    grid-column: 2;
+    grid-row: 2;
+  }
+}
+
+@media (max-width: 560px) {
+  .page {
+    width: calc(100% - 40px);
+    padding: 36px 0 80px;
+  }
+
+  .pageHeader h1 {
+    font-size: 30px;
+  }
+
+  .headerLinks {
+    gap: 4px 16px;
+  }
+
+  .statusStrip {
+    padding: 16px;
+  }
+
+  .workspaceGrid {
+    margin-top: 40px;
+  }
+
+  .sectionHeader {
+    display: grid;
+    gap: 4px;
+    align-items: start;
+  }
+
+  .sectionHeader h2 {
+    font-size: 22px;
+  }
+
+  .professorRow {
+    grid-template-columns: 1fr;
+    gap: 14px;
+    padding: 20px 4px;
+  }
+
+  .professorTopline {
+    align-items: flex-start;
+    justify-content: space-between;
+  }
+
+  .rowAction {
+    justify-items: start;
+    text-align: left;
+  }
+
+  .recruitmentList a {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .recruitmentList small {
+    white-space: normal;
+  }
+
+  .overviewSection {
+    padding: 22px 20px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .progressTrack i,
+  .professorRow,
+  .recruitmentList a {
+    transition: none;
+  }
+}

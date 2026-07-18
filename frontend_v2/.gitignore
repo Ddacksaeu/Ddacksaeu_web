@@ -1,0 +1,17 @@
+.data/
+.next/
+node_modules/
+output/
+test-results/
+playwright-report/
+.omo/
+.playwright-cli/
+.agents/
+.claude/
+.local-server.log
+.next-server.log
+.next-server.error.log
+*.tsbuildinfo
+
+.env*
+!.env.example

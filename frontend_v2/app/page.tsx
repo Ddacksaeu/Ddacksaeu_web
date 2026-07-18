@@ -1,0 +1,270 @@
+import Link from "next/link";
+
+import { AppHeader } from "../src/components/app-header";
+import { LAB_CATALOG_FIXTURES } from "../src/fixtures/catalog";
+
+const UNIVERSITIES = [
+  { shortName: "SNU", name: "Seoul National University" },
+  { shortName: "KAIST", name: "KAIST" },
+  { shortName: "POSTECH", name: "POSTECH" },
+  { shortName: "YONSEI", name: "Yonsei University" },
+] as const;
+const TRENDING_TOPICS = [
+  "Computer Vision",
+  "Generative AI",
+  "HCI",
+  "Robotics",
+  "Natural Language Processing",
+] as const;
+const FEATURED_IDS = [
+  "snu-demo-02",
+  "kaist-demo-01",
+  "postech-demo-01",
+] as const;
+
+export default function HomePage() {
+  const featuredLabs = LAB_CATALOG_FIXTURES.filter((lab) =>
+    FEATURED_IDS.some((id) => id === lab.id),
+  );
+
+  return (
+    <main className="site-shell home-discovery">
+      <AppHeader />
+      <section className="home-search-hero">
+        <div className="home-search-copy">
+          <p className="kicker">GRADUATE LAB DISCOVERY</p>
+          <h1>
+            <span className="home-title-desktop">
+              Find professors who match
+              <br />
+              your research direction
+            </span>
+            <span className="home-title-mobile">
+              Find professors who
+              <br />
+              match your research
+              <br />
+              direction
+            </span>
+          </h1>
+          <p>
+            Search by research topic, not just university. Use your interests
+            and CV to move from professor discovery to{" "}
+            <span className="keep-phrase">application planning.</span>
+          </p>
+          <form action="/professors" className="home-search-box" method="get">
+            <label htmlFor="home-query">Lab or research keyword</label>
+            <div>
+              <span aria-hidden="true">⌕</span>
+              <input
+                id="home-query"
+                name="q"
+                placeholder="e.g. Computer Vision, Multimodal, HCI"
+              />
+              <button type="submit">Find professors</button>
+            </div>
+          </form>
+          <div
+            className="home-topic-links"
+            aria-label="Popular research topics"
+          >
+            <span>Popular topics</span>
+            {TRENDING_TOPICS.map((topic) => (
+              <Link
+                href={`/professors?q=${encodeURIComponent(topic)}`}
+                key={topic}
+              >
+                {topic}
+              </Link>
+            ))}
+          </div>
+        </div>
+        <aside className="home-radar" aria-labelledby="radar-title">
+          <div className="home-radar-heading">
+            <div>
+              <span>This week’s lab radar</span>
+              <h2 id="radar-title">Labs to explore first</h2>
+            </div>
+            <Link href="/professors">View all</Link>
+          </div>
+          <ol>
+            {featuredLabs.map((lab, index) => (
+              <li key={lab.id}>
+                <Link href={`/professors/${lab.id}`}>
+                  <span className="home-rank">0{index + 1}</span>
+                  <div>
+                    <strong>{lab.labName}</strong>
+                    <small>
+                      {lab.institution} · {lab.professor}
+                    </small>
+                  </div>
+                  <span aria-hidden="true">→</span>
+                </Link>
+              </li>
+            ))}
+          </ol>
+          <p>
+            Demo data only. Verify recruitment and research details on the
+            official source.
+          </p>
+        </aside>
+      </section>
+      <nav
+        className="home-journey"
+        aria-label="Graduate school planning shortcuts"
+      >
+        <Link href="/professors">
+          <span>01</span>
+          <div>
+            <strong>Professor search</strong>
+            <small>Find candidates by research topic</small>
+          </div>
+        </Link>
+        <Link href="/cv">
+          <span>02</span>
+          <div>
+            <strong>CV analysis</strong>
+            <small>Organize experience and keywords</small>
+          </div>
+        </Link>
+        <Link href="/calendar">
+          <span>03</span>
+          <div>
+            <strong>Admissions calendar</strong>
+            <small>Track every deadline</small>
+          </div>
+        </Link>
+        <Link href="/profile">
+          <span>04</span>
+          <div>
+            <strong>Profile</strong>
+            <small>Continue saved work</small>
+          </div>
+        </Link>
+      </nav>
+      <section className="home-editorial" aria-labelledby="editorial-title">
+        <div className="home-section-heading">
+          <div>
+            <p className="kicker">CURATED RESEARCH</p>
+            <h2 id="editorial-title">Discover professors by research topic</h2>
+          </div>
+          <Link href="/professors">Explore all professors →</Link>
+        </div>
+        <div className="home-editorial-grid">
+          <Link
+            className="home-lead-story"
+            href="/professors?q=Computer%20Vision"
+          >
+            <span>This week’s theme</span>
+            <div>
+              <p>VISION · MULTIMODAL</p>
+              <h3>
+                Beyond images
+                <br />
+                Research that understands the world
+              </h3>
+              <small>Explore Computer Vision and Multimodal labs</small>
+            </div>
+            <strong aria-hidden="true">↗</strong>
+          </Link>
+          <div className="home-topic-list">
+            {[
+              [
+                "01",
+                "Generative AI",
+                "From language models to learning intelligence",
+                "Generative AI",
+              ],
+              [
+                "02",
+                "Technology for people",
+                "HCI and accessibility research",
+                "HCI",
+              ],
+              [
+                "03",
+                "AI in the physical world",
+                "Robotics and reinforcement learning",
+                "Robotics",
+              ],
+            ].map(([number, title, description, query]) => (
+              <Link
+                href={`/professors?q=${encodeURIComponent(query ?? "")}`}
+                key={number}
+              >
+                <span>{number}</span>
+                <div>
+                  <strong>{title}</strong>
+                  <small>{description}</small>
+                </div>
+                <span aria-hidden="true">→</span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+      <section
+        className="university-marquee-section"
+        aria-labelledby="university-marquee-title"
+      >
+        <div className="university-marquee-heading">
+          <div>
+            <p className="kicker">UNIVERSITY DISCOVERY</p>
+            <h2 id="university-marquee-title">
+              Explore labs at leading universities
+            </h2>
+          </div>
+          <p>
+            Based on current demo data. These universities are not official
+            partners.
+          </p>
+        </div>
+        <div
+          className="university-marquee"
+          tabIndex={0}
+          aria-label="Universities in the demo. Focus to pause the animation."
+        >
+          <div className="university-marquee-track">
+            {[0, 1].map((copyIndex) => (
+              <ul
+                aria-hidden={copyIndex === 1 ? true : undefined}
+                className="university-marquee-group"
+                key={copyIndex}
+              >
+                {UNIVERSITIES.map((university) => (
+                  <li key={`${copyIndex}-${university.shortName}`}>
+                    <span aria-hidden="true">
+                      {university.shortName.slice(0, 1)}
+                    </span>
+                    <div>
+                      <strong>{university.shortName}</strong>
+                      <small>{university.name}</small>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            ))}
+          </div>
+        </div>
+      </section>
+      <section className="home-bottom-cta">
+        <div>
+          <p>Build your research profile</p>
+          <h2>
+            Get professor recommendations
+            <br />
+            grounded in your experience.
+          </h2>
+        </div>
+        <div className="home-bottom-actions">
+          <Link className="primary-cta" href="/profile">
+            Create my profile
+          </Link>
+          <Link className="seed-link" href="/login">
+            Try the demo flow
+          </Link>
+        </div>
+      </section>
+    </main>
+  );
+}
