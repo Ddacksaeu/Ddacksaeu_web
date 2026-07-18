@@ -102,3 +102,30 @@ its Lovable mock state until a later API-integration task.
 `Lab.matchScore` in the current frontend mock is not persisted on `labs`.
 Future API responses must read a user-specific `Recommendation` instead. All
 records inserted by the development seed are explicitly fictional fixtures.
+
+## Lab search API implementation (2026-07-18)
+
+`GET /api/v1/labs` supports independent and composable `university`,
+`department`, repeated `field`, `q`, `professor_name`, and `lab_name` filters.
+The `q` filter matches lab, professor, field, summary, and Korean or English
+keyword terms. It uses the MVP `demo-user` context to expose `isFavorite` and
+the optional persisted `recommendationScore`, without deriving scores from
+frontend fixture data.
+
+Results accept `sort=score|recent`, `page`, and `page_size`, and return
+`items`, `page`, `pageSize`, and `total`. `GET /api/v1/labs/{lab_id}` returns
+the same list fields plus provenance-backed facts and papers. This is a
+backend-only implementation; no frontend files are changed.
+
+## Document-analysis API (2026-07-18)
+
+The current frontend remains unchanged and has no live upload integration.
+The backend now exposes `POST /api/v1/documents/analyze` as
+`multipart/form-data` with required `user_id` and `file` fields. It accepts a
+PDF CV or portfolio up to 10 MiB, rejects non-PDF, empty, scanned/no-text, and
+text-insufficient files, keeps the original in a private server directory, and
+returns a Pydantic-validated structured analysis. `OPENAI_API_KEY` and the
+analysis prompt remain server-only. The existing schema stores the uploaded
+document plus keywords, skills, research interests (as methodologies), and
+projects; a later migration is required to persist every additional returned
+analysis field for retrieval.
