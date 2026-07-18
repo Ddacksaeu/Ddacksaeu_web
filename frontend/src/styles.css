@@ -5,7 +5,7 @@
 @custom-variant dark (&:is(.dark *));
 
 /*
- * 딱새우 — POSTECH lab discovery prototype design system.
+ * Ddaksaeu — POSTECH lab discovery prototype design system.
  * Palette: navy #0B1F3A, deep blue #174EA6, point blue #3B82F6,
  * blue-gray surface #F4F7FB, white base.
  */
@@ -58,9 +58,7 @@
   --color-success: var(--success);
   --color-warning: var(--warning);
   --color-info: var(--info);
-  --font-sans:
-    "Pretendard", "Pretendard Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI",
-    sans-serif;
+  --font-sans: "Pretendard", "Pretendard Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 
 :root {

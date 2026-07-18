@@ -32,7 +32,11 @@ class Settings(BaseSettings):
         if origins:
             return origins
         if self.app_env == "development":
-            return ["http://localhost:5173"]
+            return [
+                "http://localhost:5173",
+                "http://localhost:8080",
+                "http://127.0.0.1:8080",
+            ]
         return []
 
     @model_validator(mode="after")

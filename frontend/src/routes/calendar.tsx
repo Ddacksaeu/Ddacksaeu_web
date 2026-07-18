@@ -37,11 +37,8 @@ export const Route = createFileRoute("/calendar")({
   component: CalendarPage,
   head: () => ({
     meta: [
-      { title: "지원 캘린더 · 딱새우" },
-      {
-        name: "description",
-        content: "대학원 원서, 컨택, 서류 준비, 면접 일정을 한눈에 관리하세요.",
-      },
+      { title: "Application Calendar · Ddaksaeu" },
+      { name: "description", content: "Manage applications, outreach, documents, and interviews at a glance." },
     ],
   }),
 });
@@ -96,11 +93,13 @@ function CalendarPage() {
     return map;
   }, [filteredEvents]);
 
-  const upcoming = [...filteredEvents].sort((a, b) => a.date.localeCompare(b.date)).slice(0, 8);
+  const upcoming = [...filteredEvents]
+    .sort((a, b) => a.date.localeCompare(b.date))
+    .slice(0, 8);
 
   const submit = () => {
     if (!form.title.trim()) {
-      toast.error("일정 제목을 입력해주세요");
+      toast.error("Enter an event title");
       return;
     }
     addEvent({
@@ -110,21 +109,21 @@ function CalendarPage() {
       labId: form.labId === "none" ? undefined : form.labId,
       memo: form.memo || undefined,
     });
-    toast.success("일정이 추가되었어요");
+    toast.success("Event added");
     setOpen(false);
     setForm({ ...form, title: "", memo: "" });
   };
 
   return (
     <AppShell
-      title="지원 캘린더"
-      description="원서 접수, 컨택, 서류 준비, 면접 일정을 한곳에서 관리해요."
+      title="Application Calendar"
+      description="Keep application, outreach, document, and interview deadlines in one place."
       actions={
         <Button
           onClick={() => setOpen(true)}
           className="gap-2 rounded-full bg-[color:var(--point)] hover:bg-[color:var(--deep)]"
         >
-          <Plus className="h-4 w-4" /> 일정 추가
+          <Plus className="h-4 w-4" /> Add event
         </Button>
       }
     >
@@ -138,19 +137,19 @@ function CalendarPage() {
                 size="icon"
                 className="h-9 w-9 rounded-full"
                 onClick={() => setCursor(new Date(year, month - 1, 1))}
-                aria-label="이전 달"
+                aria-label="Previous month"
               >
                 <ChevronLeft className="h-4 w-4" />
               </Button>
               <div className="min-w-[140px] text-center text-base font-semibold text-[color:var(--navy)]">
-                {year}년 {month + 1}월
+                {new Date(year, month).toLocaleDateString("en-US", { month: "long", year: "numeric" })}
               </div>
               <Button
                 variant="outline"
                 size="icon"
                 className="h-9 w-9 rounded-full"
                 onClick={() => setCursor(new Date(year, month + 1, 1))}
-                aria-label="다음 달"
+                aria-label="Next month"
               >
                 <ChevronRight className="h-4 w-4" />
               </Button>
@@ -160,7 +159,7 @@ function CalendarPage() {
                 className="ml-1 rounded-full text-muted-foreground"
                 onClick={() => setCursor(new Date())}
               >
-                오늘
+                Today
               </Button>
             </div>
 
@@ -168,7 +167,7 @@ function CalendarPage() {
               <div className="flex items-center gap-2 text-xs">
                 <Filter className="h-3.5 w-3.5 text-muted-foreground" />
                 <Label htmlFor="fav-only" className="text-xs text-muted-foreground">
-                  저장한 연구실만 보기
+                  Saved labs only
                 </Label>
                 <Switch id="fav-only" checked={showFavOnly} onCheckedChange={setShowFavOnly} />
               </div>
@@ -176,7 +175,7 @@ function CalendarPage() {
           </div>
 
           <div className="mt-4 grid grid-cols-7 text-center text-[11px] uppercase tracking-widest text-muted-foreground">
-            {["일", "월", "화", "수", "목", "금", "토"].map((d) => (
+            {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => (
               <div key={d} className="py-2">
                 {d}
               </div>
@@ -184,8 +183,7 @@ function CalendarPage() {
           </div>
           <div className="grid grid-cols-7 gap-1">
             {cells.map((d, i) => {
-              if (d === null)
-                return <div key={i} className="h-24 rounded-lg bg-[color:var(--surface)]/40" />;
+              if (d === null) return <div key={i} className="h-24 rounded-lg bg-[color:var(--surface)]/40" />;
               const key = iso(year, month, d);
               const dayEvents = eventsByDay.get(key) ?? [];
               const today = new Date();
@@ -242,12 +240,12 @@ function CalendarPage() {
 
         {/* Upcoming */}
         <aside className="rounded-2xl border border-border bg-white p-5">
-          <h3 className="text-sm font-semibold text-[color:var(--navy)]">다가오는 일정</h3>
-          <p className="mt-0.5 text-xs text-muted-foreground">가까운 순서로 8개까지 표시</p>
+          <h3 className="text-sm font-semibold text-[color:var(--navy)]">Upcoming events</h3>
+          <p className="mt-0.5 text-xs text-muted-foreground">Showing up to 8 events in chronological order</p>
           <ul className="mt-4 space-y-3">
             {upcoming.length === 0 && (
               <li className="rounded-xl border border-dashed border-border p-4 text-center text-xs text-muted-foreground">
-                예정된 일정이 없어요
+                No upcoming events
               </li>
             )}
             {upcoming.map((e) => {
@@ -277,10 +275,10 @@ function CalendarPage() {
                     <button
                       onClick={() => {
                         removeEvent(e.id);
-                        toast("일정을 삭제했어요");
+                        toast("Event deleted");
                       }}
                       className="opacity-0 transition-opacity group-hover:opacity-100"
-                      aria-label="일정 삭제"
+                      aria-label="Delete event"
                     >
                       <Trash2 className="h-3.5 w-3.5 text-muted-foreground hover:text-destructive" />
                     </button>
@@ -296,22 +294,22 @@ function CalendarPage() {
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>새 일정 추가</DialogTitle>
-            <DialogDescription>지원 관련 일정을 캘린더에 등록합니다.</DialogDescription>
+            <DialogTitle>Add a new event</DialogTitle>
+            <DialogDescription>Add an application-related event to your calendar.</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-1.5">
-              <Label htmlFor="ev-title">제목</Label>
+              <Label htmlFor="ev-title">Title</Label>
               <Input
                 id="ev-title"
                 value={form.title}
                 onChange={(e) => setForm({ ...form, title: e.target.value })}
-                placeholder="예: VisLab 컨택 메일 보내기"
+                placeholder="e.g. Send outreach email to VisLab"
               />
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-1.5">
-                <Label>유형</Label>
+                <Label>Type</Label>
                 <Select
                   value={form.kind}
                   onValueChange={(v) => setForm({ ...form, kind: v as EventKind })}
@@ -329,7 +327,7 @@ function CalendarPage() {
                 </Select>
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="ev-date">날짜</Label>
+                <Label htmlFor="ev-date">Date</Label>
                 <Input
                   id="ev-date"
                   type="date"
@@ -339,13 +337,13 @@ function CalendarPage() {
               </div>
             </div>
             <div className="space-y-1.5">
-              <Label>관련 연구실 (선택)</Label>
+              <Label>Related lab (optional)</Label>
               <Select value={form.labId} onValueChange={(v) => setForm({ ...form, labId: v })}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">선택 안 함</SelectItem>
+                  <SelectItem value="none">None</SelectItem>
                   {LABS.map((l) => (
                     <SelectItem key={l.id} value={l.id}>
                       {l.name}
@@ -355,25 +353,25 @@ function CalendarPage() {
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="ev-memo">메모</Label>
+              <Label htmlFor="ev-memo">Notes</Label>
               <Textarea
                 id="ev-memo"
                 value={form.memo}
                 onChange={(e) => setForm({ ...form, memo: e.target.value })}
-                placeholder="추가 메모"
+                placeholder="Additional notes"
                 rows={3}
               />
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>
-              취소
+              Cancel
             </Button>
             <Button
               onClick={submit}
               className="bg-[color:var(--point)] hover:bg-[color:var(--deep)]"
             >
-              저장
+              Save
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -19,8 +19,8 @@ export const Route = createFileRoute("/favorites")({
   component: FavoritesPage,
   head: () => ({
     meta: [
-      { title: "관심 연구실 · 딱새우" },
-      { name: "description", content: "저장한 연구실을 비교하고 정리하세요." },
+      { title: "Saved Labs · Ddaksaeu" },
+      { name: "description", content: "Compare and organize your saved labs." },
     ],
   }),
 });
@@ -34,8 +34,8 @@ function FavoritesPage() {
 
   return (
     <AppShell
-      title="관심 연구실"
-      description={`저장한 연구실 ${savedLabs.length}개 · 최대 3개까지 비교할 수 있어요.`}
+      title="Saved Labs"
+      description={`Saved labs: ${savedLabs.length} · compare up to 3 labs.`}
       actions={
         <Button
           disabled={compareLabs.length < 2}
@@ -43,7 +43,7 @@ function FavoritesPage() {
           className="gap-2 rounded-full bg-[color:var(--deep)] hover:bg-[color:var(--navy)] disabled:opacity-50"
         >
           <GitCompareArrows className="h-4 w-4" />
-          비교하기 ({compareLabs.length})
+          Compare ({compareLabs.length})
         </Button>
       }
     >
@@ -53,17 +53,14 @@ function FavoritesPage() {
             <Heart className="h-6 w-6" />
           </div>
           <h3 className="mt-4 text-base font-semibold text-[color:var(--navy)]">
-            아직 저장한 연구실이 없어요
+            No saved labs yet
           </h3>
           <p className="mt-1 text-sm text-muted-foreground">
-            연구실 카드의 하트를 눌러 언제든 다시 볼 수 있게 저장하세요.
+            Select the heart on any lab card to save it for later.
           </p>
-          <Button
-            asChild
-            className="mt-4 gap-2 rounded-full bg-[color:var(--point)] hover:bg-[color:var(--deep)]"
-          >
+          <Button asChild className="mt-4 gap-2 rounded-full bg-[color:var(--point)] hover:bg-[color:var(--deep)]">
             <Link to="/">
-              연구실 탐색으로 이동 <ArrowRight className="h-4 w-4" />
+              Explore labs <ArrowRight className="h-4 w-4" />
             </Link>
           </Button>
         </section>
@@ -79,8 +76,7 @@ function FavoritesPage() {
                   <label
                     className={cn(
                       "absolute right-4 top-4 flex cursor-pointer items-center gap-1.5 rounded-full border border-border bg-white px-2.5 py-1 text-xs text-foreground/80 shadow-sm",
-                      inCompare &&
-                        "border-[color:var(--point)] bg-[color:var(--point)]/10 text-[color:var(--deep)]",
+                      inCompare && "border-[color:var(--point)] bg-[color:var(--point)]/10 text-[color:var(--deep)]",
                       compareFull && "cursor-not-allowed opacity-50",
                     )}
                   >
@@ -101,7 +97,7 @@ function FavoritesPage() {
                     >
                       {inCompare && <span className="text-[9px]">✓</span>}
                     </span>
-                    비교 담기
+                    Add to comparison
                   </label>
                 </div>
               );
@@ -111,7 +107,7 @@ function FavoritesPage() {
           {compareLabs.length > 0 && (
             <div className="fixed bottom-16 left-0 right-0 z-20 flex justify-center px-4 lg:bottom-6 lg:pl-64">
               <div className="flex w-full max-w-3xl items-center gap-3 rounded-2xl border border-border bg-white p-3 shadow-[0_10px_32px_-16px_oklch(0.24_0.05_260/0.35)]">
-                <div className="text-xs text-muted-foreground">비교 목록</div>
+                <div className="text-xs text-muted-foreground">Comparison list</div>
                 <div className="flex flex-1 flex-wrap items-center gap-2">
                   {compareLabs.map((l) => (
                     <span
@@ -121,7 +117,7 @@ function FavoritesPage() {
                       {l.name}
                       <button
                         onClick={() => toggleCompare(l.id)}
-                        aria-label="비교 해제"
+                        aria-label="Remove from comparison"
                         className="text-muted-foreground hover:text-destructive"
                       >
                         <X className="h-3 w-3" />
@@ -130,14 +126,14 @@ function FavoritesPage() {
                   ))}
                 </div>
                 <Button variant="ghost" size="sm" onClick={clearCompare} className="rounded-full">
-                  초기화
+                  Clear
                 </Button>
                 <Button
                   disabled={compareLabs.length < 2}
                   onClick={() => setCompareOpen(true)}
                   className="rounded-full bg-[color:var(--point)] hover:bg-[color:var(--deep)]"
                 >
-                  비교하기
+                  Compare
                 </Button>
               </div>
             </div>
@@ -148,9 +144,9 @@ function FavoritesPage() {
       <Dialog open={compareOpen} onOpenChange={setCompareOpen}>
         <DialogContent className="max-w-4xl">
           <DialogHeader>
-            <DialogTitle>연구실 비교</DialogTitle>
+            <DialogTitle>Compare labs</DialogTitle>
             <DialogDescription>
-              {compareLabs.length}개의 연구실을 나란히 비교합니다.
+              {compareLabs.length} labs side by side.
             </DialogDescription>
           </DialogHeader>
           <div className="overflow-x-auto">
@@ -158,7 +154,7 @@ function FavoritesPage() {
               <thead>
                 <tr>
                   <th className="w-32 border-b border-border bg-[color:var(--surface)] px-3 py-2 text-left text-xs font-medium uppercase tracking-widest text-muted-foreground">
-                    항목
+                    Category
                   </th>
                   {compareLabs.map((l) => (
                     <th
@@ -171,12 +167,12 @@ function FavoritesPage() {
                 </tr>
               </thead>
               <tbody>
-                <Row label="교수" values={compareLabs.map((l) => l.professor)} />
-                <Row label="학과" values={compareLabs.map((l) => l.department)} />
-                <Row label="연구 분야" values={compareLabs.map((l) => l.field)} />
+                <Row label="Professor" values={compareLabs.map((l) => l.professor)} />
+                <Row label="Department" values={compareLabs.map((l) => l.department)} />
+                <Row label="Research fields" values={compareLabs.map((l) => l.field)} />
                 <tr>
                   <td className="border-b border-border px-3 py-3 align-top text-xs text-muted-foreground">
-                    프로필 일치율
+                    Profile match
                   </td>
                   {compareLabs.map((l) => (
                     <td key={l.id} className="border-b border-border px-3 py-3 align-top">
@@ -185,11 +181,11 @@ function FavoritesPage() {
                   ))}
                 </tr>
                 <Row
-                  label="최근 연구 주제"
+                  label="Recent topics"
                   values={compareLabs.map((l) => l.recentTopics.slice(0, 2).join(" / "))}
                 />
                 <tr>
-                  <td className="px-3 py-3 align-top text-xs text-muted-foreground">홈페이지</td>
+                  <td className="px-3 py-3 align-top text-xs text-muted-foreground">Website</td>
                   {compareLabs.map((l) => (
                     <td key={l.id} className="px-3 py-3 align-top">
                       <a
@@ -198,7 +194,7 @@ function FavoritesPage() {
                         rel="noreferrer"
                         className="text-[color:var(--deep)] hover:underline"
                       >
-                        방문
+                        Visit
                       </a>
                     </td>
                   ))}

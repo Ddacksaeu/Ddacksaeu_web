@@ -52,19 +52,19 @@ function ExplorePage() {
   const activeChips: { label: string; onRemove: () => void }[] = [];
   if (dept !== "all") activeChips.push({ label: dept, onRemove: () => setDept("all") });
   fields.forEach((f) => activeChips.push({ label: f, onRemove: () => toggleField(f) }));
-  if (q) activeChips.push({ label: `검색: ${q}`, onRemove: () => setQ("") });
+  if (q) activeChips.push({ label: `Search: ${q}`, onRemove: () => setQ("") });
 
   return (
     <AppShell
-      title="나에게 맞는 포스텍 연구실을 찾아보세요"
-      description="연구 분야와 키워드를 기준으로 연구실 정보를 한곳에서 비교해보세요."
+      title="Find the POSTECH lab that fits you"
+      description="Compare labs in one place by research field and keyword."
       actions={
         <Button
           size="lg"
           className="gap-2 rounded-full bg-[color:var(--point)] px-5 hover:bg-[color:var(--deep)]"
           onClick={() => navigate({ to: "/recommendations" })}
         >
-          <Sparkles className="h-4 w-4" /> CV 기반 추천받기
+          <Sparkles className="h-4 w-4" /> Get CV-based recommendations
         </Button>
       }
     >
@@ -75,8 +75,8 @@ function ExplorePage() {
           <Input
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="교수명, 연구실명, 연구 키워드 검색"
-            aria-label="연구실 검색"
+            placeholder="Search professors, labs, or research keywords"
+            aria-label="Search labs"
             className="h-14 rounded-xl border-border bg-[color:var(--surface)] pl-12 pr-4 text-base placeholder:text-muted-foreground focus-visible:border-[color:var(--point)] focus-visible:ring-2 focus-visible:ring-[color:var(--point)]/30"
           />
         </div>
@@ -84,10 +84,10 @@ function ExplorePage() {
         <div className="mt-4 grid gap-3 sm:grid-cols-[minmax(0,220px)_1fr_minmax(0,180px)] sm:items-center">
           <Select value={dept} onValueChange={setDept}>
             <SelectTrigger className="h-11 rounded-lg border-border bg-white">
-              <SelectValue placeholder="전체 학과" />
+              <SelectValue placeholder="All departments" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">전체 학과</SelectItem>
+              <SelectItem value="all">All departments</SelectItem>
               {DEPARTMENTS.map((d) => (
                 <SelectItem key={d} value={d}>
                   {d}
@@ -98,7 +98,7 @@ function ExplorePage() {
 
           <div className="flex flex-wrap items-center gap-2">
             <span className="mr-1 flex items-center gap-1 text-xs text-muted-foreground">
-              <SlidersHorizontal className="h-3.5 w-3.5" /> 연구 분야
+              <SlidersHorizontal className="h-3.5 w-3.5" /> Research fields
             </span>
             {FIELDS.slice(0, 8).map((f) => {
               const active = fields.includes(f);
@@ -126,9 +126,9 @@ function ExplorePage() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="match">추천 일치율 순</SelectItem>
-              <SelectItem value="recent">최근 업데이트 순</SelectItem>
-              <SelectItem value="name">이름 순</SelectItem>
+              <SelectItem value="match">Best match</SelectItem>
+              <SelectItem value="recent">Recently updated</SelectItem>
+              <SelectItem value="name">Name</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -138,8 +138,7 @@ function ExplorePage() {
       <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-sm text-foreground/80">
-            <span className="font-semibold text-[color:var(--navy)]">{filtered.length}</span>개의
-            연구실
+            <span className="font-semibold text-[color:var(--navy)]">{filtered.length}</span> labs
           </span>
           {activeChips.length > 0 && (
             <>
@@ -162,7 +161,7 @@ function ExplorePage() {
                 }}
                 className="text-xs text-muted-foreground hover:text-[color:var(--deep)]"
               >
-                모두 초기화
+                Clear all
               </button>
             </>
           )}
@@ -170,7 +169,7 @@ function ExplorePage() {
 
         <div className="flex items-center gap-1 rounded-lg border border-border bg-white p-1">
           <button
-            aria-label="카드 보기"
+            aria-label="Card view"
             onClick={() => setView("grid")}
             className={cn(
               "grid h-8 w-8 place-items-center rounded-md text-muted-foreground",
@@ -180,7 +179,7 @@ function ExplorePage() {
             <LayoutGrid className="h-4 w-4" />
           </button>
           <button
-            aria-label="리스트 보기"
+            aria-label="List view"
             onClick={() => setView("list")}
             className={cn(
               "grid h-8 w-8 place-items-center rounded-md text-muted-foreground",
@@ -199,10 +198,10 @@ function ExplorePage() {
             <Search className="h-5 w-5" />
           </div>
           <h3 className="mt-4 text-base font-semibold text-[color:var(--navy)]">
-            조건에 맞는 연구실이 없어요
+            No labs match your criteria
           </h3>
           <p className="mt-1 text-sm text-muted-foreground">
-            필터를 조정하거나 검색어를 지워보세요.
+            Adjust the filters or clear your search.
           </p>
           <Button
             variant="outline"
@@ -213,7 +212,7 @@ function ExplorePage() {
               setQ("");
             }}
           >
-            필터 초기화
+            Reset filters
           </Button>
         </div>
       ) : (
@@ -233,7 +232,7 @@ function ExplorePage() {
       {filtered.length > 0 && (
         <div className="mt-8 flex justify-center">
           <Button variant="outline" className="rounded-full px-6">
-            더 보기
+            Show more
           </Button>
         </div>
       )}
@@ -243,22 +242,20 @@ function ExplorePage() {
         <div className="grid gap-6 sm:grid-cols-[1fr_auto] sm:items-center">
           <div>
             <div className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-1 text-[11px] uppercase tracking-widest">
-              <Sparkles className="h-3 w-3" /> AI 매칭
+              <Sparkles className="h-3 w-3" /> AI matching
             </div>
             <h2 className="mt-3 text-xl font-semibold sm:text-2xl">
-              CV를 올리면 나에게 맞는 연구실을 자동으로 골라드려요
+              Upload your CV to discover labs that fit your background
             </h2>
             <p className="mt-2 max-w-xl text-sm text-white/70">
-              연구 관심사, 기술 스택, 프로젝트 경험을 분석해 일치율 순으로 정렬된 추천 리스트를
-              제공합니다.
+              We analyze your interests, skills, and project experience to rank matching labs
+              for you.
             </p>
           </div>
-          <Button
-            asChild
-            size="lg"
-            className="rounded-full bg-white text-[color:var(--deep)] hover:bg-white/90"
-          >
-            <Link to="/recommendations">지금 분석하기</Link>
+          <Button asChild size="lg" className="rounded-full bg-white text-[color:var(--deep)] hover:bg-white/90">
+            <Link to="/recommendations">
+              Analyze my CV
+            </Link>
           </Button>
         </div>
       </section>
