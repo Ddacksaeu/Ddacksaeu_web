@@ -6,6 +6,7 @@
 
 | 화면 | 현재 데이터·상태 | MVP에서 바로 구현할 API | 해커톤 이후 구현 또는 확장 |
 | --- | --- | --- | --- |
+| Backend foundation | No frontend integration in this stage | `GET /api/v1/health` only | Existing resource APIs remain planned; frontend keeps fixture/mock state |
 | `/` 연구실 탐색 | `LABS`를 브라우저에서 검색·필터·정렬 | `GET /labs` | 서버 전문 검색, 무한 스크롤 |
 | `/lab/$id` 상세 | loader가 `LABS.find`, 유사 연구실도 브라우저 계산 | `GET /labs/{lab_id}`, `GET /labs/{lab_id}/similar`, 관심/일정 API | 서버 비교·관련 논문 탐색 |
 | `/recommendations` | `DEMO_CV`, 타이머, `LABS` 점수 계산 | 문서 업로드·분석·추천 API | 분석 작업 폴링/SSE, 추천 이력 |
