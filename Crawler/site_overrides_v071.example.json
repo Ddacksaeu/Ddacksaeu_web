@@ -1,0 +1,289 @@
+{
+  "IT융합공학과": {
+    "faculty_urls": [
+      "https://cite.postech.ac.kr/bbs/board.php?bo_table=sub2_1_a",
+      "https://cite.postech.ac.kr/bbs/board.php?bo_table=sub2_1_b",
+      "https://cite.postech.ac.kr/bbs/board.php?bo_table=sub2_1_e"
+    ],
+    "allowed_hosts": [
+      "cite.postech.ac.kr"
+    ],
+    "render": false,
+    "max_depth": 2,
+    "faculty_card_selectors": [],
+    "name_selectors": [],
+    "email_selectors": [],
+    "lab_name_selectors": [],
+    "lab_link_selectors": [],
+    "field_selectors": [],
+    "location_selectors": [],
+    "phone_selectors": [],
+    "image_selectors": [],
+    "summary_selectors": [],
+    "keyword_selectors": [],
+    "lab_overrides": {}
+  },
+  "생명과학과": {
+    "faculty_urls": [
+      "https://life.postech.ac.kr/html/professor/professor01.php",
+      "https://life.postech.ac.kr/eng/html/professor/professor01.php"
+    ],
+    "allowed_hosts": [
+      "life.postech.ac.kr"
+    ],
+    "render": false,
+    "max_depth": 3,
+    "faculty_card_selectors": [],
+    "name_selectors": [],
+    "email_selectors": [],
+    "lab_name_selectors": [],
+    "lab_link_selectors": [],
+    "field_selectors": [],
+    "location_selectors": [],
+    "phone_selectors": [],
+    "image_selectors": [],
+    "summary_selectors": [],
+    "keyword_selectors": [],
+    "lab_overrides": {}
+  },
+  "수학과": {
+    "faculty_urls": [
+      "https://math.postech.ac.kr/bbs/board.php?bo_table=m02_01&page=1",
+      "https://math.postech.ac.kr/bbs/board.php?bo_table=m02_01&page=2",
+      "https://math.postech.ac.kr/en/bbs/board.php?bo_table=m02_01&page=1",
+      "https://math.postech.ac.kr/en/bbs/board.php?bo_table=m02_01&page=2"
+    ],
+    "allowed_hosts": [
+      "math.postech.ac.kr"
+    ],
+    "render": false,
+    "max_depth": 2,
+    "faculty_card_selectors": [],
+    "name_selectors": [],
+    "email_selectors": [],
+    "lab_name_selectors": [],
+    "lab_link_selectors": [],
+    "field_selectors": [],
+    "location_selectors": [],
+    "phone_selectors": [],
+    "image_selectors": [],
+    "summary_selectors": [],
+    "keyword_selectors": [],
+    "lab_overrides": {
+      "qiruili@postech.ac.kr": {
+        "professor_name": "이기예",
+        "lab_url": "http://qirui.li/",
+        "lab_url_status": "manual",
+        "location": "수리과학관 219호",
+        "primary_field": "정수론; 산술기하학",
+        "keywords": "정수론;산술기하학"
+      },
+      "buciumas@postech.ac.kr": {
+        "professor_name": "Valentin Buciumas",
+        "lab_url": "https://buciumas.github.io/",
+        "lab_url_status": "manual",
+        "location": "수리과학관 221호",
+        "primary_field": "표현론과 정수론과의 연계; 대수적 조합론; 수리물리학",
+        "keywords": "표현론;정수론;대수적 조합론;수리물리학"
+      }
+    }
+  },
+  "시스템생명공학부": {
+    "faculty_urls": [
+      "https://ibio.postech.ac.kr/web/?depart=1&position=1&sub=professor&top=member",
+      "https://ibio.postech.ac.kr/web/?depart=1&position=2&sub=professor&top=member"
+    ],
+    "allowed_hosts": [
+      "ibio.postech.ac.kr"
+    ],
+    "render": false,
+    "max_depth": 2,
+    "faculty_card_selectors": [],
+    "name_selectors": [],
+    "email_selectors": [],
+    "lab_name_selectors": [],
+    "lab_link_selectors": [],
+    "field_selectors": [],
+    "location_selectors": [],
+    "phone_selectors": [],
+    "image_selectors": [],
+    "summary_selectors": [],
+    "keyword_selectors": [],
+    "lab_overrides": {}
+  },
+  "첨단재료과학부": {
+    "faculty_urls": [
+      "https://gscst.postech.ac.kr/web/?depart=2&position=1&sub=professor&top=member",
+      "https://gscst.postech.ac.kr/web/?depart=2&position=2&sub=professor&top=member"
+    ],
+    "allowed_hosts": [
+      "gscst.postech.ac.kr"
+    ],
+    "render": false,
+    "max_depth": 2,
+    "faculty_card_selectors": [],
+    "name_selectors": [],
+    "email_selectors": [],
+    "lab_name_selectors": [],
+    "lab_link_selectors": [],
+    "field_selectors": [],
+    "location_selectors": [],
+    "phone_selectors": [],
+    "image_selectors": [],
+    "summary_selectors": [],
+    "keyword_selectors": [],
+    "lab_overrides": {}
+  },
+  "의과학전공": {
+    "faculty_urls": [
+      "https://emed.postech.ac.kr/web/?depart=1&position=1&sub=professor&top=member",
+      "https://gscst.postech.ac.kr/web/?depart=11&position=1&sub=professor&top=member",
+      "https://gscst.postech.ac.kr/web/?depart=11&position=2&sub=professor&top=member",
+      "https://gscst.postech.ac.kr/web/?depart=11&position=3&sub=professor&top=member"
+    ],
+    "allowed_hosts": [
+      "emed.postech.ac.kr",
+      "gscst.postech.ac.kr"
+    ],
+    "render": false,
+    "max_depth": 2,
+    "faculty_card_selectors": [],
+    "name_selectors": [],
+    "email_selectors": [],
+    "lab_name_selectors": [],
+    "lab_link_selectors": [],
+    "field_selectors": [],
+    "location_selectors": [],
+    "phone_selectors": [],
+    "image_selectors": [],
+    "summary_selectors": [],
+    "keyword_selectors": [],
+    "lab_overrides": {}
+  },
+  "국방과학기술전공": {
+    "faculty_urls": [
+      "https://dst.postech.ac.kr/",
+      "https://gscst.postech.ac.kr/web/?depart=14&position=1&sub=professor&top=member",
+      "https://gscst.postech.ac.kr/web/?depart=14&position=2&sub=professor&top=member",
+      "https://gscst.postech.ac.kr/web/?depart=14&position=3&sub=professor&top=member"
+    ],
+    "allowed_hosts": [
+      "dst.postech.ac.kr",
+      "gscst.postech.ac.kr"
+    ],
+    "render": false,
+    "max_depth": 3,
+    "faculty_card_selectors": [],
+    "name_selectors": [],
+    "email_selectors": [],
+    "lab_name_selectors": [],
+    "lab_link_selectors": [],
+    "field_selectors": [],
+    "location_selectors": [],
+    "phone_selectors": [],
+    "image_selectors": [],
+    "summary_selectors": [],
+    "keyword_selectors": [],
+    "lab_overrides": {}
+  },
+  "푸드테크융합전공": {
+    "faculty_urls": [
+      "https://foodtech.postech.ac.kr/foodtech/abo/contact.do",
+      "https://gscst.postech.ac.kr/web/?depart=16&position=1&sub=professor&top=member",
+      "https://gscst.postech.ac.kr/web/?depart=16&position=2&sub=professor&top=member"
+    ],
+    "allowed_hosts": [
+      "foodtech.postech.ac.kr",
+      "gscst.postech.ac.kr"
+    ],
+    "render": false,
+    "max_depth": 2,
+    "faculty_card_selectors": [],
+    "name_selectors": [],
+    "email_selectors": [],
+    "lab_name_selectors": [],
+    "lab_link_selectors": [],
+    "field_selectors": [],
+    "location_selectors": [],
+    "phone_selectors": [],
+    "image_selectors": [],
+    "summary_selectors": [],
+    "keyword_selectors": [],
+    "lab_overrides": {}
+  },
+  "경영과학전공": {
+    "faculty_urls": [
+      "https://gscst.postech.ac.kr/web/?depart=15&position=1&sub=professor&top=member",
+      "https://gscst.postech.ac.kr/web/?depart=15&position=2&sub=professor&top=member"
+    ],
+    "allowed_hosts": [
+      "gscst.postech.ac.kr"
+    ],
+    "render": false,
+    "max_depth": 2,
+    "faculty_card_selectors": [],
+    "name_selectors": [],
+    "email_selectors": [],
+    "lab_name_selectors": [],
+    "lab_link_selectors": [],
+    "field_selectors": [],
+    "location_selectors": [],
+    "phone_selectors": [],
+    "image_selectors": [],
+    "summary_selectors": [],
+    "keyword_selectors": [],
+    "lab_overrides": {}
+  },
+  "양자정보과학전공": {
+    "faculty_urls": [
+      "https://quantum.postech.ac.kr/",
+      "https://gscst.postech.ac.kr/web/?depart=17&position=1&sub=professor&top=member",
+      "https://gscst.postech.ac.kr/web/?depart=17&position=2&sub=professor&top=member",
+      "https://gscst.postech.ac.kr/web/?depart=17&position=3&sub=professor&top=member"
+    ],
+    "allowed_hosts": [
+      "quantum.postech.ac.kr",
+      "gscst.postech.ac.kr"
+    ],
+    "render": false,
+    "max_depth": 2,
+    "faculty_card_selectors": [],
+    "name_selectors": [],
+    "email_selectors": [],
+    "lab_name_selectors": [],
+    "lab_link_selectors": [],
+    "field_selectors": [],
+    "location_selectors": [],
+    "phone_selectors": [],
+    "image_selectors": [],
+    "summary_selectors": [],
+    "keyword_selectors": [],
+    "lab_overrides": {}
+  },
+  "산업데이터사이언스전공": {
+    "faculty_urls": [
+      "https://ids.postech.ac.kr/faculty",
+      "https://ids.postech.ac.kr/faculty_en",
+      "https://gscst.postech.ac.kr/web/?depart=18&position=1&sub=professor&top=member",
+      "https://gscst.postech.ac.kr/web/?depart=18&position=2&sub=professor&top=member"
+    ],
+    "allowed_hosts": [
+      "ids.postech.ac.kr",
+      "gscst.postech.ac.kr"
+    ],
+    "render": false,
+    "max_depth": 2,
+    "faculty_card_selectors": [],
+    "name_selectors": [],
+    "email_selectors": [],
+    "lab_name_selectors": [],
+    "lab_link_selectors": [],
+    "field_selectors": [],
+    "location_selectors": [],
+    "phone_selectors": [],
+    "image_selectors": [],
+    "summary_selectors": [],
+    "keyword_selectors": [],
+    "lab_overrides": {}
+  }
+}
