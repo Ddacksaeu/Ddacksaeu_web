@@ -97,3 +97,10 @@ records. Future recommendation responses will expose the persisted score
 breakdown and reason from `recommendations`; these are fixture data only until
 a separately scoped calculation service is implemented. Crawl and admission
 tables are provenance records and do not enable crawling or admission APIs.
+
+## Admission calendar API (2026-07-18)
+
+`GET /admissions` and `GET /admissions/export.ics` accept composable
+`start_at`, `end_at`, `university_id`, `department_id`, and `event_type`
+filters. Events are ordered by `start_at` and expose provenance, fixture
+estimate status, and derived imminent-deadline/ended flags.

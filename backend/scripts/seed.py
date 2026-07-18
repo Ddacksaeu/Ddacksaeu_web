@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import UTC, date, datetime
+from datetime import UTC, datetime
 from typing import Any, TypeVar
 
 from sqlalchemy.orm import Session
@@ -253,18 +253,48 @@ def seed_database(session: Session) -> None:
         reason="Fixture recommendation; it is not a real admission or research assessment.",
         score_breakdown={"origin": "fixture", "version": "fixture-v1"},
     )
-    add_if_missing(
-        session,
-        AdmissionEvent,
-        "fixture-postech-admission-event",
-        id="fixture-postech-admission-event",
-        university_id="fixture-postech",
-        title="Fixture Graduate Admission Timeline",
-        event_date=date(2026, 9, 1),
-        source_url=FIXTURE_SOURCE_URL,
-        source_checked_at=FIXTURE_CHECKED_AT,
-        origin="fixture",
-    )
+    for event_id, university_id, department_id, title, event_type, start_at in (
+        (
+            "fixture-snu-admission-event",
+            "fixture-seoul-national",
+            "fixture-snu-cse",
+            "Fixture SNU application deadline",
+            "application_deadline",
+            datetime(2026, 8, 15, tzinfo=UTC),
+        ),
+        (
+            "fixture-kaist-admission-event",
+            "fixture-kaist",
+            "fixture-kaist-ai",
+            "Fixture KAIST interview",
+            "interview",
+            datetime(2026, 8, 20, tzinfo=UTC),
+        ),
+        (
+            "fixture-postech-admission-event",
+            "fixture-postech",
+            "fixture-postech-cse",
+            "Fixture POSTECH schedule",
+            "schedule",
+            datetime(2026, 9, 1, tzinfo=UTC),
+        ),
+    ):
+        add_if_missing(
+            session,
+            AdmissionEvent,
+            event_id,
+            id=event_id,
+            university_id=university_id,
+            department_id=department_id,
+            title=title,
+            event_type=event_type,
+            start_at=start_at,
+            description="Fictional fixture admission event; not a real confirmed schedule.",
+            is_estimated=True,
+            source_url=FIXTURE_SOURCE_URL,
+            last_verified_at=FIXTURE_CHECKED_AT,
+            origin="fixture",
+        )
     session.flush()
     add_if_missing(
         session,
