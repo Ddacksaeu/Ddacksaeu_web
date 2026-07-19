@@ -308,67 +308,79 @@ def import_postech(
             report,
             "universities",
         )
+        departments_by_id: dict[str, Department] = {}
+        professors_by_id: dict[str, Professor] = {}
+        labs_by_id: dict[str, Lab] = {}
+        keywords_by_normalized: dict[str, Keyword] = {}
         for item in valid_labs:
-            _upsert(
-                session,
-                Department,
-                item.department_id,
-                {"university_id": POSTECH_ID, "name": item.department_name},
-                report,
-                "departments",
-            )
-            _upsert(
-                session,
-                Professor,
-                item.professor_id,
-                {
-                    "university_id": POSTECH_ID,
-                    "department_id": item.department_id,
-                    "name": item.professor_name,
-                    "profile_url": item.profile_url,
-                    "source_url": item.source_url,
-                    "source_checked_at": item.fetched_at,
-                },
-                report,
-                "professors",
-            )
-            lab = _upsert(
-                session,
-                Lab,
-                item.id,
-                {
-                    "professor_id": item.professor_id,
-                    "name": item.name,
-                    "professor_name": item.professor_name,
-                    "department": item.department_name,
-                    "field": item.field,
-                    "homepage_url": item.homepage_url,
-                    "location": item.location,
-                    "contact_email": item.email,
-                    "summary_text": item.summary,
-                    "summary_origin": "source",
-                    "source_url": item.source_url,
-                    "source_checked_at": item.fetched_at,
-                    "source_type": "postech_csv",
-                    "import_batch_id": batch_id,
-                    "validation_status": "valid",
-                },
-                report,
-                "labs",
-            )
+            if item.department_id not in departments_by_id:
+                departments_by_id[item.department_id] = _upsert(
+                    session,
+                    Department,
+                    item.department_id,
+                    {"university_id": POSTECH_ID, "name": item.department_name},
+                    report,
+                    "departments",
+                )
+            if item.professor_id not in professors_by_id:
+                professors_by_id[item.professor_id] = _upsert(
+                    session,
+                    Professor,
+                    item.professor_id,
+                    {
+                        "university_id": POSTECH_ID,
+                        "department_id": item.department_id,
+                        "name": item.professor_name,
+                        "profile_url": item.profile_url,
+                        "source_url": item.source_url,
+                        "source_checked_at": item.fetched_at,
+                    },
+                    report,
+                    "professors",
+                )
+            lab = labs_by_id.get(item.id)
+            if lab is None:
+                lab = _upsert(
+                    session,
+                    Lab,
+                    item.id,
+                    {
+                        "professor_id": item.professor_id,
+                        "name": item.name,
+                        "professor_name": item.professor_name,
+                        "department": item.department_name,
+                        "field": item.field,
+                        "homepage_url": item.homepage_url,
+                        "location": item.location,
+                        "contact_email": item.email,
+                        "summary_text": item.summary,
+                        "summary_origin": "source",
+                        "source_url": item.source_url,
+                        "source_checked_at": item.fetched_at,
+                        "source_type": "postech_csv",
+                        "import_batch_id": batch_id,
+                        "validation_status": "valid",
+                    },
+                    report,
+                    "labs",
+                )
+                labs_by_id[item.id] = lab
             for term in item.keywords:
                 normalized = normalize_term(term)
                 if not normalized:
                     continue
-                keyword = session.scalar(
-                    select(Keyword).where(Keyword.normalized_term == normalized)
-                )
+                keyword = keywords_by_normalized.get(normalized)
+                if keyword is None:
+                    keyword = session.scalar(
+                        select(Keyword).where(Keyword.normalized_term == normalized)
+                    )
                 if keyword is None:
                     keyword = Keyword(
                         id=_keyword_id(term), term_ko=term, term_en=None, normalized_term=normalized
                     )
                     session.add(keyword)
                     report.created["keywords"] += 1
+                keywords_by_normalized[normalized] = keyword
                 if not session.get(LabKeyword, {"lab_id": lab.id, "keyword_id": keyword.id}):
                     session.add(LabKeyword(lab_id=lab.id, keyword_id=keyword.id))
         session.flush()
