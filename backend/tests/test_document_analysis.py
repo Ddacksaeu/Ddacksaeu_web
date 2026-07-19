@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from types import SimpleNamespace
-
 from fastapi.testclient import TestClient
 from sqlalchemy import select
 from sqlalchemy.orm import Session, sessionmaker
@@ -88,47 +86,102 @@ def test_rejects_scanned_pdf_before_openai_call(client: TestClient, monkeypatch)
     assert response.json()["error"]["code"] == "scanned_pdf"
 
 
-def test_openai_structured_output_client_is_mocked(monkeypatch) -> None:
-    parsed = _analysis()
-    fake_client = SimpleNamespace(
-        beta=SimpleNamespace(
-            chat=SimpleNamespace(
-                completions=SimpleNamespace(
-                    parse=lambda **_: SimpleNamespace(
-                        choices=[SimpleNamespace(message=SimpleNamespace(parsed=parsed))]
-                    )
-                )
+def test_local_analysis_is_deterministic_without_api_key() -> None:
+    text = "B.S. Computer Science\nResearch project: Computer Vision with Python and PyTorch"
+    first = service.analyze_document_text(text)
+    second = service.analyze_document_text(text)
+
+    assert first == second
+    assert "Python" in first.skills
+    assert "Computer Vision" in first.research_interests
+    assert first.keywords
+
+
+def test_latest_analysis_is_authenticated_and_user_isolated(
+    client: TestClient, monkeypatch
+) -> None:
+    monkeypatch.setattr(
+        "app.api.v1.documents.extract_txt_text",
+        lambda *_: "Computer Vision Python PyTorch research project " * 5,
+    )
+    first = client.post(
+        "/api/v1/auth/signup",
+        json={"email": "first-cv@example.com", "password": "secure-password-123", "name": "First"},
+    ).json()
+    second = client.post(
+        "/api/v1/auth/signup",
+        json={
+            "email": "second-cv@example.com",
+            "password": "secure-password-123",
+            "name": "Second",
+        },
+    ).json()
+    headers = {"Authorization": f"Bearer {first['access_token']}"}
+    uploaded = client.post(
+        "/api/v1/documents/analyze",
+        headers=headers,
+        files={
+            "file": (
+                "cv.txt",
+                b"Computer Vision Python PyTorch research project " * 5,
+                "text/plain",
             )
-        )
-    )
-    monkeypatch.setattr(service, "get_openai_client", lambda *_: fake_client)
-
-    result = service.analyze_document_text(
-        "Enough CV text", api_key="test-key", model="test-model", timeout_seconds=1
+        },
     )
 
-    assert result == parsed
-
-
-def test_invalid_openai_structured_output_is_handled(monkeypatch) -> None:
-    fake_client = SimpleNamespace(
-        beta=SimpleNamespace(
-            chat=SimpleNamespace(
-                completions=SimpleNamespace(
-                    parse=lambda **_: SimpleNamespace(
-                        choices=[SimpleNamespace(message=SimpleNamespace(parsed=None))]
-                    )
-                )
-            )
-        )
+    assert uploaded.status_code == 201
+    assert uploaded.json()["analyzer_origin"] == "local_rule_based"
+    assert client.get("/api/v1/documents/latest", headers=headers).status_code == 200
+    assert (
+        client.get("/api/v1/documents", headers=headers).json()[0]["document_id"]
+        == uploaded.json()["document_id"]
     )
-    monkeypatch.setattr(service, "get_openai_client", lambda *_: fake_client)
+    assert (
+        client.get(
+            "/api/v1/documents/latest",
+            headers={"Authorization": f"Bearer {second['access_token']}"},
+        ).status_code
+        == 404
+    )
+    assert (
+        client.post(
+            "/api/v1/documents/analyze", files={"file": ("cv.txt", b"text", "text/plain")}
+        ).status_code
+        == 401
+    )
 
-    try:
-        service.analyze_document_text(
-            "Enough CV text", api_key="test-key", model="test-model", timeout_seconds=1
-        )
-    except service.DocumentProcessingError as error:
-        assert error.code == "invalid_openai_response"
-    else:
-        raise AssertionError("Expected structured output failure")
+
+def test_txt_and_invalid_upload_validation(client: TestClient) -> None:
+    account = client.post(
+        "/api/v1/auth/signup",
+        json={
+            "email": "validation@example.com",
+            "password": "secure-password-123",
+            "name": "Validation",
+        },
+    ).json()
+    headers = {"Authorization": f"Bearer {account['access_token']}"}
+    assert (
+        client.post(
+            "/api/v1/documents/analyze",
+            headers=headers,
+            files={"file": ("bad.exe", b"x" * 600, "application/octet-stream")},
+        ).status_code
+        == 415
+    )
+    assert (
+        client.post(
+            "/api/v1/documents/analyze",
+            headers=headers,
+            files={"file": ("empty.txt", b"", "text/plain")},
+        ).status_code
+        == 422
+    )
+    assert (
+        client.post(
+            "/api/v1/documents/analyze",
+            headers=headers,
+            files={"file": ("image.pdf", b"%PDF-1.7\n", "application/pdf")},
+        ).status_code
+        == 422
+    )

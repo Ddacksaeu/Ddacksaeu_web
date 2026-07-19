@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, File, Request, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile
 from fastapi.responses import JSONResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -20,7 +20,9 @@ from app.schemas.documents import DocumentAnalysisResponse
 from app.services.document_analysis import (
     DocumentProcessingError,
     analyze_document_text,
-    extract_docx_text, extract_pdf_text, extract_txt_text,
+    extract_docx_text,
+    extract_pdf_text,
+    extract_txt_text,
 )
 
 router = APIRouter(prefix="/documents", tags=["documents"])
@@ -40,7 +42,9 @@ def _validate_upload(file: UploadFile, content: bytes, settings: Settings) -> No
         raise DocumentProcessingError("invalid_filename", 422, "The filename is too long")
     extension = Path(filename).suffix.lower()
     if extension not in {".pdf", ".docx", ".txt"}:
-        raise DocumentProcessingError("invalid_file_type", 415, "Only PDF, DOCX, and TXT files are supported")
+        raise DocumentProcessingError(
+            "invalid_file_type", 415, "Only PDF, DOCX, and TXT files are supported"
+        )
     if len(content) > settings.document_max_upload_bytes:
         raise DocumentProcessingError(
             "file_too_large", 413, "The file exceeds the upload size limit"
@@ -71,7 +75,11 @@ def analyze_document(
         content = file.file.read(settings.document_max_upload_bytes + 1)
         _validate_upload(file, content, settings)
         extension = Path(file.filename or "").suffix.lower()
-        extracted_text = {".pdf": extract_pdf_text, ".docx": extract_docx_text, ".txt": extract_txt_text}[extension](content, settings.document_min_extracted_characters)
+        extracted_text = {
+            ".pdf": extract_pdf_text,
+            ".docx": extract_docx_text,
+            ".txt": extract_txt_text,
+        }[extension](content, settings.document_min_extracted_characters)
         document = create_uploaded_document(
             db,
             user_id=user.id,
@@ -87,6 +95,11 @@ def analyze_document(
         return DocumentAnalysisResponse(
             document_id=document.id,
             analysis_id=analysis.id,
+            original_filename=document.original_filename,
+            file_type=document.content_type,
+            file_size=document.byte_size,
+            analyzer_origin=analysis.analysis_origin or "local_rule_based",
+            warnings=analysis.warnings_json,
             **result.model_dump(),
         )
     except DocumentProcessingError as error:
@@ -98,9 +111,50 @@ def analyze_document(
 
 
 @router.get("/latest", response_model=DocumentAnalysisResponse)
-def latest_analysis(user: User = Depends(current_user), db: Session = Depends(get_db_session)) -> DocumentAnalysisResponse:
-    row = db.execute(select(DocumentAnalysis, UploadedDocument).join(UploadedDocument).where(UploadedDocument.user_id == user.id, DocumentAnalysis.status == "completed").order_by(DocumentAnalysis.created_at.desc())).first()
+def latest_analysis(
+    user: User = Depends(current_user), db: Session = Depends(get_db_session)
+) -> DocumentAnalysisResponse:
+    row = db.execute(
+        select(DocumentAnalysis, UploadedDocument)
+        .join(UploadedDocument)
+        .where(UploadedDocument.user_id == user.id, DocumentAnalysis.status == "completed")
+        .order_by(DocumentAnalysis.created_at.desc())
+    ).first()
     if row is None:
-        raise DocumentProcessingError("analysis_not_found", 404, "No completed CV analysis exists")
+        raise HTTPException(status_code=404, detail="No completed CV analysis exists")
     analysis, document = row
-    return DocumentAnalysisResponse(document_id=document.id, analysis_id=analysis.id, education=[], skills=analysis.skills_json, projects=analysis.projects_json, research_experience=[], research_interests=analysis.methodologies_json, strengths=[], missing_information=[], keywords=analysis.keywords_json, keyword_weights={}, short_summary="Local rule-based analysis result")
+    return DocumentAnalysisResponse(
+        document_id=document.id,
+        analysis_id=analysis.id,
+        original_filename=document.original_filename,
+        file_type=document.content_type,
+        file_size=document.byte_size,
+        analyzer_origin=analysis.analysis_origin or "local_rule_based",
+        warnings=analysis.warnings_json,
+        **analysis.structured_analysis_json,
+    )
+
+
+@router.get("", response_model=list[DocumentAnalysisResponse])
+def analysis_history(
+    user: User = Depends(current_user), db: Session = Depends(get_db_session)
+) -> list[DocumentAnalysisResponse]:
+    rows = db.execute(
+        select(DocumentAnalysis, UploadedDocument)
+        .join(UploadedDocument)
+        .where(UploadedDocument.user_id == user.id, DocumentAnalysis.status == "completed")
+        .order_by(DocumentAnalysis.created_at.desc())
+    ).all()
+    return [
+        DocumentAnalysisResponse(
+            document_id=document.id,
+            analysis_id=analysis.id,
+            original_filename=document.original_filename,
+            file_type=document.content_type,
+            file_size=document.byte_size,
+            analyzer_origin=analysis.analysis_origin or "local_rule_based",
+            warnings=analysis.warnings_json,
+            **analysis.structured_analysis_json,
+        )
+        for analysis, document in rows
+    ]

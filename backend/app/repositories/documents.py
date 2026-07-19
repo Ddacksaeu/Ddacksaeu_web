@@ -39,6 +39,7 @@ def create_uploaded_document(
 def create_completed_analysis(
     db: Session, *, document: UploadedDocument, result: StructuredDocumentAnalysis
 ) -> DocumentAnalysis:
+    payload = result.model_dump(mode="json")
     analysis = DocumentAnalysis(
         document_id=document.id,
         status="completed",
@@ -48,6 +49,9 @@ def create_completed_analysis(
         projects_json=[project.model_dump() for project in result.projects],
         completeness=max(0, min(100, 100 - len(result.missing_information) * 10)),
         analysis_origin="local_rule_based",
+        structured_analysis_json=payload,
+        search_text=" ".join(result.keywords + result.skills + result.research_interests),
+        warnings_json=[],
     )
     document.status = "completed"
     db.add(analysis)
@@ -68,6 +72,9 @@ def create_failed_analysis(db: Session, *, document: UploadedDocument, error_cod
             projects_json=[],
             analysis_origin="local_rule_based",
             error_code=error_code,
+            structured_analysis_json={},
+            search_text="",
+            warnings_json=[],
         )
     )
     db.commit()

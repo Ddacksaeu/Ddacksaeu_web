@@ -14,10 +14,21 @@ POSTECH. Their source URL is `example.invalid`; no real email, professor,
 publication, or admission schedule is claimed.
 
 FastAPI and synchronous SQLAlchemy 2 foundation for the POSTECH Lab Finder MVP.
-`POST /api/v1/documents/analyze` accepts a PDF CV or portfolio, extracts and
-normalizes its text, requests a structured OpenAI analysis, and stores the
-private upload plus the fields supported by the current document schema. The
-API has no frontend integration in this stage.
+
+## Local CV analysis
+
+`POST /api/v1/documents/analyze` accepts authenticated PDF, DOCX, and TXT CVs
+(maximum 10 MiB). It uses `LocalRuleBasedCvAnalyzer`: deterministic section and
+keyword rules, not GPT/OpenAI or any paid external API. No API key is required.
+`GET /api/v1/documents/latest` returns the current user's latest completed
+analysis and `GET /api/v1/documents` returns that user's history.
+
+Run `alembic upgrade head` after pulling the project to apply the local-CV
+analysis migration. Image-only PDFs return a 4xx response because OCR is out of
+scope. Uploads use a random private storage key; CV text is not logged or stored
+as a database field. The structured result and a derived keyword search text are
+stored per user. `app.services.cv_lab_similarity` provides deterministic local
+TF-IDF/cosine similarity for reuse by recommendations.
 
 ## Setup
 
