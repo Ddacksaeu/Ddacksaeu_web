@@ -10,7 +10,7 @@ export const AdmissionScheduleSchema = z.object({
   timezone: z.literal("Asia/Seoul"),
   sourceLabel: z.literal("Official admissions website"),
   officialSourceUrl: z.url(),
-  scheduleNote: z.literal("Fictional schedule for the hackathon demo"),
+  scheduleNote: z.literal("Verify this date on the official admissions website before applying."),
 });
 
 export type AdmissionSchedule = z.infer<typeof AdmissionScheduleSchema>;

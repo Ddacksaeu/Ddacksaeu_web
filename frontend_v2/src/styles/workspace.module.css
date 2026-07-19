@@ -18,6 +18,7 @@
 .fileName { min-width:0; overflow:hidden; color:#4e5968; font-size:12px; font-weight:500; text-overflow:ellipsis; white-space:nowrap; }
 .fileHelp { color:#8b95a1; font-size:12px; font-weight:400; }
 .buttonRow { display:flex; gap:10px; margin-top:22px; }
+.regenerate { margin-top:12px; }
 .primary,.secondary { display:inline-flex; min-height:48px; flex:1; align-items:center; justify-content:center; border-radius:11px; font-size:14px; font-weight:750; cursor:pointer; }
 .primary { border:0; color:#fff; background:#3182f6; }
 .primary:disabled { color:#8b95a1; background:#e5e8eb; cursor:not-allowed; }

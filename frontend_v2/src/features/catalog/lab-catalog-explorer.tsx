@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { profileWorkspaceSchema } from "../profile/profile-client-contract";
+import { ProfessorSaveIcon } from "../professors/professor-save-icon";
 import type { LabCatalogEntry } from "../../server/catalog/schema";
 import { filterCatalog, type CatalogFilters } from "./catalog-filter";
 
@@ -30,23 +31,28 @@ type LabCardProperties = Readonly<{
 
 function LabCard({ lab, saved, saving, ready, onToggleSaved }: LabCardProperties) {
   const checkedDate = CATALOG_DATE_FORMATTER.format(new Date(lab.verifiedAt));
+  const saveButtonLabel = !ready
+    ? "Checking saved state"
+    : saving
+      ? saved ? "Removing saved professor" : "Saving professor"
+      : saved ? "Remove saved professor" : "Save professor";
 
   return (
     <article className="catalog-card">
       <div className="catalog-card-heading">
         <div>
-          <div className="catalog-card-meta"><span>{lab.institution}</span><span className="demo-badge">Demo data</span></div>
-          <h2>{lab.labName.replace(" (Demo)", "\u00a0(Demo)")}</h2><p>{lab.professor}</p>
+          <div className="catalog-card-meta"><span>{lab.institution}</span></div>
+          <h2>{lab.labName}</h2><p>{lab.professor}</p>
         </div>
         <div className="catalog-card-actions">
           <Link className="catalog-detail-link" href={"/professors/" + lab.id}>View details</Link>
-          <button className={"catalog-save-button" + (saved ? " is-saved" : "")} disabled={saving || !ready} onClick={() => void onToggleSaved(lab.id, !saved)} type="button">{!ready ? "Checking saved state" : saving ? "Saving" : saved ? "Saved" : "Save professor"}</button>
+          <button aria-busy={saving} aria-label={saveButtonLabel} aria-pressed={saved} className={"catalog-save-button" + (saved ? " is-saved" : "")} disabled={saving || !ready} onClick={() => void onToggleSaved(lab.id, !saved)} title={saveButtonLabel} type="button"><ProfessorSaveIcon saved={saved} /></button>
           <a className="catalog-lab-link" href={lab.labUrl} rel="noreferrer" target="_blank">Registered lab link<span className="catalog-visually-hidden">, new tab</span></a>
         </div>
       </div>
       <ul aria-label={lab.labName + " research keywords"} className="catalog-topic-list">{lab.topics.map((topic) => <li key={topic}>{topic}</li>)}</ul>
       <div className="catalog-source-row">
-        <span>This is fictional professor data for product testing.</span>
+        <span>Verify current details on the official source.</span>
         <div className="catalog-source-action"><a href={lab.officialSourceUrl} rel="noreferrer" target="_blank">Official institution website<span className="catalog-visually-hidden">, new tab</span></a><span className="catalog-source-date">Checked {checkedDate}</span></div>
       </div>
     </article>
@@ -94,7 +100,7 @@ export function LabCatalogExplorer({ labs, mode, initialQuery = "" }: LabCatalog
   }
 
   const heading = mode === "search" ? "Find professors aligned with your research" : "All professors";
-  const description = mode === "search" ? "Combine university, research topic, and keywords to narrow your candidates." : "Compare all demo professor candidates and review their official institutional sources.";
+  const description = mode === "search" ? "Combine university, research topic, and keywords to narrow your candidates." : "Compare professor candidates and review their official institutional sources.";
 
   return (
     <main className="catalog-page">
@@ -110,7 +116,7 @@ export function LabCatalogExplorer({ labs, mode, initialQuery = "" }: LabCatalog
           <button className="catalog-clear-button" disabled={!hasFilters} onClick={() => setFilters(EMPTY_FILTERS)} type="button">Reset filters</button>
         </section>
         <div className="catalog-results-area">
-          <div className="catalog-result-toolbar"><p aria-live="polite"><strong>{results.length}</strong> professors found</p><span>20 fictional profiles · Not real recruitment information</span></div>
+          <div className="catalog-result-toolbar"><p aria-live="polite"><strong>{results.length}</strong> professors found</p><span>Verify details with official sources</span></div>
           <p className="catalog-save-status" aria-live="polite">{saveStatus}</p>
           {results.length > 0 ? <section aria-label="Professor search results" className="catalog-grid">{results.map((lab) => <LabCard key={lab.id} lab={lab} onToggleSaved={toggleSaved} ready={profileReady} saved={savedIdSet.has(lab.id)} saving={savingId === lab.id} />)}</section> : <section className="catalog-empty" role="status"><h2>No professors match these filters</h2><p>Shorten your query or reset the university and research topic filters.</p><button onClick={() => setFilters(EMPTY_FILTERS)} type="button">View all professors</button></section>}
         </div>

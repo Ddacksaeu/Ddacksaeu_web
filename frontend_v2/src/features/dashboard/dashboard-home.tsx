@@ -124,8 +124,8 @@ export function DashboardHome() {
                   {hasPersonalizedMatches
                     ? "Ordered by exact overlap with your saved research topics."
                     : workspaceFailed
-                      ? "Starter recommendations from the demo catalog. Saved personalization is temporarily unavailable."
-                    : "Starter recommendations from the demo catalog. Add profile topics to personalize this list."}
+                      ? "Starter recommendations from the current catalog. Saved personalization is temporarily unavailable."
+                    : "Starter recommendations from the current catalog. Add profile topics to personalize this list."}
                 </p>
               </div>
               <Link className={styles["sectionAction"]} href="/professors">View all</Link>
@@ -142,7 +142,7 @@ export function DashboardHome() {
                     <div className={styles["professorInfo"]}>
                       <div className={styles["professorTopline"]}>
                         <h3>{lab.professor}</h3>
-                        <span>Demo catalog</span>
+                        <span>Current catalog</span>
                       </div>
                       <p>{lab.institution} · {lab.labName}</p>
                       <div aria-label={`Research topics for ${lab.professor}`} className={styles["topicRow"]}>
@@ -166,7 +166,7 @@ export function DashboardHome() {
             <div className={styles["sectionHeader"]}>
               <div>
                 <h2 id="recruitment-title">Labs with recruitment to verify</h2>
-                <p>Demo leads only. Check the lab or university source before contacting a professor.</p>
+                <p>Check the lab or university source before contacting a professor.</p>
               </div>
               <Link className={styles["sectionAction"]} href="/professors">Change filters</Link>
             </div>
@@ -227,7 +227,7 @@ export function DashboardHome() {
                 </li>
               ))}
             </ol>
-            <p className={styles["demoNote"]}>Demo dates · verify on the official admissions site.</p>
+            <p className={styles["demoNote"]}>Verify dates on the official admissions site.</p>
           </section>
 
           <section className={`${styles["overviewSection"]} ${styles["savedOverview"]}`}>

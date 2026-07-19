@@ -27,8 +27,8 @@ export default async function ProfessorDetailPage({ params }: ProfessorDetailPag
         <Link className={styles["link"]} href="/professors">Back to professor search</Link>
         <section className={styles["detailHero"]}>
           <div>
-            <div className={styles["meta"]}><span>{professor.institution}</span><span>Demo profile · Source verification required</span></div>
-            <h1>{professor.labName.replace(" (Demo)", "\u00a0(Demo)")}</h1><p>{professor.professor}</p>
+            <div className={styles["meta"]}><span>{professor.institution}</span><span>Source verification required</span></div>
+            <h1>{professor.labName}</h1><p>{professor.professor}</p>
             <ul className={styles["topics"]}>{professor.topics.map((topic) => <li key={topic}>{topic}</li>)}</ul>
           </div>
           <aside className={styles["sideCard"]}>
@@ -39,8 +39,8 @@ export default async function ProfessorDetailPage({ params }: ProfessorDetailPag
         </section>
         <div className={styles["detailGrid"]}>
           <ProfessorDetailSections detail={detail} professor={professor} />
-          <section className={styles["section"] + " " + styles["fullSection"]} id="contact-draft">
-            <div className={styles["sectionHeading"]}><span>CONTACT WORKSPACE</span><h2>Outreach email draft</h2></div>
+          <section className={styles["section"] + " " + styles["fullSection"] + " " + styles["contactSection"]} id="contact-draft">
+            <div className={styles["sectionHeading"]}><span>Contact workspace</span><h2>Outreach email draft</h2></div>
             <p>Use the professor’s research and your profile when available, then edit the draft yourself.</p>
             <ContactWorkspace initialProfessor={professor.professor} />
           </section>

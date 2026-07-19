@@ -28,16 +28,18 @@ export function AppHeader({ current, setup = false }: AppHeaderProperties) {
 
   return (
     <header className="site-header">
-      <Link className="brand" href={setup ? "/onboarding" : workspace ? "/dashboard" : "/"}>Ddaksaeu</Link>
-      <nav aria-label="Main navigation" className="main-nav">
-        {workspace ? ITEMS.map((item) => (
-          <Link aria-current={item.id === current ? "page" : undefined} href={item.href} key={item.id}>
-            {item.label}
-          </Link>
-        )) : null}
-        {setup ? <span className="header-status">Onboarding</span> : null}
-        {workspace || setup ? <button className="logout-button" onClick={logout} type="button">Sign out</button> : <Link href="/login">Sign in</Link>}
-      </nav>
+      <div className="site-header-inner">
+        <Link className="brand" href={setup ? "/onboarding" : workspace ? "/dashboard" : "/"}>Ddaksaeu</Link>
+        <nav aria-label="Main navigation" className="main-nav">
+          {workspace ? ITEMS.map((item) => (
+            <Link aria-current={item.id === current ? "page" : undefined} href={item.href} key={item.id}>
+              {item.label}
+            </Link>
+          )) : null}
+          {setup ? <span className="header-status">Onboarding</span> : null}
+          {workspace || setup ? <button className="logout-button" onClick={logout} type="button">Sign out</button> : <Link href="/login">Sign in</Link>}
+        </nav>
+      </div>
     </header>
   );
 }

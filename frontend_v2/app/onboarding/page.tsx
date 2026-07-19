@@ -42,7 +42,7 @@ export default function OnboardingPage() {
       completeDemoOnboarding(window.localStorage);
       router.push("/dashboard");
     } catch {
-      setStatus("Could not save your setup. Check the CV format and try again.");
+      setStatus("Could not save your setup. Please try again.");
       setSaving(false);
     }
   }

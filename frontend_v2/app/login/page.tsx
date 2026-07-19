@@ -18,7 +18,7 @@ export default function LoginPage() {
           <label className={styles["field"]}>Username<input autoComplete="username" placeholder="Enter any username" required type="text" /></label>
           <label className={styles["field"]}>Password<input autoComplete="current-password" placeholder="Enter any password" required type="password" /></label>
           <button className={styles["primary"]} type="submit">Sign in</button>
-          <p className={styles["legal"]}>This is a demo. Your credentials are not stored or <span className={styles["keep"]}>sent.</span></p>
+          <p className={styles["legal"]}>Your credentials are not stored or <span className={styles["keep"]}>sent.</span></p>
         </form>
       </main>
     </div>

@@ -52,7 +52,7 @@ export function DemoAuthBoundary({ children }: DemoAuthBoundaryProperties) {
   }, [pathname, protectedRoute, router]);
 
   if (!ready) {
-    return <main className="auth-gate-status" role="status">Checking your demo session.</main>;
+    return <main className="auth-gate-status" role="status">Checking your session.</main>;
   }
 
   return children;
