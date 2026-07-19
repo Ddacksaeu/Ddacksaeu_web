@@ -14,8 +14,9 @@ test.describe("release API smoke", () => {
     await page.getByLabel("Select CV file").setInputFiles({ name: "release-smoke.txt", mimeType: "text/plain", buffer: Buffer.from("Computer vision and machine learning researcher with Python experience. Built a robotics perception project, evaluated neural models, documented reproducible experiments, and presented results to a faculty research group.") });
     await page.getByRole("button", { name: "Upload and analyze" }).click(); await expect(page.getByText("CV uploaded and analyzed successfully.")).toBeVisible();
     await page.goto("/professors"); await page.getByRole("button", { name: "Match with my CV" }).click();
-    await expect(page.getByRole("heading", { name: "Recommendations" })).toBeVisible();
-    const firstLab = page.getByRole("link", { name: "View details" }).first(); await expect(firstLab).toBeVisible(); await firstLab.click();
+    const recommendations = page.getByRole("region", { name: "CV-based lab recommendations" });
+    await expect(recommendations.getByRole("heading", { name: "Recommended for you" })).toBeVisible();
+    const firstLab = recommendations.getByRole("link", { name: "View details" }).first(); await expect(firstLab).toBeVisible(); await firstLab.click();
     await page.getByRole("button", { name: "Save lab" }).click(); await expect(page.getByText("Saved lab.")).toBeVisible(); await page.reload();
     await expect(page.getByRole("button", { name: "Remove saved lab" })).toBeVisible();
     await page.getByRole("link", { name: "Create contact email draft" }).click(); await expect(page.getByRole("heading", { name: "Outreach email draft" })).toBeVisible();
