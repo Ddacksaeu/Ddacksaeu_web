@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from datetime import date, datetime
+from datetime import date as Date
+from datetime import datetime
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -44,7 +45,7 @@ EventKind = Literal["apply", "contact", "docs", "interview"]
 class CalendarEventCreate(ApiSchema):
     title: str = Field(min_length=1, max_length=200)
     kind: EventKind
-    date: date
+    date: Date
     lab_id: str | None = Field(default=None, max_length=120)
     memo: str | None = Field(default=None, max_length=2_000)
 
@@ -52,7 +53,7 @@ class CalendarEventCreate(ApiSchema):
 class CalendarEventUpdate(ApiSchema):
     title: str | None = Field(default=None, min_length=1, max_length=200)
     kind: EventKind | None = None
-    date: date | None = None
+    date: Date | None = None
     lab_id: str | None = Field(default=None, max_length=120)
     memo: str | None = Field(default=None, max_length=2_000)
 

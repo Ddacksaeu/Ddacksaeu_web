@@ -25,10 +25,11 @@ live data is available.
 
 ## Backend quick start
 
-The backend foundation lives in `backend/`; it uses FastAPI, synchronous
-SQLAlchemy 2, Alembic, PostgreSQL in Docker/production, and SQLite for local
-tests. It currently serves `GET /api/v1/health` only; no frontend mock data is
-modified or treated as production data.
+The backend lives in `backend/`; it uses FastAPI, synchronous SQLAlchemy 2,
+Alembic, PostgreSQL in Docker/production, and SQLite for local development and
+tests. It provides the versioned authentication, CV analysis, lab search,
+recommendation, saved-lab, calendar, admission ICS, and email-draft APIs used
+by `frontend_v2`.
 
 ```powershell
 cd backend
@@ -36,12 +37,14 @@ python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install -e ".[dev]"
 alembic upgrade head
-python -m scripts.seed
+# Use one data source only. This imports validated POSTECH crawler data into
+# the empty local database and retains the 10 newest publications per lab.
+python -m scripts.import_postech --max-publications-per-lab 10
 uvicorn app.main:app --host 127.0.0.1 --port 8000
 ```
 
 Run `ruff format --check .`, `ruff check .`, and `pytest` from `backend/`.
-See `backend/README.md` for migration, seed, environment, and Docker commands.
+See `backend/README.md` for fixture-only seed, migration, environment, and Docker commands.
 
 ```text
 .

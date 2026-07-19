@@ -4,8 +4,8 @@ Revision ID: 20260719_0004
 Revises: 20260718_0003
 """
 
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 
 revision = "20260719_0004"
 down_revision = "20260718_0003"
@@ -14,9 +14,23 @@ depends_on = None
 
 
 def upgrade() -> None:
-    op.add_column("document_analyses", sa.Column("structured_analysis_json", sa.JSON(), nullable=False, server_default=sa.text("'{}'")))
-    op.add_column("document_analyses", sa.Column("search_text", sa.Text(), nullable=False, server_default=""))
-    op.add_column("document_analyses", sa.Column("warnings_json", sa.JSON(), nullable=False, server_default=sa.text("'[]'")))
+    op.add_column(
+        "document_analyses",
+        sa.Column(
+            "structured_analysis_json",
+            sa.JSON(),
+            nullable=False,
+            server_default=sa.text("'{}'"),
+        ),
+    )
+    op.add_column(
+        "document_analyses",
+        sa.Column("search_text", sa.Text(), nullable=False, server_default=""),
+    )
+    op.add_column(
+        "document_analyses",
+        sa.Column("warnings_json", sa.JSON(), nullable=False, server_default=sa.text("'[]'")),
+    )
 
 
 def downgrade() -> None:
