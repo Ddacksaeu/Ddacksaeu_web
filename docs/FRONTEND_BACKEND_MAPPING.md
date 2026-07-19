@@ -18,6 +18,25 @@ public, but only an authenticated request receives that user's favorite/recommen
 | `/recommendations` | `POST /documents/analyze`, `/recommendations/*` | JWT `sub` |
 | `/lab/$id/email` | `POST /email/draft` | JWT `sub` |
 
+## Frontend_v2 authentication and lab discovery integration (planned)
+
+`frontend_v2` is the Next.js UI selected for the next integration slice. It
+uses server-side route handlers as a BFF: the backend JWT is stored only in an
+HttpOnly same-site cookie, and browser code calls `/api/backend/*` rather than
+the FastAPI origin directly. This keeps the backend origin and bearer token out
+of browser storage.
+
+| Frontend_v2 surface | BFF route | Backend API |
+| --- | --- | --- |
+| Login and sign-up | `POST /api/auth/login`, `POST /api/auth/signup` | `POST /auth/login`, `POST /auth/signup` |
+| Sign-out | `POST /api/auth/logout` | Clears local session cookie only |
+| Professor search | `GET /api/backend/labs` | `GET /labs` |
+| Professor detail | `GET /api/backend/labs/{id}` | `GET /labs/{id}` |
+| Saved professors | `GET`, `PUT`, `DELETE /api/backend/me/favorites/*` | `/me/favorites/*` |
+
+The existing owner-cookie `/api/profile`, CV, calendar, and contact draft
+flows remain separate until their API contracts are migrated in later slices.
+
 ## 현재 라우트와 필요한 API
 
 | 화면 | 현재 데이터·상태 | MVP에서 바로 구현할 API | 해커톤 이후 구현 또는 확장 |
@@ -118,6 +137,24 @@ its Lovable mock state until a later API-integration task.
 `Lab.matchScore` in the current frontend mock is not persisted on `labs`.
 Future API responses must read a user-specific `Recommendation` instead. All
 records inserted by the development seed are explicitly fictional fixtures.
+
+## POSTECH crawler import mapping (2026-07-19)
+
+`Crawler/data/labs.csv` is the raw authoritative input for the catalogue:
+`researcher_id -> professors.id`, `department_id -> departments.id`, and
+`lab_id -> labs.id`. `research_summary`, `primary_field`, and semicolon-delimited
+`keywords` populate the existing search/recommendation fields. The importer maps
+`research_outputs.csv` only to `papers` because the current recommendation service
+uses paper title, abstract/summary, and keyword text; source outputs are attached by
+`lab_id`. Every imported lab and paper carries `source_url`, checked/crawled time,
+`source_type=postech_csv`, an `import_batch_id`, and `validation_status=valid`.
+
+`GET /api/v1/labs`, `GET /api/v1/labs/{id}`, and `GET /api/v1/labs/{id}/similar`
+already query ORM entities rather than fixtures, so they use POSTECH data whenever
+the selected database is imported. `GET /api/v1/recommendations` reads the same
+labs, keywords, and limited recent papers without changing recommendation weights.
+The raw catalogue has same-name professors in different departments, so the professor
+identity constraint is `(university_id, department_id, name)` rather than university/name.
 
 ## Lab search API implementation (2026-07-18)
 
@@ -224,7 +261,27 @@ fixture. No real dates, event types, URLs, descriptions, or estimate flags may
 be inferred from it. After the schema migration, fixture seed rows must retain
 `origin="fixture"` and be labelled as fixture data in every API response.
 
-## Recommendation API implementation (2026-07-18)
+## Explainable CV recommendations (Phase 3, 2026-07-19)
+
+`GET /api/v1/recommendations` is calculated for the authenticated user at
+request time. It requires that user's latest completed local CV analysis; when
+none exists it returns `409` and never reads another user's analysis. The
+Next.js professor catalogue calls it through `GET /api/backend/recommendations`,
+so the browser never receives the backend JWT.
+
+The response is deliberately not persisted. Each item includes `total_score`,
+matched and missing keywords, component scores, factual evidence, warnings,
+data completeness, and the lab data origin. Component maxima are configured in
+`backend/app/config/recommendation_weights.py`: keyword overlap 35, CV/lab
+TF-IDF 30, recent-paper TF-IDF 20, preferences 10, and freshness 5.
+
+Unavailable source data contributes zero to its own component and is reported
+as unavailable; it is never silently redistributed. The implementation uses
+only local normalization, scikit-learn TF-IDF, and rule templates. No LLM,
+embedding API, or OpenAI API is called by this recommendation flow. Fixture
+labs continue to work and are explicitly labelled in the response/UI.
+
+## Previous recommendation API implementation (2026-07-18)
 
 The backend now exposes `GET /api/v1/recommendations` for persisted results
 and `POST /api/v1/recommendations/recompute` for explicit refresh. The Lovable

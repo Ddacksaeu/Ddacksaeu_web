@@ -1,345 +1,233 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any
 
 from sqlalchemy.orm import Session
 
-from app.core.config import Settings
-from app.models import Lab, Recommendation
+from app.config.recommendation_weights import RECENT_PAPER_LIMIT, WEIGHTS
+from app.models import Lab
 from app.repositories.recommendations import RecommendationRepository
 from app.schemas.recommendations import (
+    EvidenceItem,
     RecommendationListResponse,
     RecommendationResponse,
     RecommendationScorePart,
 )
-from app.services.recommendation_similarity import (
-    DeterministicLexicalSimilarityProvider,
-    OpenAIEmbeddingSimilarityProvider,
-    SemanticSimilarityProvider,
-    tokens,
-)
-
-WEIGHTS = {
-    "keyword": 0.35,
-    "semantic": 0.30,
-    "research": 0.20,
-    "preference": 0.10,
-    "freshness": 0.05,
-}
-if round(sum(WEIGHTS.values()), 8) != 1:
-    raise RuntimeError("Recommendation weights must total 1.0")
+from app.services.cv_lab_similarity import compare_cv_to_lab
+from app.services.recommendation.normalization import normalize_term, normalize_terms
 
 
-def clamp(value: float) -> int:
-    return max(0, min(100, round(value)))
+def _round(value: float) -> float:
+    return round(max(0.0, min(100.0, value)), 1)
 
 
-def freshness_score(timestamp: datetime | None, now: datetime, half_life_days: int) -> int:
-    """A verified/crawled record loses half its freshness every configured interval."""
+def _freshness(timestamp: datetime | None, now: datetime) -> float:
     if timestamp is None:
         return 0
     if timestamp.tzinfo is None:
         timestamp = timestamp.replace(tzinfo=UTC)
-    days = max(0.0, (now - timestamp.astimezone(UTC)).total_seconds() / 86_400)
-    return clamp(100 * (0.5 ** (days / max(1, half_life_days))))
-
-
-@dataclass(frozen=True)
-class CalculatedRecommendation:
-    response: RecommendationResponse
-    record: Recommendation
+    days = max(0, (now - timestamp).days)
+    return (
+        100
+        if days <= 30
+        else 80
+        if days <= 90
+        else 60
+        if days <= 180
+        else 40
+        if days <= 365
+        else 20
+    )
 
 
 class RecommendationService:
-    def __init__(self, session: Session, settings: Settings, now: datetime | None = None) -> None:
+    def __init__(self, session: Session, now: datetime | None = None) -> None:
         self.repository = RecommendationRepository(session)
-        self.settings = settings
         self.now = now or datetime.now(UTC)
 
-    def recompute(self, user_id: str) -> RecommendationListResponse:
+    def recommend(
+        self,
+        user_id: str,
+        preferred_university: str | None = None,
+        preferred_department: str | None = None,
+        minimum_score: float | None = None,
+        limit: int = 20,
+    ) -> RecommendationListResponse:
         user = self.repository.get_user(user_id)
         if user is None:
             raise LookupError(user_id)
         analysis = self.repository.latest_analysis(user_id)
-        results = [self._calculate(user, analysis, lab) for lab in self.repository.labs()]
-        for result in results:
-            self.repository.upsert(result.record)
-        self.repository.session.commit()
-        return RecommendationListResponse(
-            items=self._sorted([result.response for result in results])
-        )
-
-    def list_persisted(self, user_id: str) -> RecommendationListResponse:
-        if self.repository.get_user(user_id) is None:
-            raise LookupError(user_id)
-        items = [self._from_record(record) for record in self.repository.persisted(user_id)]
-        return RecommendationListResponse(items=self._sorted(items))
-
-    @staticmethod
-    def _sorted(items: list[RecommendationResponse]) -> list[RecommendationResponse]:
-        return sorted(items, key=lambda item: (-item.total_score, -item.confidence, item.lab_id))
-
-    def _provider(self) -> tuple[SemanticSimilarityProvider, bool]:
-        if self.settings.recommendation_semantic_provider != "openai":
-            return DeterministicLexicalSimilarityProvider(), False
-        if not self.settings.openai_api_key:
-            return DeterministicLexicalSimilarityProvider(), True
-        try:
-            return (
-                OpenAIEmbeddingSimilarityProvider(
-                    self.settings.openai_api_key.get_secret_value(),
-                    self.settings.recommendation_embedding_model,
-                ),
-                False,
+        if analysis is None:
+            raise RuntimeError(
+                "A completed CV analysis is required before recommendations can be calculated"
             )
-        except Exception:  # provider construction must not fail a recommendation request
-            return DeterministicLexicalSimilarityProvider(), True
+        items = [
+            self._calculate(user, analysis, lab, preferred_university, preferred_department)
+            for lab in self.repository.labs()
+        ]
+        if minimum_score is not None:
+            items = [item for item in items if item.total_score >= minimum_score]
+        items.sort(
+            key=lambda item: (
+                -item.total_score,
+                -item.score_breakdown["keyword_match"].raw_score,
+                item.lab_id,
+            )
+        )
+        return RecommendationListResponse(items=items[:limit])
 
-    def _calculate(self, user: Any, analysis: Any, lab: Lab) -> CalculatedRecommendation:
+    def _calculate(
+        self, user: Any, analysis: Any, lab: Lab, university: str | None, department: str | None
+    ) -> RecommendationResponse:
+        structured = analysis.structured_analysis_json or {}
+        cv_values = (
+            list(analysis.skills_json)
+            + list(analysis.keywords_json)
+            + list(structured.get("research_interests", []))
+        )
+        cv_values += list(structured.get("keywords", []))
         profile = user.profile
-        user_terms = [(link.keyword.term_ko, link.keyword.term_en) for link in user.keywords]
-        keyword_weights = {ko: 1.0 for ko, _ in user_terms}
-        lab_terms = {
-            term
-            for link in lab.keywords
-            for term in (link.keyword.term_ko, link.keyword.term_en)
-            if term
-        }
-        normalized_lab = {term.lower() for term in lab_terms}
-        matched = sorted(
-            ko
-            for ko, en in user_terms
-            if ko.lower() in normalized_lab or (en and en.lower() in normalized_lab)
-        )
-        missing = sorted(ko for ko, _ in user_terms if ko not in matched)
-        keyword_available = bool(user_terms and lab_terms)
-        keyword_score = clamp(100 * len(matched) / len(user_terms)) if keyword_available else 0
-
-        user_text_parts = []
         if profile:
-            user_text_parts.extend(
-                profile.interests_json
-                + profile.skills_json
-                + profile.methodologies_json
-                + profile.projects_json
-            )
-        if analysis:
-            user_text_parts.extend(
-                analysis.keywords_json + analysis.skills_json + analysis.methodologies_json
-            )
-            user_text_parts.extend(
-                project.get("description", "") for project in analysis.projects_json
-            )
-        user_text = " ".join(user_text_parts)
-        lab_text = " ".join(filter(None, [lab.summary_text, lab.field, *lab_terms]))
-        semantic_available = bool(user_text.strip() and lab_text.strip())
-        provider, provider_degraded = self._provider()
-        semantic_degraded = provider_degraded
-        try:
-            semantic_score = (
-                clamp(provider.similarity(user_text, lab_text) * 100) if semantic_available else 0
-            )
-        except Exception:
-            semantic_score = clamp(
-                DeterministicLexicalSimilarityProvider().similarity(user_text, lab_text) * 100
-            )
-            semantic_degraded = True
+            cv_values += list(profile.skills_json) + list(profile.interests_json)
+        cv_terms = normalize_terms(cv_values)
+        labels = {normalize_term(value): value.strip() for value in cv_values if value.strip()}
+        lab_values = [link.keyword.term_en or link.keyword.term_ko for link in lab.keywords]
+        lab_values += [lab.field]
+        lab_terms = normalize_terms(lab_values)
+        matched = [labels[term] for term in cv_terms if term in set(lab_terms)]
+        missing = [labels[term] for term in cv_terms if term not in set(lab_terms)]
+        keyword_available = bool(cv_terms and lab_terms)
+        keyword_raw = 100 * len(matched) / len(cv_terms) if keyword_available else 0
 
-        interests = profile.interests_json if profile else []
-        research_terms = tokens(" ".join(interests))
-        papers = sorted(
-            lab.papers, key=lambda paper: (paper.published_year, paper.id), reverse=True
-        )[:3]
-        paper_scores = []
-        for paper in papers:
-            paper_text = " ".join(
+        cv_text = " ".join([analysis.search_text, *cv_values])
+        lab_text = " ".join(filter(None, [lab.summary_text, lab.field, *lab_values]))
+        similarity_available = bool(cv_text.strip() and lab_text.strip())
+        similarity_raw = (
+            compare_cv_to_lab(cv_text, lab_text).similarity_score if similarity_available else 0
+        )
+
+        interest_values = list(structured.get("research_interests", [])) + list(
+            analysis.keywords_json
+        )
+        research_text = " ".join(
+            interest_values
+            + [str(project.get("description", "")) for project in analysis.projects_json]
+        )
+        papers = sorted(lab.papers, key=lambda paper: (-paper.published_year, paper.id))[
+            :RECENT_PAPER_LIMIT
+        ]
+        paper_text = " ".join(
+            " ".join(
                 filter(None, [paper.title, paper.abstract, paper.summary, *paper.keywords_json])
             )
-            paper_scores.append(
-                100 * len(research_terms & tokens(paper_text)) / len(research_terms)
-                if research_terms
-                else 0
-            )
-        research_available = bool(research_terms and papers)
-        research_score = clamp(sum(paper_scores) / len(paper_scores)) if research_available else 0
+            for paper in papers
+        )
+        paper_available = bool(research_text.strip() and papers)
+        paper_raw = (
+            compare_cv_to_lab(research_text, paper_text).similarity_score if paper_available else 0
+        )
 
-        preference_values = []
-        if profile and profile.affiliation.strip():
+        preference_values: list[bool] = []
+        university = university or (profile.affiliation if profile else None)
+        department = department or (profile.program if profile else None)
+        if university and university.strip():
             preference_values.append(
-                100.0
-                if profile.affiliation.lower() in lab.professor.university.name.lower()
-                else 0.0
+                normalize_term(university) in normalize_term(lab.professor.university.name)
             )
-        if profile and profile.program.strip():
-            preference_values.append(
-                100.0 if profile.program.lower() in lab.department.lower() else 0.0
-            )
+        if department and department.strip():
+            preference_values.append(normalize_term(department) in normalize_term(lab.department))
         preference_available = bool(preference_values)
-        preference_score = (
-            clamp(sum(preference_values) / len(preference_values)) if preference_available else 0
+        preference_raw = (
+            100 * sum(preference_values) / len(preference_values) if preference_values else 0
         )
+        freshness_at = lab.source_checked_at or lab.updated_at
+        freshness_available = freshness_at is not None
+        freshness_raw = _freshness(freshness_at, self.now) if freshness_available else 0
 
-        fresh_at = lab.source_checked_at or lab.updated_at
-        freshness_available = fresh_at is not None
-        fresh_score = (
-            freshness_score(
-                fresh_at, self.now, self.settings.recommendation_freshness_half_life_days
+        components = (
+            ("keyword_match", keyword_raw, WEIGHTS.keyword_match, keyword_available),
+            ("cv_lab_similarity", similarity_raw, WEIGHTS.cv_lab_similarity, similarity_available),
+            (
+                "research_paper_similarity",
+                paper_raw,
+                WEIGHTS.research_paper_similarity,
+                paper_available,
+            ),
+            ("preference_match", preference_raw, WEIGHTS.preference_match, preference_available),
+            ("data_freshness", freshness_raw, WEIGHTS.data_freshness, freshness_available),
+        )
+        breakdown = {
+            name: RecommendationScorePart(
+                score=_round(raw * maximum / 100) if available else 0,
+                max_score=maximum,
+                raw_score=_round(raw),
+                available=available,
             )
-            if freshness_available
-            else 0
-        )
-        scores = {
-            "keyword": (keyword_score, keyword_available, False),
-            "semantic": (semantic_score, semantic_available, semantic_degraded),
-            "research": (research_score, research_available, False),
-            "preference": (preference_score, preference_available, False),
-            "freshness": (fresh_score, freshness_available, False),
+            for name, raw, maximum, available in components
         }
-        usable_weight = sum(
-            WEIGHTS[name] for name, (_, available, _) in scores.items() if available
-        )
-        breakdown: dict[str, RecommendationScorePart] = {}
-        for name, (score, available, degraded) in scores.items():
-            effective_weight = WEIGHTS[name] / usable_weight if available and usable_weight else 0
-            breakdown[name] = RecommendationScorePart(
-                score=score,
-                weight=effective_weight,
-                contribution=round(score * effective_weight, 2),
-                unavailable=not available,
-                degraded=degraded,
+        warnings = []
+        if not paper_available:
+            warnings.append(
+                "Recent publication data is unavailable or your CV has no research-interest text."
             )
-        total = clamp(sum(part.contribution for part in breakdown.values())) if usable_weight else 0
-        user_complete = sum(bool(value) for value in (user_terms, user_text.strip(), interests)) / 3
-        lab_complete = (
-            sum(bool(value) for value in (lab_terms, lab_text.strip(), papers, fresh_at)) / 4
-        )
-        confidence = clamp(
-            100
-            * (0.55 * usable_weight + 0.25 * user_complete + 0.20 * lab_complete)
-            * (0.8 if semantic_degraded else 1)
-        )
-        evidence = {
-            "matched_keywords": matched,
-            "paper_ids": [paper.id for paper in papers],
-            "source_checked_at": fresh_at.isoformat() if fresh_at else None,
-            "semantic_provider": "deterministic_lexical"
-            if semantic_degraded
-            or self.settings.recommendation_semantic_provider == "deterministic"
-            else "openai_embedding",
-        }
-        short_reason, action = self._explanation(
-            matched, missing, research_available, semantic_degraded
-        )
-        response = RecommendationResponse(
+        if not preference_available:
+            warnings.append("University and department preferences were not provided.")
+        if not freshness_available:
+            warnings.append("Lab verification time is unavailable.")
+        if not keyword_available:
+            warnings.append("Structured CV or lab keyword data is unavailable.")
+        evidence = []
+        if matched:
+            evidence.append(
+                EvidenceItem(
+                    type="keyword_match",
+                    text=f"{', '.join(matched[:3])} appear in both the CV and lab profile.",
+                )
+            )
+        if paper_available and paper_raw > 0:
+            evidence.append(
+                EvidenceItem(
+                    type="research_paper_similarity",
+                    text=(
+                        "Recent available publications share terms with your CV "
+                        "research interests."
+                    ),
+                )
+            )
+        if freshness_available:
+            evidence.append(
+                EvidenceItem(
+                    type="data_freshness",
+                    text=f"Lab data was last checked {freshness_at.date().isoformat()}.",
+                )
+            )
+        if len(matched) >= 3:
+            reason = f"Strong match in {', '.join(matched[:3])}."
+        elif paper_available and paper_raw >= 30:
+            reason = "The lab's recent publications align with your research interests."
+        elif warnings:
+            reason = (
+                "This recommendation has limited evidence because some profile data is unavailable."
+            )
+        else:
+            reason = "This recommendation is based on the available CV and lab information."
+        completeness = sum(available for _, _, _, available in components) / len(components)
+        return RecommendationResponse(
             lab_id=lab.id,
             lab_name=lab.name,
             professor_name=lab.professor_name,
             university=lab.professor.university.name,
             department=lab.department,
-            total_score=total,
-            confidence=confidence,
+            total_score=_round(sum(item.score for item in breakdown.values())),
             matched_keywords=matched,
             missing_keywords=missing,
-            user_keyword_weights=keyword_weights,
             score_breakdown=breakdown,
             evidence=evidence,
-            short_reason=short_reason,
-            recommended_action=action,
+            short_reason=reason,
+            recommended_action="Review the lab's recent publications and save this professor.",
+            data_completeness=round(completeness, 2),
+            warnings=warnings,
+            data_origin=lab.summary_origin,
             calculated_at=self.now,
-        )
-        record = Recommendation(
-            user_id=user.id,
-            lab_id=lab.id,
-            keyword_score=keyword_score,
-            semantic_score=semantic_score,
-            research_score=research_score,
-            preference_score=preference_score,
-            total_score=total,
-            confidence=confidence,
-            reason=short_reason,
-            score_breakdown={
-                "components": {key: value.model_dump() for key, value in breakdown.items()},
-                "evidence": evidence,
-                "matched_keywords": matched,
-                "missing_keywords": missing,
-                "user_keyword_weights": keyword_weights,
-                "recommended_action": action,
-                "calculated_at": self.now.isoformat(),
-            },
-        )
-        return CalculatedRecommendation(response=response, record=record)
-
-    @staticmethod
-    def _explanation(
-        matched: list[str], missing: list[str], has_papers: bool, degraded: bool
-    ) -> tuple[str, str]:
-        reason = (
-            f"Matched keywords: {', '.join(matched)}."
-            if matched
-            else "No structured keyword overlap was found."
-        )
-        if has_papers:
-            reason += " Recent available papers were included."
-        if degraded:
-            reason += " Semantic similarity used the deterministic fallback."
-        action = (
-            "Review the lab description and source-linked papers before contacting the professor."
-        )
-        if missing:
-            action = (
-                "Review missing interests and verify fit against the lab's "
-                "source-linked information."
-            )
-        return reason, action
-
-    def _from_record(self, record: Recommendation) -> RecommendationResponse:
-        stored = record.score_breakdown or {}
-        components = stored.get("components", {})
-        if not components:
-            components = {
-                "keyword": {
-                    "score": record.keyword_score,
-                    "weight": WEIGHTS["keyword"],
-                    "contribution": record.keyword_score * WEIGHTS["keyword"],
-                },
-                "semantic": {
-                    "score": record.semantic_score,
-                    "weight": WEIGHTS["semantic"],
-                    "contribution": record.semantic_score * WEIGHTS["semantic"],
-                },
-                "research": {
-                    "score": record.research_score,
-                    "weight": WEIGHTS["research"],
-                    "contribution": record.research_score * WEIGHTS["research"],
-                },
-                "preference": {
-                    "score": record.preference_score,
-                    "weight": WEIGHTS["preference"],
-                    "contribution": record.preference_score * WEIGHTS["preference"],
-                },
-                "freshness": {"score": 0, "weight": 0, "contribution": 0, "unavailable": True},
-            }
-        return RecommendationResponse(
-            lab_id=record.lab_id,
-            lab_name=record.lab.name,
-            professor_name=record.lab.professor_name,
-            university=record.lab.professor.university.name,
-            department=record.lab.department,
-            total_score=record.total_score,
-            confidence=record.confidence,
-            matched_keywords=stored.get("matched_keywords", []),
-            missing_keywords=stored.get("missing_keywords", []),
-            user_keyword_weights=stored.get("user_keyword_weights", {}),
-            score_breakdown={
-                key: RecommendationScorePart.model_validate(value)
-                for key, value in components.items()
-            },
-            evidence=stored.get("evidence", {}),
-            short_reason=record.reason,
-            recommended_action=stored.get(
-                "recommended_action", "Review the available source information before deciding."
-            ),
-            calculated_at=record.updated_at,
         )

@@ -22,6 +22,7 @@ export function AppHeader({ current, setup = false }: AppHeaderProperties) {
   const workspace = current !== undefined;
 
   function logout(): void {
+    void fetch("/api/auth/logout", { method: "POST" });
     endDemoSession(window.localStorage);
     router.replace("/");
   }

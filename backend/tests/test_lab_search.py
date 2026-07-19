@@ -2,6 +2,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session, sessionmaker
 
 from scripts.seed import seed_database
+from tests.auth_helpers import jwt_headers
 
 
 def seed_client_data(session_factory: sessionmaker[Session]) -> None:
@@ -12,7 +13,7 @@ def seed_client_data(session_factory: sessionmaker[Session]) -> None:
 def test_empty_search_returns_all_labs_and_favorite(client: TestClient, session_factory) -> None:
     seed_client_data(session_factory)
 
-    response = client.get("/api/v1/labs")
+    response = client.get("/api/v1/labs", headers=jwt_headers(client))
 
     assert response.status_code == 200
     payload = response.json()
@@ -56,6 +57,7 @@ def test_combined_filters_and_score_sort(client: TestClient, session_factory) ->
             ("lab_name", "Multimodal"),
             ("sort", "score"),
         ],
+        headers=jwt_headers(client),
     )
 
     assert response.status_code == 200
@@ -68,7 +70,7 @@ def test_score_sort_orders_persisted_recommendations_first(
 ) -> None:
     seed_client_data(session_factory)
 
-    response = client.get("/api/v1/labs", params={"sort": "score"})
+    response = client.get("/api/v1/labs", params={"sort": "score"}, headers=jwt_headers(client))
 
     assert response.status_code == 200
     assert [item["recommendationScore"] for item in response.json()["items"]] == [87, 84, None]
@@ -77,7 +79,7 @@ def test_score_sort_orders_persisted_recommendations_first(
 def test_lab_detail_includes_favorite_and_provenance(client: TestClient, session_factory) -> None:
     seed_client_data(session_factory)
 
-    response = client.get("/api/v1/labs/fixture-vision-lab")
+    response = client.get("/api/v1/labs/fixture-vision-lab", headers=jwt_headers(client))
 
     assert response.status_code == 200
     payload = response.json()

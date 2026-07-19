@@ -12,10 +12,12 @@ dependencies = [
   "fastapi>=0.115,<1",
   "openai>=1.60,<2",
   "pypdf>=5.0,<6",
+  "python-docx>=1.1,<2",
   "python-multipart>=0.0.18,<1",
   "psycopg[binary]>=3.2,<4",
   "pydantic-settings>=2.6,<3",
   "sqlalchemy>=2.0,<2.1",
+  "scikit-learn>=1.5,<2",
   "uvicorn[standard]>=0.30,<1",
 ]
 
@@ -28,7 +30,7 @@ dev = [
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "-q"
+addopts = "-q --basetemp=.pytest_tmp"
 
 [tool.ruff]
 target-version = "py311"
@@ -36,6 +38,14 @@ line-length = 100
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]
+
+[tool.ruff.lint.per-file-ignores]
+"app/api/v1/documents.py" = ["B008", "E501"]
+"app/models/entities.py" = ["E501"]
+"app/services/cv_lab_similarity.py" = ["E501"]
+"app/services/document_analysis/service.py" = ["E501"]
+"tests/test_document_analysis.py" = ["E501"]
+"tests/test_cv_lab_similarity.py" = ["E501"]
 
 [tool.ruff.format]
 quote-style = "double"

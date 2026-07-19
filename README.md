@@ -1,8 +1,27 @@
-# 딱새우 (Dacksaue)
+# 딱새우 (Dacksaeu)
 
 대학원 진학 희망자가 연구 관심사와 조건에 맞는 연구실을 탐색·추천받을 수 있도록 만드는 서비스입니다.
 
 ## 예정 구조
+
+## Explainable CV recommendations
+
+Authenticated users can request `GET /api/v1/recommendations` after completing
+a local CV analysis. The result is calculated on demand (not stored) with
+deterministic keyword normalization and scikit-learn TF-IDF. Scores total 100:
+keyword match 35, CV/lab similarity 30, recent papers 20, preferences 10, and
+data freshness 5. Change these values in
+`backend/app/config/recommendation_weights.py`; module import validates that
+they total 100.
+
+Missing input data yields a zero, unavailable component plus a warning rather
+than reweighting other components. Results include fixture/data-origin labels,
+evidence, matched and missing terms, and a rule-based next action. The
+recommendation flow makes no OpenAI, LLM, or embedding request. `frontend_v2`
+uses `/api/backend/recommendations` through its existing BFF and presents a
+CV-required link when the API returns 409. Crawler-imported lab records use
+the same fields as fixtures, so no recommendation code change is required when
+live data is available.
 
 ## Backend quick start
 

@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { LAB_CATALOG_FIXTURES } from "../../fixtures/catalog";
 import { SavedContactDraft } from "../contact/saved-contact-draft";
+import { CvAnalysisPanel } from "./cv-analysis-panel";
 import type { ProfileWorkspaceData } from "./profile-client-contract";
 import { ProfileRecommendations } from "./profile-recommendations";
 
@@ -97,6 +98,7 @@ export function ProfileDashboard({
           <button className="profile-inline-button" onClick={onEdit} type="button">Add or replace CV</button>
         </aside>
       </div>
+      <CvAnalysisPanel />
       <SavedContactDraft />
       <p className="profile-dashboard-status" aria-live="polite">{status}</p>
       <ProfileRecommendations keywords={profile.researchInterests} />
