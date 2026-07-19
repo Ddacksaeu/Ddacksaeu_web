@@ -24,7 +24,7 @@ export function ContactWorkspace({ initialProfessor }: ContactWorkspacePropertie
   const savedContactDraft = parseContactDraft(savedSnapshot);
   const [professor, setProfessor] = useState(initialProfessor);
   const [editedDraft, setEditedDraft] = useState<string | null>(null);
-  const [status, setStatus] = useState("This demo draft uses the selected professor and sample CV details.");
+  const [status, setStatus] = useState("This draft uses the selected professor and available CV details.");
   const draft = editedDraft ?? (savedContactDraft?.professor === professor ? savedContactDraft.draft : DEFAULT_DRAFT);
 
   async function copyDraft(): Promise<void> {
@@ -39,7 +39,7 @@ I am preparing to apply to graduate programs in Computer Vision and am reaching 
 I would appreciate your review of my attached CV.
 
 Thank you.`);
-    setStatus("Generated a new demo draft using this professor’s research.");
+    setStatus("Generated a new draft using this professor’s research.");
   }
 
   function saveDraft(): void {
@@ -54,7 +54,7 @@ Thank you.`);
         <h2>Draft settings</h2>
         <label className={styles["field"]}>Professor<input value={professor} onChange={(event) => setProfessor(event.target.value)} /></label>
         <label className={styles["field"]}>Details to include<textarea value="Computer Vision project, PyTorch reproduction study, interest in Multimodal Learning" readOnly /></label>
-        <button className={styles["primary"]} type="button" onClick={regenerateDraft}>Regenerate draft</button>
+        <button className={styles["primary"] + " " + styles["regenerate"]} type="button" onClick={regenerateDraft}>Regenerate draft</button>
       </section>
       <section className={styles["card"]}>
         <h2>Edit email</h2>

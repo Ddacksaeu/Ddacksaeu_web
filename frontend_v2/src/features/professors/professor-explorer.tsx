@@ -27,7 +27,7 @@ export function ProfessorExplorer({ professors }: ProfessorExplorerProperties) {
     <main className={styles["page"]}>
       <header className={styles["hero"]}>
         <div><p className={styles["eyebrow"]}>PROFESSOR DISCOVERY</p><h1>Find professors aligned with your research</h1><p>Combine university, research area, and keywords to compare candidates and recent work.</p></div>
-        <span className={styles["demo"]}>20 demo professor profiles</span>
+        <span className={styles["demo"]}>20 professor profiles</span>
       </header>
       <div className={styles["searchLayout"]}>
         <section className={styles["filters"]} aria-label="Professor search filters">
@@ -37,7 +37,7 @@ export function ProfessorExplorer({ professors }: ProfessorExplorerProperties) {
           <button className={styles["reset"]} type="button" onClick={() => setFilters(EMPTY_FILTERS)}>Reset filters</button>
         </section>
         <section aria-label="Professor search results">
-          <div className={styles["resultsHeader"]}><p aria-live="polite"><strong>{results.length}</strong> professors found</p><span>Demo data shown before crawler integration</span></div>
+          <div className={styles["resultsHeader"]}><p aria-live="polite"><strong>{results.length}</strong> professors found</p><span>Source data will refresh after crawler integration</span></div>
           {results.length === 0 ? <div className={styles["empty"]}><h2>No professors match these filters</h2><p>Shorten your keywords or reset the search filters.</p></div> : (
             <ol className={styles["list"]}>{results.map((professor) => {
               const isSaved = savedIdSet.has(professor.id);

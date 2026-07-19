@@ -14,7 +14,7 @@ export function CvAnalysisWorkspace() {
         <h2>Files to analyze</h2>
         <label className={styles["field"]}>CV / portfolio<span className={styles["filePicker"]}><input aria-describedby="cv-analysis-file-help" className={styles["fileInput"]} accept="application/pdf,text/plain" type="file" onChange={(event) => { setFileName(event.target.files?.item(0)?.name ?? ""); setAnalyzed(false); }} /><span className={styles["fileButton"]}>Choose file</span><span className={styles["fileName"]}>{fileName || "No file selected"}</span></span><small className={styles["fileHelp"]} id="cv-analysis-file-help">PDF or TXT · Up to 5 MB</small></label>
         <label className={styles["field"]}>Application goal<select defaultValue="Master's in Computer Vision"><option value="Master's in Computer Vision">Master’s in Computer Vision</option><option value="Master's in HCI">Master’s in HCI</option><option>PhD in Machine Learning</option></select></label>
-        <button className={styles["primary"]} disabled={fileName.length === 0} type="button" onClick={() => setAnalyzed(true)}>Start analysis</button>
+        <div className={styles["buttonRow"]}><button className={styles["primary"]} disabled={fileName.length === 0} type="button" onClick={() => setAnalyzed(true)}>Start analysis</button></div>
         <p className={styles["status"]} aria-live="polite">{fileName.length === 0 ? "Select a PDF or TXT file." : analyzed ? fileName + " analysis is complete." : fileName + " is ready to analyze."}</p>
       </section>
       <section className={styles["card"]} aria-labelledby="analysis-title">

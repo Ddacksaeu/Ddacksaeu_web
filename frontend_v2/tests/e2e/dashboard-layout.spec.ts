@@ -13,7 +13,7 @@ test("signed-in home uses a practical recommendation feed with an application ov
   const overview = page.getByRole("complementary", { name: "Application overview" });
   await expect(recommendations).toBeVisible();
   await expect(overview).toBeVisible();
-  await expect(recommendations.getByRole("link", { name: /View Demo Professor/ })).toHaveCount(3);
+  await expect(recommendations.getByRole("link", { name: /View Professor/ })).toHaveCount(3);
 
   const recommendationBox = await recommendations.boundingBox();
   const overviewBox = await overview.boundingBox();

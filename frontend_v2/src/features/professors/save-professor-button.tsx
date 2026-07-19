@@ -2,6 +2,7 @@
 
 import ky, { HTTPError } from "ky";
 import { useEffect, useState } from "react";
+import { ProfessorSaveIcon } from "./professor-save-icon";
 
 type SaveProfessorButtonProperties = Readonly<{ labId: string }>;
 
@@ -32,10 +33,16 @@ export function SaveProfessorButton({ labId }: SaveProfessorButtonProperties) {
     }
   }
 
+  const buttonLabel = !ready
+    ? "Checking saved state"
+    : saving
+      ? saved ? "Removing saved professor" : "Saving professor"
+      : saved ? "Remove saved professor" : "Save professor";
+
   return (
     <div className="detail-save-control">
-      <button disabled={!ready || saving} onClick={() => void toggle()} type="button">
-        {!ready ? "Checking saved state" : saving ? "Processing" : saved ? "Saved professor" : "Save professor"}
+      <button aria-busy={saving} aria-label={buttonLabel} aria-pressed={saved} disabled={!ready || saving} onClick={() => void toggle()} title={buttonLabel} type="button">
+        <ProfessorSaveIcon saved={saved} />
       </button>
       <span aria-live="polite">{status}</span>
     </div>

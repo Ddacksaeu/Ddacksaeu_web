@@ -135,7 +135,7 @@ export function ProfileWorkspace() {
         <p className="kicker">MY RESEARCH PROFILE</p>
         <h1 id="profile-title">{data.profile === null ? "Create research profile" : "Edit research profile"}</h1>
         <p>{data.profile === null ? "Save your name and interests to start personalized professor recommendations and a saved list." : "Update saved information, add a CV, or manage your data."}</p>
-        <div className="privacy-note"><span aria-hidden="true">✓</span><div><strong>Your data is private to this demo session</strong><p>Data is isolated in an anonymous session and can be deleted anytime.</p></div></div>
+        <div className="privacy-note"><span aria-hidden="true">✓</span><div><strong>Your data is private to this session</strong><p>Data is isolated in an anonymous session and can be deleted anytime.</p></div></div>
       </section>
       <ProfileEditor
         assets={data.cvAssets}
