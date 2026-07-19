@@ -28,6 +28,15 @@ npm run build
 npm run start
 ```
 
+## Backend connection
+
+The independently running Next.js app keeps its local profile API at
+`/api/profile`. To reach this repository's FastAPI backend, configure
+`BACKEND_API_ORIGIN` in `.env.local`; the backend API is then available through
+`/backend-api/*` (for example, `http://localhost:3000/backend-api/health`).
+See [docs/backend-connection.md](docs/backend-connection.md) for the local
+startup commands and the routing contract.
+
 ## 검증
 
 ```bash
