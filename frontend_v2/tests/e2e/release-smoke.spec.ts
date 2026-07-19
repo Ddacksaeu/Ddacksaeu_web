@@ -11,7 +11,7 @@ test.describe("release API smoke", () => {
     await page.getByRole("button", { name: "Create account" }).click(); await expect(page).toHaveURL(/\/onboarding$/);
     await page.evaluate(() => { localStorage.setItem("ddaksaewoo:demo-session", "signed-in"); localStorage.setItem("ddaksaewoo:demo-onboarding", "complete"); });
     await page.goto("/cv");
-    await page.getByLabel("Select CV file").setInputFiles({ name: "release-smoke.txt", mimeType: "text/plain", buffer: Buffer.from("Computer vision, machine learning, robotics, Python research project.") });
+    await page.getByLabel("Select CV file").setInputFiles({ name: "release-smoke.txt", mimeType: "text/plain", buffer: Buffer.from("Computer vision and machine learning researcher with Python experience. Built a robotics perception project, evaluated neural models, documented reproducible experiments, and presented results to a faculty research group.") });
     await page.getByRole("button", { name: "Upload and analyze" }).click(); await expect(page.getByText("CV uploaded and analyzed successfully.")).toBeVisible();
     await page.goto("/professors"); await page.getByRole("button", { name: "Match with my CV" }).click();
     await expect(page.getByRole("heading", { name: "Recommendations" })).toBeVisible();
