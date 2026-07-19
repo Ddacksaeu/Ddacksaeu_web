@@ -29,7 +29,7 @@ from urllib3.util.retry import Retry
 # ============================================================
 # 0. Version and defaults
 # ============================================================
-ENRICHER_VERSION = "0.10.1-source-of-truth"
+ENRICHER_VERSION = "0.10.4-evidence-contract"
 
 DEFAULT_DATA_DIR = Path("./data")
 DEFAULT_REQUEST_DELAY_SECONDS = 0.55
@@ -40,6 +40,8 @@ DEFAULT_CHECKPOINT_EVERY = 1
 DEFAULT_RESPECT_ROBOTS = True
 MIN_AUTHORITATIVE_SUCCESS_RATIO = 1.0
 DEFAULT_MIN_PRIMARY_ROSTER_COVERAGE = 0.20
+CENTRAL_RESEARCHER_HOSTS = {"postech.ac.kr", "www.postech.ac.kr"}
+CENTRAL_RESEARCHER_PATH_TOKEN = "/research-industry-academia/researcher-search.do"
 MAX_SUMMARY_CHARS = 1200
 MAX_PRIMARY_FIELD_CHARS = 600
 MAX_KEYWORDS = 12
@@ -595,6 +597,164 @@ DEFAULT_FACULTY_URLS_BY_NAME = {
 # depend on a separate file being present.
 BUILTIN_SITE_OVERRIDES: dict[str, dict] = {'생명과학과': {'faculty_urls': ['https://life.postech.ac.kr/html/professor/professor01.php', 'https://life.postech.ac.kr/eng/html/professor/professor01.php'], 'allowed_hosts': ['life.postech.ac.kr'], 'render': True, 'max_depth': 3, 'max_card_emails': 2, 'max_card_identities': 2}, '시스템생명공학부': {'faculty_urls': ['https://ibio.postech.ac.kr/web/?depart=1&position=1&sub=professor&top=member', 'https://ibio.postech.ac.kr/web/?depart=1&position=2&sub=professor&top=member', 'https://ibio.postech.ac.kr/web/?depart=1&position=3&sub=professor&top=member'], 'allowed_hosts': ['ibio.postech.ac.kr'], 'scope_query_params': {'depart': ['1']}, 'follow_links': False, 'max_depth': 0, 'max_card_emails': 2, 'max_card_identities': 2, 'allow_secondary_field_enrichment': False}, '첨단재료과학부': {'faculty_urls': ['https://gscst.postech.ac.kr/web/?depart=2&position=1&sub=professor&top=member', 'https://gscst.postech.ac.kr/web/?depart=2&position=2&sub=professor&top=member'], 'allowed_hosts': ['gscst.postech.ac.kr'], 'scope_query_params': {'depart': ['2']}, 'follow_links': False, 'max_depth': 0, 'max_card_emails': 2, 'max_card_identities': 2, 'allow_secondary_field_enrichment': False}, '의과학전공': {'faculty_urls': ['https://gscst.postech.ac.kr/web/?depart=11&position=1&sub=professor&top=member', 'https://gscst.postech.ac.kr/web/?depart=11&position=2&sub=professor&top=member', 'https://gscst.postech.ac.kr/web/?depart=11&position=3&sub=professor&top=member'], 'allowed_hosts': ['gscst.postech.ac.kr'], 'scope_query_params': {'depart': ['11']}, 'follow_links': False, 'max_depth': 0, 'max_card_emails': 2, 'max_card_identities': 2, 'allow_secondary_field_enrichment': False}, '국방과학기술전공': {'faculty_urls': ['https://gscst.postech.ac.kr/web/?depart=14&position=1&sub=professor&top=member', 'https://gscst.postech.ac.kr/web/?depart=14&position=2&sub=professor&top=member', 'https://gscst.postech.ac.kr/web/?depart=14&position=3&sub=professor&top=member'], 'allowed_hosts': ['gscst.postech.ac.kr'], 'scope_query_params': {'depart': ['14']}, 'follow_links': False, 'max_depth': 0, 'max_card_emails': 2, 'max_card_identities': 2, 'allow_secondary_field_enrichment': False}, '경영과학전공': {'faculty_urls': ['https://gscst.postech.ac.kr/web/?depart=15&position=1&sub=professor&top=member', 'https://gscst.postech.ac.kr/web/?depart=15&position=2&sub=professor&top=member'], 'allowed_hosts': ['gscst.postech.ac.kr'], 'scope_query_params': {'depart': ['15']}, 'follow_links': False, 'max_depth': 0, 'max_card_emails': 2, 'max_card_identities': 2, 'allow_secondary_field_enrichment': False}, '푸드테크융합전공': {'faculty_urls': ['https://gscst.postech.ac.kr/web/?depart=16&position=1&sub=professor&top=member', 'https://gscst.postech.ac.kr/web/?depart=16&position=2&sub=professor&top=member'], 'allowed_hosts': ['gscst.postech.ac.kr'], 'scope_query_params': {'depart': ['16']}, 'follow_links': False, 'max_depth': 0, 'max_card_emails': 2, 'max_card_identities': 2, 'allow_secondary_field_enrichment': False}, '양자정보과학전공': {'faculty_urls': ['https://gscst.postech.ac.kr/web/?depart=17&position=1&sub=professor&top=member', 'https://gscst.postech.ac.kr/web/?depart=17&position=2&sub=professor&top=member', 'https://gscst.postech.ac.kr/web/?depart=17&position=3&sub=professor&top=member'], 'allowed_hosts': ['gscst.postech.ac.kr'], 'scope_query_params': {'depart': ['17']}, 'follow_links': False, 'max_depth': 0, 'max_card_emails': 2, 'max_card_identities': 2, 'allow_secondary_field_enrichment': False}, '산업데이터사이언스전공': {'faculty_urls': ['https://gscst.postech.ac.kr/web/?depart=18&position=1&sub=professor&top=member', 'https://gscst.postech.ac.kr/web/?depart=18&position=2&sub=professor&top=member'], 'allowed_hosts': ['gscst.postech.ac.kr'], 'scope_query_params': {'depart': ['18']}, 'follow_links': False, 'max_depth': 0, 'max_card_emails': 2, 'max_card_identities': 2, 'allow_secondary_field_enrichment': False}, '수학과': {'faculty_urls': ['https://math.postech.ac.kr/bbs/board.php?bo_table=m02_01&sca=%EC%A0%84%EC%9E%84%EA%B5%90%EC%88%98', 'https://math.postech.ac.kr/en/bbs/board.php?bo_table=m02_01', 'https://math.postech.ac.kr/bbs/board.php?bo_table=m02_01&wr_id=16', 'https://math.postech.ac.kr/bbs/board.php?bo_table=m02_01&wr_id=3'], 'allowed_hosts': ['math.postech.ac.kr'], 'scope_query_params': {'bo_table': ['m02_01']}, 'max_depth': 2, 'max_card_emails': 2, 'max_card_identities': 2, 'allow_secondary_field_enrichment': False}}
 
+# Additional program-specific profiles. These departments have no professor
+# records whose immutable primary_department_id points to the program itself, so
+# their membership must be rebuilt from a tightly scoped official faculty page.
+BUILTIN_SITE_OVERRIDES.update({
+    "반도체대학원": {
+        "faculty_urls": ["https://gradsemi.postech.ac.kr/members/professor/"],
+        "allowed_hosts": ["gradsemi.postech.ac.kr"],
+        "follow_links": True,
+        "max_depth": 1,
+        "max_card_emails": 2,
+        "max_card_identities": 2,
+        "allow_secondary_unique_name_affiliation": True,
+        "allow_secondary_field_enrichment": False,
+    },
+    "정보통신대학원": {
+        "faculty_urls": [
+            "https://eecs.postech.ac.kr/teaching-and-research/professor/?dept=103"
+        ],
+        "allowed_hosts": ["eecs.postech.ac.kr"],
+        "scope_query_params": {"dept": ["103"]},
+        "follow_links": False,
+        "max_depth": 0,
+        "max_card_emails": 2,
+        "max_card_identities": 2,
+        "allow_secondary_unique_name_affiliation": True,
+        "allow_secondary_field_enrichment": False,
+    },
+    "소셜데이터사이언스(SDS) 전공": {
+        "faculty_urls": ["https://psds.postech.ac.kr/professor"],
+        "allowed_hosts": ["psds.postech.ac.kr"],
+        "follow_links": True,
+        "max_depth": 1,
+        "max_card_emails": 2,
+        "max_card_identities": 2,
+        "allow_secondary_unique_name_affiliation": True,
+        "allow_secondary_field_enrichment": False,
+    },
+    "합성생물학전공": {
+        "faculty_urls": ["https://synbio.postech.ac.kr/faculty"],
+        "allowed_hosts": ["synbio.postech.ac.kr"],
+        "follow_links": True,
+        "render": True,
+        "max_depth": 2,
+        "max_card_emails": 2,
+        "max_card_identities": 2,
+        "allow_secondary_unique_name_affiliation": True,
+        "allow_secondary_field_enrichment": False,
+    },
+})
+
+# These keys are safety invariants rather than optional parser hints. A stale
+# external site_overrides.json must not be able to remove a shared-portal query
+# lock or replace a program-filtered URL with an unfiltered all-faculty page.
+HARD_SCOPE_GUARDS: dict[str, dict] = {
+    "시스템생명공학부": {
+        "faculty_urls": [
+            "https://ibio.postech.ac.kr/web/?depart=1&position=1&sub=professor&top=member",
+            "https://ibio.postech.ac.kr/web/?depart=1&position=2&sub=professor&top=member",
+            "https://ibio.postech.ac.kr/web/?depart=1&position=3&sub=professor&top=member",
+        ],
+        "allowed_hosts": ["ibio.postech.ac.kr"],
+        "scope_query_params": {"depart": ["1"]},
+        "follow_links": False,
+        "allow_secondary_unique_name_affiliation": True,
+        "allow_secondary_field_enrichment": False,
+    },
+    "첨단재료과학부": {
+        "faculty_urls": [
+            "https://gscst.postech.ac.kr/web/?depart=2&position=1&sub=professor&top=member",
+            "https://gscst.postech.ac.kr/web/?depart=2&position=2&sub=professor&top=member",
+        ],
+        "allowed_hosts": ["gscst.postech.ac.kr"],
+        "scope_query_params": {"depart": ["2"]},
+        "follow_links": False,
+        "allow_secondary_unique_name_affiliation": True,
+        "allow_secondary_field_enrichment": False,
+    },
+    "의과학전공": {
+        "faculty_urls": [
+            "https://gscst.postech.ac.kr/web/?depart=11&position=1&sub=professor&top=member",
+            "https://gscst.postech.ac.kr/web/?depart=11&position=2&sub=professor&top=member",
+            "https://gscst.postech.ac.kr/web/?depart=11&position=3&sub=professor&top=member",
+        ],
+        "allowed_hosts": ["gscst.postech.ac.kr"],
+        "scope_query_params": {"depart": ["11"]},
+        "follow_links": False,
+        "allow_secondary_unique_name_affiliation": True,
+        "allow_secondary_field_enrichment": False,
+    },
+    "국방과학기술전공": {
+        "faculty_urls": [
+            "https://gscst.postech.ac.kr/web/?depart=14&position=1&sub=professor&top=member",
+            "https://gscst.postech.ac.kr/web/?depart=14&position=2&sub=professor&top=member",
+            "https://gscst.postech.ac.kr/web/?depart=14&position=3&sub=professor&top=member",
+        ],
+        "allowed_hosts": ["gscst.postech.ac.kr"],
+        "scope_query_params": {"depart": ["14"]},
+        "follow_links": False,
+        "allow_secondary_unique_name_affiliation": True,
+        "allow_secondary_field_enrichment": False,
+    },
+    "경영과학전공": {
+        "faculty_urls": [
+            "https://gscst.postech.ac.kr/web/?depart=15&position=1&sub=professor&top=member",
+            "https://gscst.postech.ac.kr/web/?depart=15&position=2&sub=professor&top=member",
+        ],
+        "allowed_hosts": ["gscst.postech.ac.kr"],
+        "scope_query_params": {"depart": ["15"]},
+        "follow_links": False,
+        "allow_secondary_unique_name_affiliation": True,
+        "allow_secondary_field_enrichment": False,
+    },
+    "푸드테크융합전공": {
+        "faculty_urls": [
+            "https://gscst.postech.ac.kr/web/?depart=16&position=1&sub=professor&top=member",
+            "https://gscst.postech.ac.kr/web/?depart=16&position=2&sub=professor&top=member",
+        ],
+        "allowed_hosts": ["gscst.postech.ac.kr"],
+        "scope_query_params": {"depart": ["16"]},
+        "follow_links": False,
+        "allow_secondary_unique_name_affiliation": True,
+        "allow_secondary_field_enrichment": False,
+    },
+    "양자정보과학전공": {
+        "faculty_urls": [
+            "https://gscst.postech.ac.kr/web/?depart=17&position=1&sub=professor&top=member",
+            "https://gscst.postech.ac.kr/web/?depart=17&position=2&sub=professor&top=member",
+            "https://gscst.postech.ac.kr/web/?depart=17&position=3&sub=professor&top=member",
+        ],
+        "allowed_hosts": ["gscst.postech.ac.kr"],
+        "scope_query_params": {"depart": ["17"]},
+        "follow_links": False,
+        "allow_secondary_unique_name_affiliation": True,
+        "allow_secondary_field_enrichment": False,
+    },
+    "산업데이터사이언스전공": {
+        "faculty_urls": [
+            "https://gscst.postech.ac.kr/web/?depart=18&position=1&sub=professor&top=member",
+            "https://gscst.postech.ac.kr/web/?depart=18&position=2&sub=professor&top=member",
+        ],
+        "allowed_hosts": ["gscst.postech.ac.kr"],
+        "scope_query_params": {"depart": ["18"]},
+        "follow_links": False,
+        "allow_secondary_unique_name_affiliation": True,
+        "allow_secondary_field_enrichment": False,
+    },
+    "정보통신대학원": {
+        "faculty_urls": [
+            "https://eecs.postech.ac.kr/teaching-and-research/professor/?dept=103"
+        ],
+        "allowed_hosts": ["eecs.postech.ac.kr"],
+        "scope_query_params": {"dept": ["103"]},
+        "follow_links": False,
+        "allow_secondary_unique_name_affiliation": True,
+        "allow_secondary_field_enrichment": False,
+    },
+}
+
 # Emergency cardinality guards for shared portals. These values are intentionally
 # generous: they do not define the expected faculty count; they only prevent a
 # sibling-program navigation leak from attaching most POSTECH professors to one
@@ -725,6 +885,7 @@ class RuntimePaths:
     backups: Path
     raw: Path
     log: Path
+    rebuild_report: Path
 
     @classmethod
     def from_args(cls, data_dir: Path, overrides: Optional[Path]) -> "RuntimePaths":
@@ -738,6 +899,7 @@ class RuntimePaths:
             backups=data_dir / "backups",
             raw=data_dir / "raw_stage2",
             log=data_dir / "stage2_crawl_log.jsonl",
+            rebuild_report=data_dir / "authoritative_rebuild_report.json",
         )
 
 
@@ -1132,6 +1294,23 @@ def append_jsonl(path: Path, payload: dict) -> None:
         file.write(json.dumps(payload, ensure_ascii=False) + "\n")
 
 
+def atomic_write_json(path: Path, payload: dict) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fd, temp_name = tempfile.mkstemp(prefix=f".{path.name}.", suffix=".tmp", dir=str(path.parent))
+    os.close(fd)
+    temp_path = Path(temp_name)
+    try:
+        with temp_path.open("w", encoding="utf-8") as file:
+            json.dump(payload, file, ensure_ascii=False, indent=2)
+            file.write("\n")
+            file.flush()
+            os.fsync(file.fileno())
+        os.replace(temp_path, path)
+    except Exception:
+        temp_path.unlink(missing_ok=True)
+        raise
+
+
 def deep_merge_dict(base: dict, override: dict) -> dict:
     result = json.loads(json.dumps(base, ensure_ascii=False))
     for key, value in override.items():
@@ -1149,7 +1328,26 @@ def load_overrides(path: Path) -> dict:
             external = json.load(file)
         if not isinstance(external, dict):
             raise ValueError("site_overrides.json 최상위 값은 객체여야 합니다.")
-    return deep_merge_dict(BUILTIN_SITE_OVERRIDES, external)
+    merged = deep_merge_dict(BUILTIN_SITE_OVERRIDES, external)
+    # Reapply non-negotiable scope guards after external overrides. Parser
+    # selectors remain customizable, but program identity boundaries do not.
+    for department_name, guard in HARD_SCOPE_GUARDS.items():
+        current = merged.get(department_name, {})
+        if not isinstance(current, dict):
+            current = {}
+        merged[department_name] = deep_merge_dict(current, guard)
+    return merged
+
+
+def effective_builtin_overrides() -> dict:
+    """Return built-ins with the same non-negotiable guards as load_overrides()."""
+    merged = deep_merge_dict({}, BUILTIN_SITE_OVERRIDES)
+    for department_name, guard in HARD_SCOPE_GUARDS.items():
+        current = merged.get(department_name, {})
+        if not isinstance(current, dict):
+            current = {}
+        merged[department_name] = deep_merge_dict(current, guard)
+    return merged
 
 
 def is_noise_exact(value: str) -> bool:
@@ -4114,18 +4312,36 @@ def reset_foreign_department_provenance(
 def quarantine_unverified_affiliations(
     departments: list[dict[str, str]],
     labs_by_id: dict[str, dict[str, str]],
+    overrides: dict,
 ) -> int:
-    """Keep only primary affiliations when legacy rows have no evidence trail."""
+    """Keep only secondary affiliations that satisfy the current evidence contract."""
     changed = 0
+    department_by_name = {
+        clean_text(row.get("department_name_kor", "")): row
+        for row in departments
+        if clean_text(row.get("department_name_kor", ""))
+    }
     for row in labs_by_id.values():
         primary = clean_text(row.get("department_name", ""))
         evidence = parse_json_dict(row.get("affiliation_evidence", ""))
-        valid_secondary = [
-            name for name, item in evidence.items()
-            if name != primary and isinstance(item, dict)
-            and clean_text(item.get("method", "")).startswith("email")
-            and normalize_url(item.get("source_url", ""))
-        ]
+        valid_secondary: list[str] = []
+        for name, item in evidence.items():
+            if name == primary or not isinstance(item, dict):
+                continue
+            method = clean_text(item.get("method", ""))
+            source_url = normalize_url(item.get("source_url", ""))
+            if method == "manual":
+                valid_secondary.append(name)
+                continue
+            if method.startswith("email") and source_url:
+                valid_secondary.append(name)
+                continue
+            if method == "unique_name_scoped_faculty_page":
+                valid, _ = scoped_unique_name_evidence_status(
+                    name, item, department_by_name, overrides
+                )
+                if valid:
+                    valid_secondary.append(name)
         new_value = merge_multi(primary, valid_secondary)
         if new_value != clean_text(row.get("affiliated_programs", "")):
             row["affiliated_programs"] = new_value
@@ -4152,8 +4368,183 @@ def exact_page_email_lab_ids(result: PageResult, labs_by_email: dict[str, str]) 
     }
 
 
-def affiliation_evidence_violations(labs: Iterable[dict[str, str]]) -> list[dict[str, str]]:
+def is_central_researcher_profile_url(url: str) -> bool:
+    url = normalize_url(url)
+    if not url:
+        return False
+    parsed = urlparse(url)
+    return (
+        parsed.hostname in CENTRAL_RESEARCHER_HOSTS
+        and CENTRAL_RESEARCHER_PATH_TOKEN in parsed.path
+        and clean_text((parse_qs(parsed.query).get("mode") or [""])[0]) == "view"
+    )
+
+
+def page_has_faculty_identity_context(result: PageResult, known_names: set[str]) -> bool:
+    """Permit page-wide exact-email fallback only on a faculty identity page."""
+    if is_non_identity_source_url(result.url):
+        return False
+    parsed = urlparse(result.url)
+    url_text = f"{parsed.path} {parsed.query}".casefold()
+    if any(token in url_text for token in ("faculty", "professor", "people", "member", "staff", "교수")):
+        return True
+    soup = result.soup
+    if is_faculty_hub_page(soup, known_names):
+        return True
+    page_text = clean_text(soup.get_text(" ", strip=True)).casefold()
+    faculty_terms = sum(
+        term in page_text
+        for term in ("교수", "교수진", "전임교수", "겸임교수", "faculty", "professor")
+    )
+    return faculty_terms >= 2 and bool(EMAIL_RE.search(result.html))
+
+
+def central_profile_identity_matches(result: PageResult, lab: dict[str, str]) -> bool:
+    if not is_central_researcher_profile_url(result.url):
+        return False
+    expected_email = normalize_email(lab.get("email", ""))
+    if not expected_email:
+        return False
+    page_emails = {normalize_email(value) for value in EMAIL_RE.findall(result.html)}
+    if expected_email not in page_emails:
+        return False
+    expected_name = normalize_name(lab.get("professor_name", ""))
+    if not expected_name:
+        return True
+    page_text = normalize_name(result.soup.get_text(" ", strip=True))
+    return expected_name in page_text
+
+
+def verify_primary_roster_via_central_profiles(
+    client: RespectfulClient,
+    department: dict[str, str],
+    expected_lab_ids: set[str],
+    already_verified_ids: set[str],
+    required_matches: int,
+    labs_by_id: dict[str, dict[str, str]],
+    paths: RuntimePaths,
+    save_raw: bool,
+) -> dict[str, str]:
+    """Verify missing primary identities from official POSTECH profile pages.
+
+    This path is identity-only. It never imports lab names, research fields,
+    summaries, locations, lab URLs, or secondary affiliations.
+    """
+    verified: dict[str, str] = {}
+    if required_matches <= len(already_verified_ids):
+        return verified
+    candidates: list[tuple[str, str]] = []
+    for lab_id in sorted(expected_lab_ids - already_verified_ids):
+        lab = labs_by_id.get(lab_id, {})
+        source_url = normalize_url(lab.get("source_url", ""))
+        if is_central_researcher_profile_url(source_url):
+            candidates.append((lab_id, source_url))
+    for index, (lab_id, source_url) in enumerate(candidates, start=1):
+        if len(already_verified_ids) + len(verified) >= required_matches:
+            break
+        try:
+            result = client.fetch(source_url)
+        except Exception as exc:
+            append_jsonl(
+                paths.log,
+                {
+                    "timestamp": now_iso(),
+                    "level": "central_identity_fallback_warning",
+                    "department": department.get("department_name_kor", ""),
+                    "lab_id": lab_id,
+                    "source_url": source_url,
+                    "message": str(exc),
+                    "enricher_version": ENRICHER_VERSION,
+                },
+            )
+            continue
+        if not central_profile_identity_matches(result, labs_by_id.get(lab_id, {})):
+            continue
+        verified[lab_id] = result.url
+        save_raw_html(
+            paths,
+            department.get("department_id", "UNKNOWN"),
+            9000 + index,
+            result,
+            save_raw,
+        )
+    return verified
+
+
+def canonical_evidence_url_key(url: str) -> tuple:
+    """Canonical URL key used only for evidence-page equality checks.
+
+    Redirected POSTECH pages frequently add an explicit :443 and reorder query
+    parameters. Those changes do not alter page identity and must not turn a
+    valid affiliation proof into a commit failure.
+    """
+    normalized = normalize_url(url)
+    if not normalized:
+        return ()
+    parsed = urlparse(normalized)
+    host = (parsed.hostname or "").lower().removeprefix("www.")
+    port = parsed.port
+    if (parsed.scheme == "https" and port == 443) or (parsed.scheme == "http" and port == 80):
+        port = None
+    query = parse_qs(parsed.query, keep_blank_values=True)
+    query_key = tuple(
+        sorted(
+            (clean_text(key), tuple(sorted(clean_text(value) for value in values)))
+            for key, values in query.items()
+        )
+    )
+    return (parsed.scheme.lower(), host, port, parsed.path or "/", query_key)
+
+
+def scoped_unique_name_evidence_status(
+    affiliation: str,
+    item: dict,
+    department_by_name: dict[str, dict[str, str]],
+    overrides: dict,
+) -> tuple[bool, str]:
+    """Validate a name-only secondary affiliation against the exact official scope.
+
+    A globally unique professor name is accepted only when the department has
+    explicitly opted into this fallback, the source URL stays inside the
+    department's hard host/query scope, and that exact page was visited during
+    the successful authoritative rebuild.
+    """
+    department = department_by_name.get(clean_text(affiliation))
+    if not department:
+        return False, "unknown_affiliation"
+    override = resolve_department_override(overrides, department)
+    if not bool(override.get("allow_secondary_unique_name_affiliation", False)):
+        return False, "scoped_name_not_allowed"
+    source_url = normalize_url(item.get("source_url", ""))
+    if not source_url:
+        return False, "missing_source_url"
+    if not url_matches_override_scope(source_url, override):
+        return False, "source_outside_query_scope"
+    source_host = hostname(source_url).removeprefix("www.")
+    if source_host not in authoritative_department_hosts(department, override):
+        return False, "source_outside_authoritative_host"
+    visited_pages = {
+        canonical_evidence_url_key(url)
+        for url in split_multi(department.get("faculty_page_urls", ""))
+        if canonical_evidence_url_key(url)
+    }
+    if canonical_evidence_url_key(source_url) not in visited_pages:
+        return False, "source_not_in_successful_faculty_pages"
+    return True, "verified_scoped_unique_name"
+
+
+def affiliation_evidence_violations(
+    labs: Iterable[dict[str, str]],
+    departments: Optional[Sequence[dict[str, str]]] = None,
+    overrides: Optional[dict] = None,
+) -> list[dict[str, str]]:
     violations: list[dict[str, str]] = []
+    department_by_name = {
+        clean_text(row.get("department_name_kor", "")): row
+        for row in (departments or [])
+        if clean_text(row.get("department_name_kor", ""))
+    }
+    effective_overrides = overrides or effective_builtin_overrides()
     for row in labs:
         primary = clean_text(row.get("department_name", ""))
         evidence = parse_json_dict(row.get("affiliation_evidence", ""))
@@ -4161,15 +4552,40 @@ def affiliation_evidence_violations(labs: Iterable[dict[str, str]]) -> list[dict
             if affiliation == primary:
                 continue
             item = evidence.get(affiliation)
+            base = {
+                "lab_id": clean_text(row.get("lab_id", "")),
+                "professor_name": clean_text(row.get("professor_name", "")),
+                "email": normalize_email(row.get("email", "")),
+                "affiliation": affiliation,
+            }
             if not isinstance(item, dict):
-                violations.append({"lab_id": row.get("lab_id", ""), "affiliation": affiliation, "reason": "missing_evidence"})
+                violations.append({**base, "reason": "missing_evidence"})
                 continue
             method = clean_text(item.get("method", ""))
             source_url = normalize_url(item.get("source_url", ""))
             if method == "manual":
                 continue
-            if not method.startswith("email") or not source_url:
-                violations.append({"lab_id": row.get("lab_id", ""), "affiliation": affiliation, "reason": "weak_evidence"})
+            if method.startswith("email") and source_url:
+                continue
+            if method == "unique_name_scoped_faculty_page":
+                valid, reason = scoped_unique_name_evidence_status(
+                    affiliation, item, department_by_name, effective_overrides
+                )
+                if valid:
+                    continue
+                violations.append({
+                    **base,
+                    "method": method,
+                    "source_url": source_url,
+                    "reason": reason,
+                })
+                continue
+            violations.append({
+                **base,
+                "method": method,
+                "source_url": source_url,
+                "reason": "weak_evidence",
+            })
     return violations
 
 def minimum_primary_roster_matches(expected_count: int, override: dict) -> int:
@@ -4227,23 +4643,36 @@ def authoritative_commit_failure_reasons(
     selected_departments: Sequence[dict[str, str]],
     labs: Iterable[dict[str, str]],
     overrides: dict,
-) -> tuple[list[str], dict[str, int]]:
-    successful_departments = sum(
-        clean_text(row.get("enrichment_status", "")) == "success"
+) -> tuple[list[str], dict]:
+    accepted_statuses = {"success", "success_identity_fallback"}
+    failed_departments = [
+        {
+            "department_id": clean_text(row.get("department_id", "")),
+            "department_name": clean_text(row.get("department_name_kor", "")),
+            "status": clean_text(row.get("enrichment_status", "")) or "unknown",
+            "message": clean_text(row.get("enrichment_message", "")),
+            "faculty_match_count": clean_text(row.get("faculty_match_count", "")),
+        }
         for row in selected_departments
-    )
+        if clean_text(row.get("enrichment_status", "")) not in accepted_statuses
+    ]
+    successful_departments = len(selected_departments) - len(failed_departments)
     minimum_successes = max(
         1, int(len(selected_departments) * MIN_AUTHORITATIVE_SUCCESS_RATIO + 0.999)
     ) if selected_departments else 0
     lab_rows = list(labs)
-    evidence_violations = affiliation_evidence_violations(lab_rows)
+    evidence_violations = affiliation_evidence_violations(
+        lab_rows, selected_departments, overrides
+    )
     foreign_violations = foreign_department_page_violations(
         selected_departments, lab_rows, overrides
     )
     reasons: list[str] = []
     if successful_departments < minimum_successes:
+        names = ", ".join(item["department_name"] for item in failed_departments) or "알 수 없음"
         reasons.append(
-            f"학과 성공 {successful_departments}/{len(selected_departments)} < 최소 {minimum_successes}"
+            f"학과 성공 {successful_departments}/{len(selected_departments)} < 최소 {minimum_successes}; "
+            f"실패={names}"
         )
     if evidence_violations:
         reasons.append(f"복수소속 증거 위반 {len(evidence_violations)}건")
@@ -4252,9 +4681,40 @@ def authoritative_commit_failure_reasons(
     return reasons, {
         "successful_departments": successful_departments,
         "minimum_successes": minimum_successes,
+        "failed_departments": failed_departments,
         "affiliation_evidence_violations": len(evidence_violations),
+        "affiliation_evidence_violation_details": evidence_violations,
         "foreign_department_page_violations": len(foreign_violations),
     }
+
+
+def write_authoritative_rebuild_report(
+    paths: RuntimePaths,
+    selected_departments: Sequence[dict[str, str]],
+    failure_reasons: Sequence[str],
+    commit_metrics: dict,
+    committed: bool,
+) -> None:
+    payload = {
+        "generated_at": now_iso(),
+        "enricher_version": ENRICHER_VERSION,
+        "committed": committed,
+        "failure_reasons": list(failure_reasons),
+        **commit_metrics,
+        "departments": [
+            {
+                "department_id": clean_text(row.get("department_id", "")),
+                "department_name": clean_text(row.get("department_name_kor", "")),
+                "department_type": clean_text(row.get("department_type", "")),
+                "status": clean_text(row.get("enrichment_status", "")),
+                "faculty_match_count": clean_text(row.get("faculty_match_count", "")),
+                "message": clean_text(row.get("enrichment_message", "")),
+                "faculty_page_urls": split_multi(row.get("faculty_page_urls", "")),
+            }
+            for row in selected_departments
+        ],
+    }
+    atomic_write_json(paths.rebuild_report, payload)
 
 
 # ============================================================
@@ -4304,7 +4764,7 @@ def run_stage2(args: argparse.Namespace) -> None:
     quarantined_affiliation_count = 0
     if args.clean_only:
         quarantined_affiliation_count = quarantine_unverified_affiliations(
-            departments, labs_by_id
+            departments, labs_by_id, overrides
         )
     elif args.reset_affiliations or authoritative_rebuild:
         reset_affiliation_count = reset_affiliations_for_full_rebuild(departments, labs_by_id)
@@ -4465,7 +4925,23 @@ def run_stage2(args: argparse.Namespace) -> None:
         # failure restores the state from immediately before that department.
         department_lab_snapshot = deepcopy(labs_by_id)
         touched_lab_ids_snapshot = set(touched_lab_ids)
-        eligible_name_to_lab_id = build_department_name_index(labs_by_id, department, unique_name_to_lab_id)
+        primary_name_to_lab_id = build_department_name_index(
+            labs_by_id, department, unique_name_to_lab_id
+        )
+        allow_secondary_unique_name = bool(
+            override.get("allow_secondary_unique_name_affiliation", False)
+        )
+        # Program/division rosters often contain only professors whose immutable
+        # primary department is elsewhere. On explicitly scoped official pages,
+        # globally unique names may establish affiliation only; they can never
+        # supply lab descriptive fields.
+        eligible_name_to_lab_id = (
+            dict(unique_name_to_lab_id)
+            if allow_secondary_unique_name
+            else dict(primary_name_to_lab_id)
+        )
+        eligible_name_to_lab_id.update(primary_name_to_lab_id)
+        discovery_error = ""
         try:
             pages = discover_department_pages(
                 client,
@@ -4478,22 +4954,39 @@ def run_stage2(args: argparse.Namespace) -> None:
                 save_raw=args.save_raw_html,
             )
         except Exception as exc:
-            department["enrichment_status"] = "failed"
-            department["enrichment_message"] = str(exc)
-            department["enriched_at"] = now_iso()
-            department["enricher_version"] = ENRICHER_VERSION
-            print(f"[FAIL-DEPT] {department_name} | {exc}")
-            save_checkpoint(paths, departments, labs_by_id, department_fields, lab_fields, checkpoint_dry_run)
-            continue
+            # Do not stop here. Primary departments can still be identity-verified
+            # through official central POSTECH researcher profiles below.
+            discovery_error = str(exc)
+            pages = []
+            print(f"[WARN-DEPT] {department_name} | 학과 페이지 탐색 실패, 중앙 프로필 fallback 시도 | {exc}")
+            append_jsonl(
+                paths.log,
+                {
+                    "timestamp": now_iso(),
+                    "level": "department_discovery_failed_fallback_pending",
+                    "department": department_name,
+                    "department_id": department_id,
+                    "message": discovery_error,
+                    "enricher_version": ENRICHER_VERSION,
+                },
+            )
 
         department_match_ids: set[str] = set()
         faculty_pages: set[str] = set()
         field_update_counts: Counter[str] = Counter()
         page_exact_evidence_ids: set[str] = set()
+        exact_evidence_source_by_lab_id: dict[str, str] = {}
         primary_name_evidence_ids: set[str] = set()
+        identity_fallback_ids: set[str] = set()
+        secondary_name_fallback_ids: set[str] = set()
+        central_fallback_ids: set[str] = set()
 
         for result in pages:
-            page_exact_evidence_ids.update(exact_page_email_lab_ids(result, labs_by_email))
+            exact_ids = exact_page_email_lab_ids(result, labs_by_email)
+            if page_has_faculty_identity_context(result, normalized_known_names):
+                page_exact_evidence_ids.update(exact_ids)
+                for exact_lab_id in exact_ids:
+                    exact_evidence_source_by_lab_id.setdefault(exact_lab_id, result.url)
             matches = build_page_matches(
                 result,
                 override,
@@ -4513,10 +5006,76 @@ def run_stage2(args: argparse.Namespace) -> None:
                     current.get("primary_department_id", "") or current.get("department_id", "")
                 )
                 is_primary_source = bool(department_id and department_id == current_primary_id)
+                secondary_name_identity_only = bool(
+                    not is_primary_source and match.method.startswith("name")
+                )
+                if secondary_name_identity_only:
+                    safe_secondary_name = bool(
+                        allow_secondary_unique_name
+                        and page_has_faculty_identity_context(result, normalized_known_names)
+                    )
+                    if not safe_secondary_name:
+                        print(
+                            f"    [REJECT] 학과={department_name} | "
+                            f"교수={current.get('professor_name', '-') or '-'} | "
+                            f"방식={match.method} | 보조소속 이름 증거가 안전 조건을 충족하지 않음"
+                        )
+                        continue
+                    merged = dict(current)
+                    merged["affiliated_programs"] = merge_multi(
+                        merged.get("affiliated_programs", ""), department_name
+                    )
+                    record_affiliation_evidence(
+                        merged,
+                        department_name,
+                        result.url,
+                        "unique_name_scoped_faculty_page",
+                        False,
+                    )
+                    merged["enrichment_source_urls"] = sanitize_enrichment_source_urls(
+                        merged, [result.url]
+                    )
+                    merged["enrichment_status"] = "matched_identity_only"
+                    merged["enrichment_message"] = (
+                        f"{department_name} 범위 고정 공식 교수 페이지에서 "
+                        "전역 고유 교수명 확인; 연구실 필드는 복사하지 않음"
+                    )
+                    merged["enriched_at"] = now_iso()
+                    merged["enricher_version"] = ENRICHER_VERSION
+                    merged["data_state"] = (
+                        "authoritative_identity_only"
+                        if authoritative_rebuild
+                        else "incremental_identity_only"
+                    )
+                    merged["data_quality_status"] = data_quality_status(merged)
+                    labs_by_id[match.lab_id] = merged
+                    department_match_ids.add(match.lab_id)
+                    touched_lab_ids.add(match.lab_id)
+                    secondary_name_fallback_ids.add(match.lab_id)
+                    print(
+                        f"    [SCOPED-NAME] 학과={department_name} | "
+                        f"교수={merged.get('professor_name', '-') or '-'} | 소속만 확인"
+                    )
+                    append_jsonl(
+                        paths.log,
+                        {
+                            "timestamp": now_iso(),
+                            "level": "secondary_unique_name_affiliation",
+                            "department_type": department_type,
+                            "department": department_name,
+                            "department_id": department_id,
+                            "lab_id": merged.get("lab_id", ""),
+                            "professor": merged.get("professor_name", ""),
+                            "match_method": match.method,
+                            "page_url": result.url,
+                            "enricher_version": ENRICHER_VERSION,
+                        },
+                    )
+                    continue
                 if not is_primary_source and not match.method.startswith("email"):
                     print(
                         f"    [REJECT] 학과={department_name} | 교수={current.get('professor_name', '-') or '-'} | "
-                        f"방식={match.method} | 보조소속은 정확 이메일 증거 필요"
+                        f"방식={match.method} | 보조소속은 정확 이메일 또는 범위 고정 고유이름 증거 필요"
                     )
                     continue
                 if is_primary_source and match.method.startswith("name"):
@@ -4593,12 +5152,96 @@ def run_stage2(args: argparse.Namespace) -> None:
                     },
                 )
 
+        # Exact e-mail on an official faculty page is sufficient for identity
+        # and affiliation even when the site's DOM does not expose a card.
+        # No descriptive fields are copied in this fallback path.
+        for exact_lab_id, exact_source_url in sorted(exact_evidence_source_by_lab_id.items()):
+            if exact_lab_id in department_match_ids:
+                continue
+            current = labs_by_id.get(exact_lab_id)
+            if not current:
+                continue
+            current_primary_id = clean_text(
+                current.get("primary_department_id", "") or current.get("department_id", "")
+            )
+            is_primary_source = bool(department_id and department_id == current_primary_id)
+            merged = dict(current)
+            if is_primary_source:
+                merged["department_page_url"] = exact_source_url
+                merged["enrichment_source_urls"] = sanitize_enrichment_source_urls(
+                    merged, [exact_source_url]
+                )
+            else:
+                merged["affiliated_programs"] = merge_multi(
+                    merged.get("affiliated_programs", ""), department_name
+                )
+            record_affiliation_evidence(
+                merged,
+                department_name,
+                exact_source_url,
+                "email_page_identity_only",
+                is_primary_source,
+            )
+            merged["enrichment_status"] = "matched_identity_only"
+            merged["enrichment_message"] = (
+                f"{department_name} 공식 교수 페이지에서 정확 이메일 신원 확인; "
+                "카드 필드는 복사하지 않음"
+            )
+            merged["enriched_at"] = now_iso()
+            merged["enricher_version"] = ENRICHER_VERSION
+            merged["data_state"] = (
+                "authoritative_identity_only" if authoritative_rebuild else "incremental_identity_only"
+            )
+            merged["data_quality_status"] = data_quality_status(merged)
+            labs_by_id[exact_lab_id] = merged
+            department_match_ids.add(exact_lab_id)
+            touched_lab_ids.add(exact_lab_id)
+            identity_fallback_ids.add(exact_lab_id)
+            print(
+                f"    [EMAIL-IDENTITY] 학과={department_name} | "
+                f"교수={merged.get('professor_name', '-') or '-'} | 카드 없이 정확 이메일 확인"
+            )
+
         supported_ids = page_exact_evidence_ids | primary_name_evidence_ids
         expected_primary_ids = primary_lab_ids_by_department.get(department_id, set())
         recovered_primary_ids = supported_ids & expected_primary_ids
         required_primary_matches = minimum_primary_roster_matches(
             len(expected_primary_ids), override
         )
+        if required_primary_matches and len(recovered_primary_ids) < required_primary_matches:
+            central_verified = verify_primary_roster_via_central_profiles(
+                client,
+                department,
+                expected_primary_ids,
+                recovered_primary_ids,
+                required_primary_matches,
+                labs_by_id,
+                paths,
+                args.save_raw_html,
+            )
+            for fallback_lab_id, fallback_url in central_verified.items():
+                fallback_lab = labs_by_id.get(fallback_lab_id)
+                if not fallback_lab:
+                    continue
+                fallback_lab["enrichment_status"] = "matched_identity_only"
+                fallback_lab["enrichment_message"] = (
+                    f"{department_name} 학과 사이트 직접 확인 부족; "
+                    "POSTECH 중앙 연구자 프로필에서 교수명·이메일 재확인"
+                )
+                fallback_lab["enriched_at"] = now_iso()
+                fallback_lab["enricher_version"] = ENRICHER_VERSION
+                fallback_lab["data_state"] = "authoritative_central_identity_fallback"
+                fallback_lab["data_quality_status"] = data_quality_status(fallback_lab)
+                labs_by_id[fallback_lab_id] = fallback_lab
+                department_match_ids.add(fallback_lab_id)
+                touched_lab_ids.add(fallback_lab_id)
+                central_fallback_ids.add(fallback_lab_id)
+                recovered_primary_ids.add(fallback_lab_id)
+                print(
+                    f"    [CENTRAL-FALLBACK] 학과={department_name} | "
+                    f"교수={fallback_lab.get('professor_name', '-') or '-'} | {fallback_url}"
+                )
+
         if required_primary_matches and len(recovered_primary_ids) < required_primary_matches:
             labs_by_id.clear()
             labs_by_id.update(deepcopy(department_lab_snapshot))
@@ -4623,8 +5266,18 @@ def run_stage2(args: argparse.Namespace) -> None:
             continue
 
         if guarded_department:
-            allowed_matches = max(len(supported_ids) + 3, int(len(supported_ids) * 1.20) + 1)
-            unsupported_ids = department_match_ids - supported_ids
+            # Scoped-portal protection must recognize all authoritative identity
+            # channels. Central POSTECH profiles explain primary-department
+            # matches, while compact globally-unique names explain affiliation
+            # matches on the exact scoped program page.
+            guard_supported_ids = (
+                supported_ids | central_fallback_ids | secondary_name_fallback_ids
+            )
+            allowed_matches = max(
+                len(guard_supported_ids) + 3,
+                int(len(guard_supported_ids) * 1.20) + 1,
+            )
+            unsupported_ids = department_match_ids - guard_supported_ids
             evidence_mismatch = bool(
                 department_match_ids
                 and (len(department_match_ids) > allowed_matches or len(unsupported_ids) > 3)
@@ -4636,14 +5289,14 @@ def run_stage2(args: argparse.Namespace) -> None:
                 touched_lab_ids.update(touched_lab_ids_snapshot or set())
                 department["enrichment_status"] = "failed_scope_guard"
                 department["enrichment_message"] = (
-                    f"페이지 신원증거={len(supported_ids)}, 매칭={len(department_match_ids)}, "
+                    f"권위 신원증거={len(guard_supported_ids)}, 매칭={len(department_match_ids)}, "
                     f"설명불가={len(unsupported_ids)}; 학과 변경 전체 롤백"
                 )
                 department["faculty_match_count"] = "0"
                 department["enriched_at"] = now_iso()
                 department["enricher_version"] = ENRICHER_VERSION
                 print(
-                    f"[ROLLBACK-DEPT] 학과={department_name} | 페이지증거={len(supported_ids)} | "
+                    f"[ROLLBACK-DEPT] 학과={department_name} | 권위증거={len(guard_supported_ids)} | "
                     f"매칭={len(department_match_ids)} | 설명불가={len(unsupported_ids)}"
                 )
                 save_checkpoint(paths, departments, labs_by_id, department_fields, lab_fields, checkpoint_dry_run)
@@ -4739,10 +5392,25 @@ def run_stage2(args: argparse.Namespace) -> None:
         department["enriched_at"] = now_iso()
         department["enricher_version"] = ENRICHER_VERSION
         if department_match_ids:
-            department["enrichment_status"] = "success"
-            summary = ", ".join(f"{key}={value}" for key, value in sorted(field_update_counts.items()))
+            department["enrichment_status"] = (
+                "success_identity_fallback"
+                if central_fallback_ids and not (department_match_ids - central_fallback_ids)
+                else "success"
+            )
+            summary_parts = [
+                f"{key}={value}" for key, value in sorted(field_update_counts.items())
+            ]
+            if identity_fallback_ids:
+                summary_parts.append(f"exact_email_identity_only={len(identity_fallback_ids)}")
+            if secondary_name_fallback_ids:
+                summary_parts.append(
+                    f"scoped_unique_name_affiliation={len(secondary_name_fallback_ids)}"
+                )
+            if central_fallback_ids:
+                summary_parts.append(f"central_profile_identity={len(central_fallback_ids)}")
+            summary = ", ".join(summary_parts)
             department["enrichment_message"] = (
-                f"교수/랩 {len(department_match_ids)}명 매칭" + (f"; {summary}" if summary else "")
+                f"교수/랩 {len(department_match_ids)}명 권위 확인" + (f"; {summary}" if summary else "")
             )
         else:
             department["enrichment_status"] = "no_match"
@@ -4776,7 +5444,14 @@ def run_stage2(args: argparse.Namespace) -> None:
             lab["affiliated_programs"] = lab.get("department_name", "")
         lab["data_quality_status"] = data_quality_status(lab)
         if lab.get("lab_id") in touched_lab_ids:
-            lab["data_state"] = "authoritative_rebuilt" if authoritative_rebuild else "incremental_verified"
+            current_state = clean_text(lab.get("data_state", ""))
+            identity_states = {
+                "authoritative_identity_only",
+                "authoritative_central_identity_fallback",
+                "incremental_identity_only",
+            }
+            if current_state not in identity_states:
+                lab["data_state"] = "authoritative_rebuilt" if authoritative_rebuild else "incremental_verified"
         elif authoritative_rebuild and clean_text(lab.get("data_state", "")) == "authoritative_rebuild_pending":
             lab["data_state"] = "authoritative_no_match"
         lab["enricher_version"] = ENRICHER_VERSION
@@ -4796,13 +5471,27 @@ def run_stage2(args: argparse.Namespace) -> None:
                 "enricher_version": ENRICHER_VERSION,
             },
         )
+        write_authoritative_rebuild_report(
+            paths, selected_departments, failure_reasons, commit_metrics, committed=False
+        )
         print("\n[ABORT-COMMIT] 전체 권위 재구축 검증 실패")
         for reason in failure_reasons:
             print(f"  - {reason}")
+        for item in commit_metrics.get("failed_departments", []):
+            print(
+                f"    · {item.get('department_name', '-')}: "
+                f"{item.get('status', '-')} | {item.get('message', '-') or '-'}"
+            )
+        print(f"진단 보고서: {paths.rebuild_report}")
         print("원본 departments.csv/labs.csv는 변경하지 않았습니다. 백업만 생성되었습니다.")
         return
 
     save_checkpoint(paths, departments, labs_by_id, department_fields, lab_fields, args.dry_run)
+
+    if authoritative_rebuild and not args.dry_run:
+        write_authoritative_rebuild_report(
+            paths, selected_departments, [], commit_metrics, committed=True
+        )
 
     quality_counts = Counter(clean_text(lab.get("data_quality_status", "")) or "unknown" for lab in labs_by_id.values())
     status_counts = Counter(clean_text(lab.get("enrichment_status", "")) or "unknown" for lab in labs_by_id.values())
@@ -5437,6 +6126,7 @@ def build_data_audit_report(
     departments: list[dict[str, str]],
     labs: list[dict[str, str]],
     outputs: list[dict[str, str]],
+    overrides: Optional[dict] = None,
 ) -> dict[str, object]:
     labs_by_id = {
         clean_text(row.get("lab_id", "")): row
@@ -5555,7 +6245,9 @@ def build_data_audit_report(
             count_mismatch_labs += 1
 
     affiliation_counts = count_affiliations(labs)
-    affiliation_guard_violations = affiliation_evidence_violations(labs)
+    affiliation_guard_violations = affiliation_evidence_violations(
+        labs, departments, overrides or effective_builtin_overrides()
+    )
 
     department_by_id = {
         clean_text(row.get("department_id", "")): row
@@ -5696,7 +6388,9 @@ def run_data_audit(args: argparse.Namespace) -> None:
     departments, _ = read_csv_rows(data_dir / "departments.csv")
     labs, _ = read_csv_rows(data_dir / "labs.csv")
     outputs, _ = read_csv_rows(data_dir / "research_outputs.csv")
-    report = build_data_audit_report(departments, labs, outputs)
+    overrides_path = Path(args.overrides).expanduser().resolve() if args.overrides else data_dir / "site_overrides.json"
+    audit_overrides = load_overrides(overrides_path)
+    report = build_data_audit_report(departments, labs, outputs, audit_overrides)
     clean_path = data_dir / "research_outputs_clean.csv"
     recent_path = data_dir / "recent_outputs.csv"
     if clean_path.exists() and recent_path.exists():
@@ -5751,6 +6445,51 @@ def run_self_test() -> None:
         "email", False,
     )
     assert not affiliation_evidence_violations([evidence_row])
+    tests += 1
+
+    # A scoped globally-unique name is valid only when the exact successful
+    # official page and the department's hard scope are both available.
+    scoped_url = "https://gscst.postech.ac.kr:443/web/?top=member&sub=professor&depart=16&position=2"
+    scoped_department = {
+        "department_id": "D16",
+        "department_name_kor": "푸드테크융합전공",
+        "homepage_url": "",
+        "faculty_page_urls": scoped_url,
+    }
+    scoped_row = {
+        "lab_id": "L2", "department_name": "컴퓨터공학과",
+        "professor_name": "전역고유이름", "email": "unique@postech.ac.kr",
+        "affiliated_programs": "컴퓨터공학과;푸드테크융합전공",
+        "affiliation_evidence": "",
+    }
+    record_affiliation_evidence(
+        scoped_row, "푸드테크융합전공", scoped_url,
+        "unique_name_scoped_faculty_page", False,
+    )
+    assert not affiliation_evidence_violations(
+        [scoped_row], [scoped_department], effective_builtin_overrides()
+    )
+    bad_scoped_department = dict(scoped_department)
+    bad_scoped_department["faculty_page_urls"] = (
+        "https://gscst.postech.ac.kr/web/?depart=14&position=2&sub=professor&top=member"
+    )
+    assert len(affiliation_evidence_violations(
+        [scoped_row], [bad_scoped_department], effective_builtin_overrides()
+    )) == 1
+    tests += 1
+
+    # clean-only must preserve the same scoped-name evidence contract instead
+    # of deleting affiliations that the authoritative commit accepted.
+    scoped_clean_lab = {"L2": dict(scoped_row)}
+    quarantine_unverified_affiliations(
+        [dict(scoped_department)], scoped_clean_lab, effective_builtin_overrides()
+    )
+    assert "푸드테크융합전공" in split_multi(
+        scoped_clean_lab["L2"]["affiliated_programs"]
+    )
+    assert not affiliation_evidence_violations(
+        scoped_clean_lab.values(), [scoped_department], effective_builtin_overrides()
+    )
     tests += 1
 
     # Official-list-shaped HTML must produce one exact-email match per card.
@@ -6023,7 +6762,7 @@ def run_self_test() -> None:
             }),
         }
     }
-    quarantine_unverified_affiliations([], evidence_lab)
+    quarantine_unverified_affiliations([], evidence_lab, effective_builtin_overrides())
     assert evidence_lab["L1"]["affiliated_programs"] == "컴퓨터공학과;푸드테크융합전공"
     assert "푸드테크융합전공" in parse_json_dict(evidence_lab["L1"]["affiliation_evidence"])
     assert not affiliation_evidence_violations(evidence_lab.values())
@@ -6117,6 +6856,91 @@ def run_self_test() -> None:
     assert summary_has_lab_intro_context(
         "MARCH 연구실에서는 휴먼-로봇 인터페이스 연구를 수행합니다."
     )
+    tests += 1
+
+    identity_html = """
+    <html><body><h2>교수진</h2><div>홍길동</div>
+    <a href='mailto:hong@postech.ac.kr'>hong@postech.ac.kr</a></body></html>
+    """
+    identity_result = PageResult(
+        "https://example.postech.ac.kr/faculty", identity_html, "test", 200
+    )
+    assert page_has_faculty_identity_context(identity_result, {normalize_name("홍길동")})
+    assert not page_has_faculty_identity_context(
+        PageResult("https://example.postech.ac.kr/news/1", identity_html, "test", 200),
+        {normalize_name("홍길동")},
+    )
+    tests += 1
+
+    central_result = PageResult(
+        "https://www.postech.ac.kr/kor/research-industry-academia/researcher-search.do?mode=view&id=abc",
+        "<html><body><h3>홍길동 교수</h3><span>hong@postech.ac.kr</span></body></html>",
+        "test",
+        200,
+    )
+    assert central_profile_identity_matches(
+        central_result, {"professor_name": "홍길동", "email": "hong@postech.ac.kr"}
+    )
+    assert not central_profile_identity_matches(
+        central_result, {"professor_name": "김철수", "email": "hong@postech.ac.kr"}
+    )
+    tests += 1
+
+    fallback_departments = [
+        {"department_id": "D1", "department_name_kor": "A", "enrichment_status": "success"},
+        {"department_id": "D2", "department_name_kor": "B", "enrichment_status": "success_identity_fallback"},
+    ]
+    reasons, metrics = authoritative_commit_failure_reasons(fallback_departments, [], {})
+    assert not reasons and metrics["successful_departments"] == 2
+    tests += 1
+
+    with tempfile.TemporaryDirectory() as temp_dir:
+        override_path = Path(temp_dir) / "site_overrides.json"
+        override_path.write_text(
+            json.dumps(
+                {
+                    "정보통신대학원": {
+                        "faculty_urls": [
+                            "https://eecs.postech.ac.kr/teaching-and-research/professor/"
+                        ],
+                        "scope_query_params": {"dept": ["ALL"]},
+                    }
+                },
+                ensure_ascii=False,
+            ),
+            encoding="utf-8",
+        )
+        hardened = load_overrides(override_path)["정보통신대학원"]
+        assert hardened["scope_query_params"] == {"dept": ["103"]}
+        assert hardened["faculty_urls"] == [
+            "https://eecs.postech.ac.kr/teaching-and-research/professor/?dept=103"
+        ]
+    tests += 1
+
+    scoped_html = """
+    <html><body><h2>교수</h2>
+      <div class='professor-card'><strong>홍길동 교수</strong><span>연구분야</span></div>
+    </body></html>
+    """
+    scoped_result = PageResult(
+        "https://program.postech.ac.kr/professor", scoped_html, "test", 200
+    )
+    scoped_lab = {
+        "LAB_X": {
+            "lab_id": "LAB_X",
+            "professor_name": "홍길동",
+            "email": "hong@postech.ac.kr",
+        }
+    }
+    scoped_matches = build_page_matches(
+        scoped_result,
+        {"max_card_emails": 2, "max_card_identities": 2},
+        scoped_lab,
+        {},
+        {normalize_name("홍길동"): "LAB_X"},
+        {normalize_name("홍길동")},
+    )
+    assert len(scoped_matches) == 1 and scoped_matches[0].method.startswith("name")
     tests += 1
 
     print(f"SELF TEST PASSED: {tests} tests")

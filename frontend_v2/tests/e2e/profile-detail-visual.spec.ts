@@ -52,7 +52,7 @@ test("captures every affected profile and professor state", async ({ page }) => 
   const saveButton = page.getByRole("button", { name: "Save professor" }).first();
   await expect(saveButton).toBeEnabled();
   await saveButton.click();
-  await expect(page.getByRole("button", { name: "Saved" }).first()).toBeVisible();
+  await expect(page.getByRole("button", { name: "Remove saved professor" }).first()).toBeVisible();
   await captureBreakpoints(page, "professors-saved");
 
   await page.goto("/profile");
@@ -70,7 +70,7 @@ test("captures every affected profile and professor state", async ({ page }) => 
   await captureBreakpoints(page, "profile-contact-draft");
 
   await page.goto("/professors/snu-demo-01");
-  await expect(page.getByRole("heading", { name: "AI Systems Lab (Demo)" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "AI Systems Lab" })).toBeVisible();
   await expect(page.getByText("1 exact keyword match", { exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Recent research and paper preview" })).toBeVisible();
   await captureBreakpoints(page, "professor-detail");

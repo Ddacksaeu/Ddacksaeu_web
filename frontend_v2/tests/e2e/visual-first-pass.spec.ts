@@ -28,6 +28,7 @@ for (const target of PAGES) {
     }
     await page.goto(target.path);
     await expect(page.getByRole("heading", { name: new RegExp(target.heading), level: 1 })).toBeVisible();
+    await expect(page.locator("body")).not.toContainText(/\bDemo\b|\(Demo\)|fictional|product testing|not real recruitment/i);
     if (target.path === "/dashboard") await expect(page.getByText("Next: create a research profile")).toBeVisible();
     if (target.path.startsWith("/professors/")) await expect(page.getByText("Create a profile to compare", { exact: true })).toBeVisible();
     await page.addStyleTag({ content: "nextjs-portal { display: none !important; }" });

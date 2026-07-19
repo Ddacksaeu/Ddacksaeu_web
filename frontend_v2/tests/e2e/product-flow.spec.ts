@@ -68,6 +68,37 @@ test("professor filters use a labelled drawer on tablet", async ({ page }) => {
   await expect(page.getByLabel("Search professors, labs, or keywords")).toBeVisible();
 });
 
+test("professor filter selections are optically centered inside their controls", async ({ page }) => {
+  await useSignedInDemo(page);
+  await page.goto("/professors");
+
+  const selects = page.locator(".catalog-select-field select");
+  await expect(selects).toHaveCount(2);
+  for (const select of await selects.all()) {
+    await expect(select).toHaveCSS("height", "48px");
+    await expect(select).toHaveCSS("padding-top", "0px");
+    await expect(select).toHaveCSS("padding-bottom", "1px");
+  }
+});
+
+test("professor results keep compact spacing below the result count", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await useSignedInDemo(page);
+  await page.goto("/professors");
+
+  const toolbar = page.locator(".catalog-result-toolbar");
+  const firstCard = page.locator(".catalog-card").first();
+  await expect(toolbar).toBeVisible();
+  await expect(firstCard).toBeVisible();
+
+  const [toolbarBox, cardBox] = await Promise.all([toolbar.boundingBox(), firstCard.boundingBox()]);
+  expect(toolbarBox).not.toBeNull();
+  expect(cardBox).not.toBeNull();
+  const gap = cardBox!.y - (toolbarBox!.y + toolbarBox!.height);
+  expect(gap).toBeGreaterThanOrEqual(8);
+  expect(gap).toBeLessThanOrEqual(16);
+});
+
 test("professor detail keeps project and paper titles intact on mobile", async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 812 });
   await useSignedInDemo(page);

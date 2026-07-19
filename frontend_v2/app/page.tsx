@@ -1,13 +1,40 @@
+import Image from "next/image";
 import Link from "next/link";
 
 import { AppHeader } from "../src/components/app-header";
 import { LAB_CATALOG_FIXTURES } from "../src/fixtures/catalog";
 
 const UNIVERSITIES = [
-  { shortName: "SNU", name: "Seoul National University" },
-  { shortName: "KAIST", name: "KAIST" },
-  { shortName: "POSTECH", name: "POSTECH" },
-  { shortName: "YONSEI", name: "Yonsei University" },
+  {
+    name: "Seoul National University",
+    logo: "/images/universities/snu.png",
+    width: 826,
+    height: 189,
+  },
+  {
+    name: "KAIST",
+    logo: "/images/universities/kaist.png",
+    width: 307,
+    height: 89,
+  },
+  {
+    name: "POSTECH",
+    logo: "/images/universities/postech.png",
+    width: 493,
+    height: 72,
+  },
+  {
+    name: "Yonsei University",
+    logo: "/images/universities/yonsei.png",
+    width: 784,
+    height: 236,
+  },
+  {
+    name: "Korea University",
+    logo: "/images/universities/korea.png",
+    width: 686,
+    height: 185,
+  },
 ] as const;
 const TRENDING_TOPICS = [
   "Computer Vision",
@@ -104,8 +131,7 @@ export default function HomePage() {
             ))}
           </ol>
           <p>
-            Demo data only. Verify recruitment and research details on the
-            official source.
+            Verify recruitment and research details on the official source.
           </p>
         </aside>
       </section>
@@ -214,15 +240,11 @@ export default function HomePage() {
               Explore labs at leading universities
             </h2>
           </div>
-          <p>
-            Based on current demo data. These universities are not official
-            partners.
-          </p>
         </div>
         <div
           className="university-marquee"
           tabIndex={0}
-          aria-label="Universities in the demo. Focus to pause the animation."
+          aria-label="University logo carousel. Focus to pause the animation."
         >
           <div className="university-marquee-track">
             {[0, 1].map((copyIndex) => (
@@ -232,14 +254,14 @@ export default function HomePage() {
                 key={copyIndex}
               >
                 {UNIVERSITIES.map((university) => (
-                  <li key={`${copyIndex}-${university.shortName}`}>
-                    <span aria-hidden="true">
-                      {university.shortName.slice(0, 1)}
-                    </span>
-                    <div>
-                      <strong>{university.shortName}</strong>
-                      <small>{university.name}</small>
-                    </div>
+                  <li key={`${copyIndex}-${university.name}`}>
+                    <Image
+                      alt={`${university.name} logo`}
+                      height={university.height}
+                      sizes="(max-width: 700px) 192px, 220px"
+                      src={university.logo}
+                      width={university.width}
+                    />
                   </li>
                 ))}
               </ul>
@@ -259,9 +281,6 @@ export default function HomePage() {
         <div className="home-bottom-actions">
           <Link className="primary-cta" href="/profile">
             Create my profile
-          </Link>
-          <Link className="seed-link" href="/login">
-            Try the demo flow
           </Link>
         </div>
       </section>

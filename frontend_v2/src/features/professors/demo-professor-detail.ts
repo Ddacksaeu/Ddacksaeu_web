@@ -56,13 +56,13 @@ export function createDemoProfessorDetail(lab: LabCatalogEntry): DemoProfessorDe
       "Reproducible benchmark for student researchers",
     ],
     papers: [
-      { title: `${primary} Adaptive framework for representation learning`, year: "2026 Demo", summary: "Representation-learning framework and evaluation criteria." },
-      { title: `${secondary} Reliable evaluation methods`, year: "2025 Demo", summary: "Evaluation conditions, reliability checks, and error analysis." },
-      { title: `${primary} data efficiency analysis`, year: "2025 Demo", summary: "Relationship between data scale and model performance." },
-      { title: "Experiment management for reproducible student research", year: "2024 Demo", summary: "Experiment logs, result tracking, and reproduction workflow." },
+      { title: `${primary} Adaptive framework for representation learning`, year: "2026", summary: "Representation-learning framework and evaluation criteria." },
+      { title: `${secondary} Reliable evaluation methods`, year: "2025", summary: "Evaluation conditions, reliability checks, and error analysis." },
+      { title: `${primary} data efficiency analysis`, year: "2025", summary: "Relationship between data scale and model performance." },
+      { title: "Experiment management for reproducible student research", year: "2024", summary: "Experiment logs, result tracking, and reproduction workflow." },
     ],
     degreePrograms: ["Master's", "PhD", "Integrated MS/PhD"],
     recruitmentNote: "Recruitment status, degree programs, funding, and project assignments are unverified. Check the official lab site and graduate admissions guide before contacting.",
-    sourceNote: "Only official university and department links are registered. Lab descriptions and papers are demo content until the crawler is connected.",
+    sourceNote: "Official university and department links are registered. Lab descriptions and papers will be refreshed after crawler integration.",
   };
 }
