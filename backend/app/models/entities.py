@@ -70,7 +70,9 @@ class Department(TimestampedModel, Base):
 class Professor(TimestampedModel, Base):
     __tablename__ = "professors"
     __table_args__ = (
-        UniqueConstraint("university_id", "name", name="uq_professors_university_name"),
+        UniqueConstraint(
+            "university_id", "department_id", "name", name="uq_professors_university_department_name"
+        ),
     )
 
     id: Mapped[str] = mapped_column(String(120), primary_key=True)
@@ -162,6 +164,9 @@ class Lab(TimestampedModel, Base):
     summary_origin: Mapped[str] = mapped_column(String(32), default="fixture", nullable=False)
     source_url: Mapped[str | None] = mapped_column(String(500))
     source_checked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    source_type: Mapped[str] = mapped_column(String(50), default="fixture", nullable=False)
+    import_batch_id: Mapped[str | None] = mapped_column(String(36), index=True)
+    validation_status: Mapped[str] = mapped_column(String(32), default="valid", nullable=False)
 
     professor: Mapped[Professor] = relationship(back_populates="labs")
     facts: Mapped[list[LabFact]] = relationship(back_populates="lab", cascade="all, delete-orphan")
@@ -243,8 +248,23 @@ class Paper(Base):
     source_url: Mapped[str | None] = mapped_column(String(500))
     source_checked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     last_crawled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    source_type: Mapped[str] = mapped_column(String(50), default="fixture", nullable=False)
+    import_batch_id: Mapped[str | None] = mapped_column(String(36), index=True)
+    validation_status: Mapped[str] = mapped_column(String(32), default="valid", nullable=False)
 
     lab: Mapped[Lab] = relationship(back_populates="papers")
+
+
+class ImportBatch(Base):
+    __tablename__ = "import_batches"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    source_type: Mapped[str] = mapped_column(String(50), nullable=False)
+    source_path: Mapped[str] = mapped_column(String(500), nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False)
+    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, nullable=False)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    report_json: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict, nullable=False)
 
 
 class Favorite(Base):

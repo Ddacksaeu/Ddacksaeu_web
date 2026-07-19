@@ -25,9 +25,16 @@ def test_initial_migration_upgrades_and_downgrades_sqlite(tmp_path: Path, monkey
         "recommendations",
         "crawl_runs",
         "document_analyses",
+        "import_batches",
     }.issubset(inspect(engine).get_table_names())
     assert {"event_type", "start_at", "is_estimated", "last_verified_at"}.issubset(
         {column["name"] for column in inspect(engine).get_columns("admission_events")}
+    )
+    assert {"source_type", "import_batch_id", "validation_status"}.issubset(
+        {column["name"] for column in inspect(engine).get_columns("labs")}
+    )
+    assert {"source_type", "import_batch_id", "validation_status"}.issubset(
+        {column["name"] for column in inspect(engine).get_columns("papers")}
     )
 
     command.downgrade(config, "20260718_0002")

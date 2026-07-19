@@ -27,6 +27,7 @@ dist/
 *.egg-info/
 *.db
 backend/.document_uploads/
+backend/import_reports/
 
 # Node.js
 node_modules/

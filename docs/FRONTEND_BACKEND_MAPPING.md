@@ -138,6 +138,24 @@ its Lovable mock state until a later API-integration task.
 Future API responses must read a user-specific `Recommendation` instead. All
 records inserted by the development seed are explicitly fictional fixtures.
 
+## POSTECH crawler import mapping (2026-07-19)
+
+`Crawler/data/labs.csv` is the raw authoritative input for the catalogue:
+`researcher_id -> professors.id`, `department_id -> departments.id`, and
+`lab_id -> labs.id`. `research_summary`, `primary_field`, and semicolon-delimited
+`keywords` populate the existing search/recommendation fields. The importer maps
+`research_outputs.csv` only to `papers` because the current recommendation service
+uses paper title, abstract/summary, and keyword text; source outputs are attached by
+`lab_id`. Every imported lab and paper carries `source_url`, checked/crawled time,
+`source_type=postech_csv`, an `import_batch_id`, and `validation_status=valid`.
+
+`GET /api/v1/labs`, `GET /api/v1/labs/{id}`, and `GET /api/v1/labs/{id}/similar`
+already query ORM entities rather than fixtures, so they use POSTECH data whenever
+the selected database is imported. `GET /api/v1/recommendations` reads the same
+labs, keywords, and limited recent papers without changing recommendation weights.
+The raw catalogue has same-name professors in different departments, so the professor
+identity constraint is `(university_id, department_id, name)` rather than university/name.
+
 ## Lab search API implementation (2026-07-18)
 
 `GET /api/v1/labs` supports independent and composable `university`,
