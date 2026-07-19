@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 
+import { CvRecommendations } from "../recommendations/cv-recommendations";
 import type { DocumentAnalysis } from "./document-analysis";
 import { analyzeDocument, getDocumentHistory, getLatestDocumentAnalysis, validateDocumentFile, type DocumentApiError } from "./documents-api";
 import { CvAnalysisResult } from "./cv-analysis-result";
@@ -62,7 +63,7 @@ export function CvAnalysisPanel() {
     {state === "error" && <div className="form-status is-error" role="alert"><p>{message}</p><button className="secondary-button" type="button" onClick={() => window.location.reload()}>Try again</button></div>}
     {state === "idle" && message && <p className="form-status" aria-live="polite">{message}</p>}
     {analysis === null && state === "idle" && <div className="profile-dashboard-empty"><strong>No analyzed CV yet</strong><p>Upload a CV to view its local rule-based analysis.</p></div>}
-    {analysis !== null && <CvAnalysisResult analysis={analysis} />}
+    {analysis !== null && <><CvAnalysisResult analysis={analysis} /><CvRecommendations analysisId={analysis.analysis_id} /></>}
     {history.length > 1 && <section className="cv-history" aria-labelledby="cv-history-title"><h3 id="cv-history-title">Recent analyses</h3><ul>{history.map((item) => <li key={item.analysis_id}><strong>{item.original_filename ?? "Untitled CV"}</strong><span>{item.file_type ?? "Unknown format"} · {item.analyzer_origin}</span></li>)}</ul></section>}
   </section>;
 }
