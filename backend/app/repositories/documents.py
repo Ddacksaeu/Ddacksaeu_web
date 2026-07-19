@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 from sqlalchemy.orm import Session
 
 from app.models import DocumentAnalysis, UploadedDocument, User
@@ -26,7 +28,7 @@ def create_uploaded_document(
         original_filename=filename,
         content_type=content_type,
         byte_size=byte_size,
-        storage_key=f"documents/{new_id()}.pdf",
+        storage_key=f"documents/{new_id()}{Path(filename).suffix.lower()}",
         status="uploaded",
     )
     db.add(document)
@@ -45,7 +47,7 @@ def create_completed_analysis(
         methodologies_json=result.research_interests,
         projects_json=[project.model_dump() for project in result.projects],
         completeness=max(0, min(100, 100 - len(result.missing_information) * 10)),
-        analysis_origin="openai",
+        analysis_origin="local_rule_based",
     )
     document.status = "completed"
     db.add(analysis)
@@ -64,7 +66,7 @@ def create_failed_analysis(db: Session, *, document: UploadedDocument, error_cod
             skills_json=[],
             methodologies_json=[],
             projects_json=[],
-            analysis_origin="openai",
+            analysis_origin="local_rule_based",
             error_code=error_code,
         )
     )

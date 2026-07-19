@@ -4,12 +4,13 @@ from pathlib import Path
 
 from fastapi import APIRouter, Depends, File, Request, UploadFile
 from fastapi.responses import JSONResponse
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.auth import current_user
 from app.core.config import Settings
 from app.db.session import get_db_session
-from app.models import User
+from app.models import DocumentAnalysis, UploadedDocument, User
 from app.repositories.documents import (
     create_completed_analysis,
     create_failed_analysis,
@@ -19,7 +20,7 @@ from app.schemas.documents import DocumentAnalysisResponse
 from app.services.document_analysis import (
     DocumentProcessingError,
     analyze_document_text,
-    extract_pdf_text,
+    extract_docx_text, extract_pdf_text, extract_txt_text,
 )
 
 router = APIRouter(prefix="/documents", tags=["documents"])
@@ -37,18 +38,16 @@ def _validate_upload(file: UploadFile, content: bytes, settings: Settings) -> No
     filename = file.filename or ""
     if len(filename) > 255:
         raise DocumentProcessingError("invalid_filename", 422, "The filename is too long")
-    if not filename.lower().endswith(".pdf") or file.content_type not in {
-        "application/pdf",
-        "application/x-pdf",
-    }:
-        raise DocumentProcessingError("invalid_file_type", 415, "Only PDF files are supported")
+    extension = Path(filename).suffix.lower()
+    if extension not in {".pdf", ".docx", ".txt"}:
+        raise DocumentProcessingError("invalid_file_type", 415, "Only PDF, DOCX, and TXT files are supported")
     if len(content) > settings.document_max_upload_bytes:
         raise DocumentProcessingError(
-            "file_too_large", 413, "The PDF exceeds the upload size limit"
+            "file_too_large", 413, "The file exceeds the upload size limit"
         )
     if not content:
-        raise DocumentProcessingError("empty_pdf", 422, "The PDF is empty")
-    if not content.startswith(b"%PDF-"):
+        raise DocumentProcessingError("empty_file", 422, "The file is empty")
+    if extension == ".pdf" and not content.startswith(b"%PDF-"):
         raise DocumentProcessingError("invalid_pdf", 422, "The file is not a PDF")
 
 
@@ -71,22 +70,18 @@ def analyze_document(
     try:
         content = file.file.read(settings.document_max_upload_bytes + 1)
         _validate_upload(file, content, settings)
-        extracted_text = extract_pdf_text(content, settings.document_min_extracted_characters)
+        extension = Path(file.filename or "").suffix.lower()
+        extracted_text = {".pdf": extract_pdf_text, ".docx": extract_docx_text, ".txt": extract_txt_text}[extension](content, settings.document_min_extracted_characters)
         document = create_uploaded_document(
             db,
             user_id=user.id,
             filename=file.filename or "document.pdf",
-            content_type="application/pdf",
+            content_type=file.content_type or "application/octet-stream",
             byte_size=len(content),
         )
         _save_private_upload(Path(settings.document_upload_dir), document.storage_key, content)
         result = analyze_document_text(
             extracted_text,
-            api_key=(
-                settings.openai_api_key.get_secret_value() if settings.openai_api_key else None
-            ),
-            model=settings.openai_model,
-            timeout_seconds=settings.openai_timeout_seconds,
         )
         analysis = create_completed_analysis(db, document=document, result=result)
         return DocumentAnalysisResponse(
@@ -100,3 +95,12 @@ def analyze_document(
         return _error_response(request, error)
     finally:
         file.file.close()
+
+
+@router.get("/latest", response_model=DocumentAnalysisResponse)
+def latest_analysis(user: User = Depends(current_user), db: Session = Depends(get_db_session)) -> DocumentAnalysisResponse:
+    row = db.execute(select(DocumentAnalysis, UploadedDocument).join(UploadedDocument).where(UploadedDocument.user_id == user.id, DocumentAnalysis.status == "completed").order_by(DocumentAnalysis.created_at.desc())).first()
+    if row is None:
+        raise DocumentProcessingError("analysis_not_found", 404, "No completed CV analysis exists")
+    analysis, document = row
+    return DocumentAnalysisResponse(document_id=document.id, analysis_id=analysis.id, education=[], skills=analysis.skills_json, projects=analysis.projects_json, research_experience=[], research_interests=analysis.methodologies_json, strengths=[], missing_information=[], keywords=analysis.keywords_json, keyword_weights={}, short_summary="Local rule-based analysis result")
