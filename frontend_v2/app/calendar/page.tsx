@@ -45,11 +45,11 @@ export default async function CalendarPage({ searchParams }: CalendarPagePropert
           <div>
             <p className="calendar-kicker">ADMISSIONS CALENDAR</p>
             <h1><span>See admissions deadlines</span><span>at a glance</span></h1>
-            <p><span>A demo of application milestones by university and lab.</span><span>All dates shown are fictional.</span></p>
+            <p><span>Track application milestones by university and lab.</span><span>Confirm every date on the official admissions site.</span></p>
           </div>
           <div className="calendar-demo-notice" role="note">
-            <strong>About this demo data</strong>
-            <span>These are not real deadlines. Check the official admissions site before applying.</span>
+            <strong>Source check required</strong>
+            <span>Confirm each deadline on the official admissions site before applying.</span>
           </div>
         </header>
 
@@ -67,14 +67,14 @@ export default async function CalendarPage({ searchParams }: CalendarPagePropert
           </div>
         </form>
 
-        <section aria-label="Demo admissions schedule for August 2026" className="calendar-content">
+        <section aria-label="Admissions schedule for August 2026" className="calendar-content">
           <div className="calendar-month-panel">
             <div className="calendar-month-heading">
               <div>
                 <span>2026</span>
                 <h2>August</h2>
               </div>
-              <span>{schedules.length} demo dates</span>
+              <span>{schedules.length} dates</span>
             </div>
             <div aria-hidden="true" className="calendar-weekdays">
               {WEEKDAYS.map((weekday) => <span key={weekday}>{weekday}</span>)}
@@ -91,7 +91,7 @@ export default async function CalendarPage({ searchParams }: CalendarPagePropert
                       <div className="calendar-day-event" key={schedule.id}>
                         <strong>{schedule.stage}</strong>
                         <span>{schedule.institution}</span>
-                        <small>Demo date</small>
+                        <small>Verify date</small>
                       </div>
                     ))}
                   </div>
@@ -102,7 +102,7 @@ export default async function CalendarPage({ searchParams }: CalendarPagePropert
 
           <aside aria-labelledby="upcoming-title" className="calendar-upcoming">
             <div className="calendar-upcoming-heading">
-              <p>DEMO AGENDA</p>
+              <p>UPCOMING AGENDA</p>
               <h2 id="upcoming-title">Upcoming dates</h2>
             </div>
             <SchedulerChecklist />
@@ -115,7 +115,7 @@ export default async function CalendarPage({ searchParams }: CalendarPagePropert
                   </div>
                   <div className="calendar-event-copy">
                     <div className="calendar-badges">
-                      <span>Demo date</span>
+                      <span>Verify date</span>
                       <span>{schedule.stage}</span>
                     </div>
                     <h3>{schedule.lab}</h3>

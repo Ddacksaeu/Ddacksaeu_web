@@ -18,7 +18,7 @@ describe("filterCatalog", () => {
     const professorResult = filterCatalog(LAB_CATALOG_FIXTURES, {
       institution: "",
       topic: "",
-      query: "Demo Professor 20",
+      query: "Professor 20",
     });
     const topicResult = filterCatalog(LAB_CATALOG_FIXTURES, {
       institution: "",

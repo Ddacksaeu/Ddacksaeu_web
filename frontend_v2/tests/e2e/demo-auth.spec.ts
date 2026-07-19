@@ -76,3 +76,22 @@ test("Given sign-in without completed setup, workspace routes remain gated by on
   await expect(page).toHaveURL(/\/onboarding$/);
   await expect(page.getByRole("heading", { name: "Tell us what you are looking for" })).toBeVisible();
 });
+
+test("Given a scrolled onboarding page, the sticky header covers the viewport", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 400 });
+  await page.goto("/login");
+  await page.getByLabel("Username").fill("demo");
+  await page.getByLabel("Password").fill("demo");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await expect(page).toHaveURL(/\/onboarding$/);
+
+  await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+  const header = page.locator(".site-header");
+  const bounds = await header.boundingBox();
+  const viewportWidth = await page.evaluate(
+    () => document.documentElement.clientWidth,
+  );
+
+  expect(bounds?.x).toBe(0);
+  expect(bounds?.width).toBe(viewportWidth);
+});

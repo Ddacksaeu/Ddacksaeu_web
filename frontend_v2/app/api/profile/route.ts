@@ -1,3 +1,4 @@
+import { randomBytes } from "node:crypto";
 import { join } from "node:path";
 
 import { NextResponse } from "next/server";
@@ -33,11 +34,7 @@ const repository = new FileProfileRepository(
 );
 const service = new ProfileService(repository);
 
-class MissingOwnerSecretError extends Error {
-  readonly name = "MissingOwnerSecretError";
-}
-
-const LOCAL_OWNER_SESSION_SECRET = "ddaksaewoo-local-owner-session-secret";
+const EPHEMERAL_OWNER_SESSION_SECRET = randomBytes(32).toString("hex");
 const MAX_JSON_REQUEST_BYTES = 64 * 1024;
 const MAX_MULTIPART_REQUEST_BYTES = MAX_CV_BYTES + 64 * 1024;
 const targetLabInputSchema = z.strictObject({
@@ -58,12 +55,7 @@ function ownerSecret(): string {
   if (secret !== undefined && secret.length >= 16) {
     return secret;
   }
-  if (process.env["NODE_ENV"] !== "production") {
-    return LOCAL_OWNER_SESSION_SECRET;
-  }
-  throw new MissingOwnerSecretError(
-    "OWNER_SESSION_SECRET must contain at least 16 characters",
-  );
+  return EPHEMERAL_OWNER_SESSION_SECRET;
 }
 
 type OwnerContext = {

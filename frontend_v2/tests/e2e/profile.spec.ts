@@ -73,18 +73,21 @@ test("saved profile opens as a useful My Page and remains editable", async ({ br
 test("saved professor persists from discovery to My Page and can be removed", async ({ page }) => {
   await createProfile(page);
   await page.goto("/professors");
-  const labCard = page.getByRole("heading", { name: "AI Systems Lab (Demo)" }).locator("..").locator("..");
-  await labCard.getByRole("button", { name: "Save professor" }).click();
-  await expect(labCard.getByRole("button", { name: "Saved" })).toBeVisible();
+  const labCard = page.getByRole("heading", { name: "AI Systems Lab" }).locator("..").locator("..");
+  const saveButton = labCard.getByRole("button", { name: "Save professor" });
+  await expect(saveButton.locator("svg")).toBeVisible();
+  expect((await saveButton.textContent())?.trim()).toBe("");
+  await saveButton.click();
+  await expect(labCard.getByRole("button", { name: "Remove saved professor" })).toHaveAttribute("aria-pressed", "true");
 
   await page.reload();
-  const reloadedCard = page.getByRole("heading", { name: "AI Systems Lab (Demo)" }).locator("..").locator("..");
-  await expect(reloadedCard.getByRole("button", { name: "Saved" })).toBeVisible();
+  const reloadedCard = page.getByRole("heading", { name: "AI Systems Lab" }).locator("..").locator("..");
+  await expect(reloadedCard.getByRole("button", { name: "Remove saved professor" })).toHaveAttribute("aria-pressed", "true");
 
   await page.goto("/profile");
   const savedRegion = page.getByRole("region", { name: "Saved professors" });
   await expect(savedRegion).toBeVisible();
-  await expect(savedRegion.getByText("AI Systems Lab (Demo)")).toBeVisible();
+  await expect(savedRegion.getByText("AI Systems Lab")).toBeVisible();
   await expect(savedRegion.getByRole("link", { name: "View details" })).toHaveAttribute("href", "/professors/snu-demo-01");
 
   await savedRegion.getByRole("button", { name: "Remove" }).click();

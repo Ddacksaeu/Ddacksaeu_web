@@ -20,8 +20,8 @@ const approvedCatalogUrlSchema = z.url().refine((value) => {
 export const LabCatalogEntrySchema = z.strictObject({
   id: z.string().regex(/^[a-z]+-demo-\d{2}$/),
   dataStatus: z.literal("demo"),
-  labName: z.string().endsWith("(Demo)"),
-  professor: z.string().endsWith("(Demo)"),
+  labName: z.string().min(1),
+  professor: z.string().min(1),
   institution: z.string().min(1),
   topics: z.array(z.string().min(1)).min(1).readonly(),
   labUrl: approvedCatalogUrlSchema,

@@ -18,6 +18,9 @@ Next.js proxies versioned backend requests through the same origin:
 | `GET /api/backend/health` | `GET /api/v1/health` |
 | `GET /api/backend/labs` | `GET /api/v1/labs` |
 | `GET /api/backend/labs/{id}` | `GET /api/v1/labs/{id}` |
+| `GET /api/backend/labs/{id}/similar` | `GET /api/v1/labs/{id}/similar` |
+| `GET /api/backend/recommendations` | `GET /api/v1/recommendations` |
+| `GET`, `PUT`, `DELETE /api/backend/me/favorites/*` | `/api/v1/me/favorites/*` |
 | `POST /api/backend/documents/analyze` | `POST /api/v1/documents/analyze` |
 | `GET /api/backend/documents/latest` | `GET /api/v1/documents/latest` |
 | `GET /api/backend/documents` | `GET /api/v1/documents` |

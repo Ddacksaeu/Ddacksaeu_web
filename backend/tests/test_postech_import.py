@@ -61,6 +61,25 @@ def _dataset(tmp_path: Path) -> Path:
             "crawled_at": "",
             "enriched_at": "",
         },
+        {
+            "lab_id": "LAB_SHARED_KEYWORD",
+            "researcher_id": "PROF_SHARED_KEYWORD",
+            "department_id": "DEPT_SHARED",
+            "department_name": "Electrical Engineering",
+            "lab_name_kor": "Shared Keyword Lab",
+            "lab_name_eng": "",
+            "professor_name": "Shared Kim",
+            "primary_field": "Systems",
+            "lab_url": "https://shared.postech.ac.kr",
+            "professor_profile_url": "https://postech.ac.kr/p/shared",
+            "email": "shared@postech.ac.kr",
+            "location": "C5",
+            "research_summary": "Shared keyword test",
+            "keywords": "distributed systems;operating systems",
+            "source_url": "https://postech.ac.kr/source/shared",
+            "crawled_at": "2026-07-18T12:00:00+09:00",
+            "enriched_at": "",
+        },
     ]
     papers = [
         {
@@ -120,21 +139,21 @@ def test_import_is_idempotent_limits_papers_and_skips_invalid(
     with session_factory() as session:
         report = import_postech(session, data_dir, max_publications_per_lab=2)
         session.commit()
-        assert report.created["labs"] == 1
+        assert report.created["labs"] == 2
         assert len(report.skipped) == 2
     with session_factory() as session:
         report = import_postech(session, data_dir, max_publications_per_lab=2)
         session.commit()
-        assert report.updated["labs"] == 1
-        assert session.scalar(select(func.count()).select_from(Lab)) == 1
-        assert session.scalar(select(func.count()).select_from(Professor)) == 1
+        assert report.updated["labs"] == 2
+        assert session.scalar(select(func.count()).select_from(Lab)) == 2
+        assert session.scalar(select(func.count()).select_from(Professor)) == 2
         assert session.scalar(select(func.count()).select_from(Paper)) == 2
 
 
 def test_dry_run_does_not_write(session_factory: sessionmaker[Session], tmp_path: Path) -> None:
     with session_factory() as session:
         report = import_postech(session, _dataset(tmp_path), dry_run=True)
-        assert report.created["labs"] == 1
+        assert report.created["labs"] == 2
         assert session.scalar(select(func.count()).select_from(Lab)) == 0
 
 

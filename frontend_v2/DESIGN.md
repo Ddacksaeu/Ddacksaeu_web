@@ -36,22 +36,23 @@ Primary product flow:
 
 ## 2A. Language and content contract
 
-- Shipping product copy is English only. This includes navigation, forms, validation, loading and empty states, demo data, source labels, metadata, and accessibility text.
+- Shipping product copy is English only. This includes navigation, forms, validation, loading and empty states, source labels, metadata, and accessibility text.
 - Render the brand name as `Ddaksaeu`; never translate it literally. Use sentence case for headings, buttons, chips, and status messages.
 - Prefer concise, concrete product language. Avoid generic AI phrases, inflated claims, and admission-probability language.
 - English labels may grow longer than their Korean equivalents. Controls and cards must wrap without clipping at 375/768/1280 widths and at 200% zoom.
-- A residual Hangul scan across `app`, `src`, and `tests` is a release gate for the English demo.
+- A residual Hangul scan across `app`, `src`, and `tests` is a release gate for the English product.
 
 ## 3. Layout and responsive behavior
 
 - Sticky 64px header, max width 1200px, desktop/tablet/mobile gutters 32/24/20px.
 - Layout grammar is page-specific: public home uses a search-first discovery feed; dashboard uses a compact work queue; professor search uses a dense filter/results board; professor detail uses a long-form report; My Page uses a saved workspace overview. 모든 화면은 초기 버전의 밝고 부드러운 표면 언어를 공유한다.
+- Professor detail uses an editorial `research profile + application context` layout. Research sections flow as one long-form article separated by whitespace and dividers; fit, recruitment, and source checks sit in a narrower supporting rail. Reserve bordered cards for actionable controls such as save, profile comparison, and draft editing—never wrap every information section in its own card.
 - Signed-in dashboard: 짧은 `Home` 제목과 현재 상태 요약 뒤에 desktop `minmax(0, 1fr) 320px` grid를 사용한다. 주요 열은 추천 교수와 모집 확인 목록을 평평한 divider list로, 보조 레일은 profile readiness, upcoming deadlines, saved work를 작은 패널로 쌓는다. 900px 미만에서는 한 열로 합치되 제목→readiness→추천→일정 순으로 다음 행동이 먼저 보이게 한다.
 - Dashboard sections may use one outer border and subtle canvas contrast, but repeated rows must use dividers instead of individually elevated cards. Section labels are sentence case; decorative uppercase kickers and rank numbers are not used.
 - 1024px 이상: 280px filter rail + flexible results. 768–1023px: labelled filter drawer. 768px 미만: sticky search/filter triggers + single-column results.
 - Lab cards order: lab/professor, university, keywords, recommendation reason, official source/verified date, save action.
 - My Page order: saved-profile overview, quick actions, research keywords/CV, saved professors, similarity recommendations, then secondary data management. The creation/editor form is shown only for empty or explicit editing states. Empty, loading, saved, editing, saving, invalid, and error states are distinct.
-- Calendar: desktop month grid + upcoming rail; mobile chronological agenda first. University/lab, source, timezone, verified/demo/user-entered status remain visible.
+- Calendar: desktop month grid + upcoming rail; mobile chronological agenda first. University/lab, source, timezone, and verified/user-entered/unverified status remain visible.
 - No horizontal scroll at 375px, 768px, 1280px. Deadline, source, action, recovery text must never be truncated away.
 
 ## 4. Material and motion
@@ -62,16 +63,16 @@ The featured research story keeps the original content-first layout on one quiet
 
 ## 5. Required primitives and states
 
-- `AppHeader`, buttons/links, `SearchField`, `FilterGroup/Chip/Drawer`, `ResultToolbar`.
-- `UniversityMarquee`: 공식 제휴로 오해되지 않는 탐색 가능 대학 워드마크, 중복 트랙은 보조기술에서 숨김, reduced-motion 정적 상태.
+- `AppHeader`, buttons/links, `SearchField`, `SelectField`, `FilterGroup/Chip/Drawer`, `ResultToolbar`. Single-select controls use one centered chevron, a 36px end inset, and a 1px optical bottom correction across every form.
+- `UniversityMarquee`: 사용자가 제공한 대학 로고 이미지를 원본 비율로 표시하는 탐색 가능 마키. 각 로고는 고정 높이 안에서 `contain`으로 맞추고 대체 텍스트를 제공하며, 중복 트랙은 보조기술에서 숨긴다. reduced-motion과 모바일에서는 정적 가로 목록으로 전환한다.
 - `LabCard/ListRow`: default, focus, saved, recommended, selected, unavailable-source.
-- `SourceBadge`: official, verified date, demo, user-entered, stale/unknown.
+- `SourceBadge`: official, verified date, user-entered, stale/unknown.
 - `UploadDropzone`: idle, drag, validating, analyzing, success, unsupported, oversized, failed.
 - `KeywordChipEditor`: extracted, user-added, edited, removed, keyboard-selected.
 - `ProfileOverview/ProfileEditor`: a saved summary is the default after creation and reload; editing is explicit, prefilled, cancellable, and returns to the overview after save.
 - `SavedContactDraft`: saved professor and mail preview, resume action, and explicit removal; hidden when no draft exists.
-- `SavedProfessorCard/Button`: unsaved, saving, saved, removing, failed, and empty-list states persist through the owner workspace and remain consistent across list, detail, and My Page.
-- `ProfessorDetail`: research overview, focus areas, paper previews, recruitment check, fit evidence, source freshness, and contact drafting. Demo, inferred, and unverified values are labeled at section or field level.
+- `SavedProfessorCard/Button`: use a 44×44 icon-only bookmark control in professor search and detail. The unsaved state is outlined, the saved state is filled with the blue accent, and every state keeps an action-based accessible name, `aria-pressed`, focus ring, and non-color feedback. Unsaved, saving, saved, removing, failed, and empty-list states persist through the owner workspace and remain consistent across list, detail, and My Page.
+- `ProfessorDetail`: research overview, focus areas, paper previews, recruitment check, fit evidence, source freshness, and contact drafting. Inferred and unverified values are labeled at section or field level.
 - `RecommendationReason`: score band, overlap, explanation, uncertainty.
 - `CalendarEvent/DeadlineListItem`: upcoming, today, past, unverified, user-entered.
 - `EmptyState/ErrorState/Skeleton`, `DetailDrawer/Dialog` with focus trap and focus restoration.

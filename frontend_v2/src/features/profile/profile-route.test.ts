@@ -1,7 +1,7 @@
 import { rm } from "node:fs/promises";
 import { resolve } from "node:path";
 
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 type ProfileRoute = typeof import("../../../app/api/profile/route");
 
@@ -109,6 +109,25 @@ describe("profile API route", () => {
       } else {
         process.env["OWNER_SESSION_SECRET"] = previous;
       }
+    }
+  });
+
+  it("serves a production build when the session secret is not configured", async () => {
+    const previousSecret = process.env["OWNER_SESSION_SECRET"];
+    delete process.env["OWNER_SESSION_SECRET"];
+    vi.stubEnv("NODE_ENV", "production");
+    try {
+      const response = await GET(
+        new Request("http://local/api/profile", { method: "GET" }),
+      );
+      expect(response.status).toBe(200);
+    } finally {
+      if (previousSecret === undefined) {
+        delete process.env["OWNER_SESSION_SECRET"];
+      } else {
+        process.env["OWNER_SESSION_SECRET"] = previousSecret;
+      }
+      vi.unstubAllEnvs();
     }
   });
 
