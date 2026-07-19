@@ -283,6 +283,22 @@ labs continue to work and are explicitly labelled in the response/UI.
 
 ## Previous recommendation API implementation (2026-07-18)
 
+## frontend_v2 real POSTECH API connection (2026-07-19)
+
+`frontend_v2` renders the lab catalogue, keyword search, lab detail, similar
+labs, saved labs, and CV recommendations through the same-origin Next.js BFF.
+The BFF reads the HTTP-only `ddacksaeu_session` cookie and forwards the Bearer
+token server-side; no browser storage contains a token and
+`BACKEND_API_ORIGIN` remains server-only.
+
+| Surface | BFF route | Backend route | UI rule |
+| --- | --- | --- | --- |
+| Catalogue/search | `GET /api/backend/labs?q=&page=&page_size=` | `GET /api/v1/labs` | Explicit loading, empty, and retry states. |
+| Detail | `GET /api/backend/labs/{lab_id}` | `GET /api/v1/labs/{lab_id}` | URL ID is used; 404 is a not-found page. |
+| Similar labs | `GET /api/backend/labs/{lab_id}/similar` | `GET /api/v1/labs/{lab_id}/similar` | Empty data is informational. |
+| Recommendations | `GET /api/backend/recommendations` | `GET /api/v1/recommendations` | Server scores and evidence are rendered unchanged; 409 means no analyzed CV. |
+| Saved labs | `GET`, `PUT`, `DELETE /api/backend/me/favorites/*` | `/api/v1/me/favorites/*` | Failed mutations retain prior state. |
+
 The backend now exposes `GET /api/v1/recommendations` for persisted results
 and `POST /api/v1/recommendations/recompute` for explicit refresh. The Lovable
 frontend remains unchanged. The response keeps labs separate from per-user
