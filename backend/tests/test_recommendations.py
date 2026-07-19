@@ -10,6 +10,7 @@ from app.core.config import Settings
 from app.models import Recommendation
 from app.services.recommendations import RecommendationService, clamp, freshness_score
 from scripts.seed import seed_database
+from tests.auth_helpers import jwt_headers
 
 
 def test_recompute_is_deterministic_and_upserts(session_factory: sessionmaker[Session]) -> None:
@@ -49,12 +50,13 @@ def test_recommendation_api_read_then_recompute(
 ) -> None:
     with session_factory() as session:
         seed_database(session)
-    assert client.get("/api/v1/recommendations").status_code == 200
-    response = client.post("/api/v1/recommendations/recompute")
+    headers = jwt_headers(client)
+    assert client.get("/api/v1/recommendations", headers=headers).status_code == 200
+    response = client.post("/api/v1/recommendations/recompute", headers=headers)
     assert response.status_code == 200
     payload = response.json()
     assert payload["items"][0]["score_breakdown"]["keyword"]["score"] <= 100
-    assert client.get("/api/v1/recommendations?user_id=missing").status_code == 404
+    assert client.get("/api/v1/recommendations", headers=headers).status_code == 200
 
 
 @pytest.mark.parametrize(

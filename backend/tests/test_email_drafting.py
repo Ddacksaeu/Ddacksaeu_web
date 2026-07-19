@@ -1,6 +1,7 @@
 from fastapi.testclient import TestClient
 
 from scripts.seed import seed_database
+from tests.auth_helpers import jwt_headers
 
 
 def _seed(session_factory) -> None:
@@ -14,6 +15,7 @@ def test_db_backed_english_demo_draft(client: TestClient, session_factory) -> No
     response = client.post(
         "/api/v1/email/draft",
         json={"labId": "fixture-vision-lab", "userId": "demo-user", "language": "en"},
+        headers=jwt_headers(client),
     )
 
     assert response.status_code == 200
@@ -29,6 +31,7 @@ def test_db_backed_korean_demo_draft(client: TestClient, session_factory) -> Non
     response = client.post(
         "/api/v1/email/draft",
         json={"labId": "fixture-vision-lab", "language": "ko"},
+        headers=jwt_headers(client),
     )
 
     assert response.status_code == 200
@@ -39,7 +42,9 @@ def test_db_backed_korean_demo_draft(client: TestClient, session_factory) -> Non
 def test_missing_lab_returns_404(client: TestClient, session_factory) -> None:
     _seed(session_factory)
 
-    response = client.post("/api/v1/email/draft", json={"labId": "missing"})
+    response = client.post(
+        "/api/v1/email/draft", json={"labId": "missing"}, headers=jwt_headers(client)
+    )
 
     assert response.status_code == 404
     assert response.json()["error"]["code"] == "lab_not_found"

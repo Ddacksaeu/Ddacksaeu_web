@@ -20,6 +20,6 @@ def test_settings_load_from_environment(monkeypatch) -> None:
 
 
 def test_non_development_has_no_default_permissive_cors() -> None:
-    settings = Settings(app_env="production")
+    settings = Settings(app_env="production", auth_secret="test-production-auth-secret")
 
     assert settings.allowed_origins == []

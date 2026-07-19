@@ -2,6 +2,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session, sessionmaker
 
 from scripts.seed import seed_database
+from tests.auth_helpers import jwt_headers
 
 
 def test_profile_favorites_and_calendar_are_persisted(
@@ -9,15 +10,20 @@ def test_profile_favorites_and_calendar_are_persisted(
 ) -> None:
     with session_factory() as session:
         seed_database(session)
+    headers = jwt_headers(client)
 
     profile = client.patch(
-        "/api/v1/me/profile", json={"name": "Persisted User", "skills": ["Python"]}
+        "/api/v1/me/profile",
+        json={"name": "Persisted User", "skills": ["Python"]},
+        headers=headers,
     )
     assert profile.status_code == 200
-    assert client.get("/api/v1/me/profile").json()["name"] == "Persisted User"
+    assert client.get("/api/v1/me/profile", headers=headers).json()["name"] == "Persisted User"
 
-    assert client.put("/api/v1/me/favorites/fixture-vision-lab").status_code == 204
-    assert "fixture-vision-lab" in client.get("/api/v1/me/favorites").json()["labIds"]
+    favorite = client.put("/api/v1/me/favorites/fixture-vision-lab", headers=headers)
+    assert favorite.status_code == 204
+    favorites = client.get("/api/v1/me/favorites", headers=headers)
+    assert "fixture-vision-lab" in favorites.json()["labIds"]
 
     created = client.post(
         "/api/v1/me/calendar-events",
@@ -27,10 +33,11 @@ def test_profile_favorites_and_calendar_are_persisted(
             "date": "2026-08-01",
             "labId": "fixture-vision-lab",
         },
+        headers=headers,
     )
     assert created.status_code == 201
     event_id = created.json()["id"]
-    assert [item["id"] for item in client.get("/api/v1/me/calendar-events").json()["items"]] == [
-        event_id
-    ]
-    assert client.delete(f"/api/v1/me/calendar-events/{event_id}").status_code == 204
+    events = client.get("/api/v1/me/calendar-events", headers=headers)
+    assert [item["id"] for item in events.json()["items"]] == [event_id]
+    deleted = client.delete(f"/api/v1/me/calendar-events/{event_id}", headers=headers)
+    assert deleted.status_code == 204

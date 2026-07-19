@@ -26,6 +26,7 @@ build/
 dist/
 *.egg-info/
 *.db
+backend/.document_uploads/
 
 # Node.js
 node_modules/
