@@ -78,3 +78,15 @@ class MeRepository:
         self.session.delete(event)
         self.session.commit()
         return True
+
+    def update_event(self, event_id: str, **values) -> CalendarEvent | None:
+        event = self.session.get(CalendarEvent, event_id)
+        if event is None or event.user_id != self.user_id:
+            return None
+        if values.get("lab_id") and self.session.get(Lab, values["lab_id"]) is None:
+            raise LookupError(values["lab_id"])
+        for field, value in values.items():
+            setattr(event, "event_date" if field == "date" else field, value)
+        self.session.commit()
+        self.session.refresh(event)
+        return event
