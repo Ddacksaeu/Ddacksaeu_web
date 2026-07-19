@@ -31,26 +31,26 @@ export function ProfessorDetailSections({ detail, professor }: ProfessorDetailSe
       <section className={styles["section"]}>
         <div className={styles["sectionHeading"]}><span>RESEARCH THEMES</span><h2>Research focus</h2></div>
         <div className={styles["focusList"]}>
-          {detail.researchFocus.map((focus) => (
-            <article key={focus.title}><h3>{focus.title}</h3><p>{focus.description}</p><ul>{focus.keywords.map((keyword) => <li key={keyword}>{keyword}</li>)}</ul></article>
+          {detail.researchFocus.map((focus, focusIndex) => (
+            <article key={`${focus.title}-${focusIndex}`}><h3>{focus.title}</h3><p>{focus.description}</p><ul>{[...new Set(focus.keywords)].map((keyword) => <li key={`${focus.title}-${keyword}`}>{keyword}</li>)}</ul></article>
           ))}
         </div>
       </section>
 
       <section className={styles["section"]}>
         <div className={styles["sectionHeading"]}><span>WORKFLOW</span><h2>Methods and tools</h2></div>
-        <ul className={styles["checkList"]}>{detail.methods.map((method) => <li key={method}>{method}</li>)}</ul>
+        <ul className={styles["checkList"]}>{[...new Set(detail.methods)].map((method) => <li key={method}>{method}</li>)}</ul>
       </section>
 
       <section className={styles["section"]}>
         <div className={styles["sectionHeading"]}><span>DEMO PROJECTS</span><h2>Project examples</h2></div>
-        <ol className={styles["projectList"]}>{detail.projects.map((project, index) => <li key={project}><span>{String(index + 1).padStart(2, "0")}</span><strong>{project}</strong></li>)}</ol>
+        <ol className={styles["projectList"]}>{[...new Set(detail.projects)].map((project, index) => <li key={project}><span>{String(index + 1).padStart(2, "0")}</span><strong>{project}</strong></li>)}</ol>
         <p className={styles["caption"]}>These examples demonstrate the detail layout and are not real projects.</p>
       </section>
 
       <section className={styles["section"] + " " + styles["fullSection"]}>
         <div className={styles["sectionHeading"]}><span>DEMO PAPER METADATA</span><h2>Recent research and paper preview</h2></div>
-        <ol className={styles["papers"]}>{detail.papers.map((paper) => <li key={paper.title}><div><span>{paper.year}</span><strong>{paper.title}</strong></div><p>{paper.summary}</p></li>)}</ol>
+        <ol className={styles["papers"]}>{detail.papers.map((paper, index) => <li key={`${paper.title}-${paper.year}-${index}`}><div><span>{paper.year}</span><strong>{paper.title}</strong></div><p>{paper.summary}</p></li>)}</ol>
         <p className={styles["caption"]}>Titles, years, and summaries are fictional metadata. Live paper lists will link to original sources after crawler integration.</p>
       </section>
 
@@ -63,7 +63,7 @@ export function ProfessorDetailSections({ detail, professor }: ProfessorDetailSe
 
       <section className={styles["section"]}>
         <div className={styles["sectionHeading"]}><span>RECRUITMENT CHECK</span><h2>Recruitment and application details</h2></div>
-        <div className={styles["degreeRow"]}>{detail.degreePrograms.map((degree) => <span key={degree}>{degree}</span>)}</div>
+        <div className={styles["degreeRow"]}>{[...new Set(detail.degreePrograms)].map((degree) => <span key={degree}>{degree}</span>)}</div>
         <p>{detail.recruitmentNote}</p>
         <a href={professor.labUrl} rel="noreferrer" target="_blank">Check the registered lab link</a>
       </section>
