@@ -1,10 +1,9 @@
 "use client";
 
-import ky from "ky";
+import ky, { HTTPError } from "ky";
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
-import { profileWorkspaceSchema } from "../profile/profile-client-contract";
 import type { LabCatalogEntry } from "../../server/catalog/schema";
 import { filterCatalog, type CatalogFilters } from "./catalog-filter";
 
@@ -57,7 +56,6 @@ export function LabCatalogExplorer({ labs, mode, initialQuery = "" }: LabCatalog
   const [filters, setFilters] = useState<CatalogFilters>({ ...EMPTY_FILTERS, query: initialQuery });
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [savedIds, setSavedIds] = useState<readonly string[]>([]);
-  const profileExists = useRef(false);
   const [profileReady, setProfileReady] = useState(false);
   const [savingId, setSavingId] = useState<string | null>(null);
   const [saveStatus, setSaveStatus] = useState("");
@@ -68,26 +66,21 @@ export function LabCatalogExplorer({ labs, mode, initialQuery = "" }: LabCatalog
   const hasFilters = Object.values(filters).some((value) => value.length > 0);
 
   useEffect(() => {
-    void ky.get("/api/profile").json().then((value) => {
-      const workspace = profileWorkspaceSchema.parse(value);
-      profileExists.current = workspace.profile !== null;
-      setSavedIds(workspace.targetLabIds);
+    void ky.get("/api/backend/me/favorites").json<{ labIds: string[] }>().then((value) => {
+      setSavedIds(value.labIds);
       setProfileReady(true);
     }).catch(() => { setSaveStatus("Could not load saved professors."); setProfileReady(true); });
   }, []);
 
   async function toggleSaved(labId: string, saved: boolean): Promise<void> {
-    if (!profileExists.current) {
-      window.location.assign("/profile");
-      return;
-    }
     setSavingId(labId);
     try {
-      await ky.patch("/api/profile", { json: { labId, saved } });
+      await (saved ? ky.put(`/api/backend/me/favorites/${labId}`) : ky.delete(`/api/backend/me/favorites/${labId}`));
       setSavedIds((current) => saved ? [...current.filter((id) => id !== labId), labId] : current.filter((id) => id !== labId));
       setSaveStatus(saved ? "Saved this professor." : "Removed this professor from saved items.");
-    } catch {
-      setSaveStatus("Could not update saved professors.");
+    } catch (error) {
+      if (error instanceof HTTPError && error.response.status === 401) window.location.assign("/login");
+      else setSaveStatus("Could not update saved professors.");
     } finally {
       setSavingId(null);
     }
