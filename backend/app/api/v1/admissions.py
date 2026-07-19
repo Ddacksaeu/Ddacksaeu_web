@@ -111,4 +111,8 @@ def export_ics(
             ]
         )
     lines.append("END:VCALENDAR")
-    return Response("\r\n".join(lines) + "\r\n", media_type="text/calendar; charset=utf-8")
+    return Response(
+        "\r\n".join(lines) + "\r\n",
+        media_type="text/calendar; charset=utf-8",
+        headers={"Content-Disposition": 'attachment; filename="admissions-calendar.ics"'},
+    )

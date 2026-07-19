@@ -132,8 +132,26 @@ environment before it can start.
 ## Admission calendar
 
 `GET /api/v1/admissions` and `/api/v1/admissions/export.ics` provide
-fixture-only, source-labelled admission events. They accept `start_at`,
+source-labelled admission events. They accept `start_at`,
 `end_at`, `university_id`, `department_id`, and `event_type` filters.
+
+No real admission dates are committed in this repository. After a human checks an
+official source, copy `data/admissions.example.json`, add only verified records,
+and run `python -m scripts.import_admissions path/to/admissions.json --dry-run`
+before running the same command without `--dry-run`. Each event requires `id`,
+`university_id`, `university_name`, `title`, `event_type`, timezone-aware
+`start_at`, `source_url`, and `checked_at`; optional `end_at` must not precede
+`start_at`. Invalid events are reported with a skip reason, and event IDs are
+upserted on re-import. Imported records are marked `origin=official_import`;
+development fixtures remain `origin=fixture`.
+
+## Release Playwright smoke
+
+`npm run test:e2e:release` (from `frontend_v2`) runs only the API-backed release
+smoke when `PLAYWRIGHT_RELEASE_SMOKE=1`. Start a backend against a migrated,
+isolated SQLite database with a small approved POSTECH import first, then set
+`BACKEND_API_ORIGIN=http://127.0.0.1:8000`. It uses a unique account and makes
+no external web, OCR, or email-service calls.
 
 ## Recommendations
 

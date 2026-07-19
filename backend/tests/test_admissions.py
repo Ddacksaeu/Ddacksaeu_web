@@ -43,6 +43,9 @@ def test_admission_empty_and_ics_escaping(client, session_factory) -> None:
     )
     response = client.get("/api/v1/admissions/export.ics")
     assert response.headers["content-type"].startswith("text/calendar")
+    assert (
+        response.headers["content-disposition"] == 'attachment; filename="admissions-calendar.ics"'
+    )
     assert "SUMMARY:한글\\, 특수\\;문자" in response.text
     assert "DESCRIPTION:첫 줄\\\\둘째 줄" in response.text
 
