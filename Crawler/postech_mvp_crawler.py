@@ -10,6 +10,8 @@ import re
 import shutil
 import tempfile
 import time
+import unicodedata
+from copy import deepcopy
 from collections import Counter, defaultdict
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
@@ -27,7 +29,7 @@ from urllib3.util.retry import Retry
 # ============================================================
 # 0. Version and defaults
 # ============================================================
-ENRICHER_VERSION = "0.7.1-data-audit"
+ENRICHER_VERSION = "0.10.1-source-of-truth"
 
 DEFAULT_DATA_DIR = Path("./data")
 DEFAULT_REQUEST_DELAY_SECONDS = 0.55
@@ -36,6 +38,8 @@ DEFAULT_MAX_DEPARTMENT_PAGES = 12
 DEFAULT_MAX_DEPTH = 2
 DEFAULT_CHECKPOINT_EVERY = 1
 DEFAULT_RESPECT_ROBOTS = True
+MIN_AUTHORITATIVE_SUCCESS_RATIO = 1.0
+DEFAULT_MIN_PRIMARY_ROSTER_COVERAGE = 0.20
 MAX_SUMMARY_CHARS = 1200
 MAX_PRIMARY_FIELD_CHARS = 600
 MAX_KEYWORDS = 12
@@ -586,6 +590,34 @@ DEFAULT_FACULTY_URLS_BY_NAME = {
 
 
 
+# Built-in site profiles are always active. An external site_overrides.json may
+# extend or override these values, but the shared-portal scope guards never
+# depend on a separate file being present.
+BUILTIN_SITE_OVERRIDES: dict[str, dict] = {'생명과학과': {'faculty_urls': ['https://life.postech.ac.kr/html/professor/professor01.php', 'https://life.postech.ac.kr/eng/html/professor/professor01.php'], 'allowed_hosts': ['life.postech.ac.kr'], 'render': True, 'max_depth': 3, 'max_card_emails': 2, 'max_card_identities': 2}, '시스템생명공학부': {'faculty_urls': ['https://ibio.postech.ac.kr/web/?depart=1&position=1&sub=professor&top=member', 'https://ibio.postech.ac.kr/web/?depart=1&position=2&sub=professor&top=member', 'https://ibio.postech.ac.kr/web/?depart=1&position=3&sub=professor&top=member'], 'allowed_hosts': ['ibio.postech.ac.kr'], 'scope_query_params': {'depart': ['1']}, 'follow_links': False, 'max_depth': 0, 'max_card_emails': 2, 'max_card_identities': 2, 'allow_secondary_field_enrichment': False}, '첨단재료과학부': {'faculty_urls': ['https://gscst.postech.ac.kr/web/?depart=2&position=1&sub=professor&top=member', 'https://gscst.postech.ac.kr/web/?depart=2&position=2&sub=professor&top=member'], 'allowed_hosts': ['gscst.postech.ac.kr'], 'scope_query_params': {'depart': ['2']}, 'follow_links': False, 'max_depth': 0, 'max_card_emails': 2, 'max_card_identities': 2, 'allow_secondary_field_enrichment': False}, '의과학전공': {'faculty_urls': ['https://gscst.postech.ac.kr/web/?depart=11&position=1&sub=professor&top=member', 'https://gscst.postech.ac.kr/web/?depart=11&position=2&sub=professor&top=member', 'https://gscst.postech.ac.kr/web/?depart=11&position=3&sub=professor&top=member'], 'allowed_hosts': ['gscst.postech.ac.kr'], 'scope_query_params': {'depart': ['11']}, 'follow_links': False, 'max_depth': 0, 'max_card_emails': 2, 'max_card_identities': 2, 'allow_secondary_field_enrichment': False}, '국방과학기술전공': {'faculty_urls': ['https://gscst.postech.ac.kr/web/?depart=14&position=1&sub=professor&top=member', 'https://gscst.postech.ac.kr/web/?depart=14&position=2&sub=professor&top=member', 'https://gscst.postech.ac.kr/web/?depart=14&position=3&sub=professor&top=member'], 'allowed_hosts': ['gscst.postech.ac.kr'], 'scope_query_params': {'depart': ['14']}, 'follow_links': False, 'max_depth': 0, 'max_card_emails': 2, 'max_card_identities': 2, 'allow_secondary_field_enrichment': False}, '경영과학전공': {'faculty_urls': ['https://gscst.postech.ac.kr/web/?depart=15&position=1&sub=professor&top=member', 'https://gscst.postech.ac.kr/web/?depart=15&position=2&sub=professor&top=member'], 'allowed_hosts': ['gscst.postech.ac.kr'], 'scope_query_params': {'depart': ['15']}, 'follow_links': False, 'max_depth': 0, 'max_card_emails': 2, 'max_card_identities': 2, 'allow_secondary_field_enrichment': False}, '푸드테크융합전공': {'faculty_urls': ['https://gscst.postech.ac.kr/web/?depart=16&position=1&sub=professor&top=member', 'https://gscst.postech.ac.kr/web/?depart=16&position=2&sub=professor&top=member'], 'allowed_hosts': ['gscst.postech.ac.kr'], 'scope_query_params': {'depart': ['16']}, 'follow_links': False, 'max_depth': 0, 'max_card_emails': 2, 'max_card_identities': 2, 'allow_secondary_field_enrichment': False}, '양자정보과학전공': {'faculty_urls': ['https://gscst.postech.ac.kr/web/?depart=17&position=1&sub=professor&top=member', 'https://gscst.postech.ac.kr/web/?depart=17&position=2&sub=professor&top=member', 'https://gscst.postech.ac.kr/web/?depart=17&position=3&sub=professor&top=member'], 'allowed_hosts': ['gscst.postech.ac.kr'], 'scope_query_params': {'depart': ['17']}, 'follow_links': False, 'max_depth': 0, 'max_card_emails': 2, 'max_card_identities': 2, 'allow_secondary_field_enrichment': False}, '산업데이터사이언스전공': {'faculty_urls': ['https://gscst.postech.ac.kr/web/?depart=18&position=1&sub=professor&top=member', 'https://gscst.postech.ac.kr/web/?depart=18&position=2&sub=professor&top=member'], 'allowed_hosts': ['gscst.postech.ac.kr'], 'scope_query_params': {'depart': ['18']}, 'follow_links': False, 'max_depth': 0, 'max_card_emails': 2, 'max_card_identities': 2, 'allow_secondary_field_enrichment': False}, '수학과': {'faculty_urls': ['https://math.postech.ac.kr/bbs/board.php?bo_table=m02_01&sca=%EC%A0%84%EC%9E%84%EA%B5%90%EC%88%98', 'https://math.postech.ac.kr/en/bbs/board.php?bo_table=m02_01', 'https://math.postech.ac.kr/bbs/board.php?bo_table=m02_01&wr_id=16', 'https://math.postech.ac.kr/bbs/board.php?bo_table=m02_01&wr_id=3'], 'allowed_hosts': ['math.postech.ac.kr'], 'scope_query_params': {'bo_table': ['m02_01']}, 'max_depth': 2, 'max_card_emails': 2, 'max_card_identities': 2, 'allow_secondary_field_enrichment': False}}
+
+# Emergency cardinality guards for shared portals. These values are intentionally
+# generous: they do not define the expected faculty count; they only prevent a
+# sibling-program navigation leak from attaching most POSTECH professors to one
+# program. A department run is rolled back transactionally when the limit is
+# exceeded.
+SHARED_PORTAL_MAX_MATCHES = {
+    "시스템생명공학부": 60,
+    "첨단재료과학부": 40,
+    "의과학전공": 60,
+    "국방과학기술전공": 35,
+    "경영과학전공": 35,
+    "푸드테크융합전공": 35,
+    "양자정보과학전공": 45,
+    "산업데이터사이언스전공": 45,
+}
+# Static faculty-count limits are retained only for legacy audit context.
+# They are deliberately not injected into site profiles because legitimate
+# adjunct-faculty pages can be large. Runtime safety now depends on URL scope,
+# exact-email evidence, and transaction rollback on evidence mismatch.
+
+
+
+
 # ============================================================
 # 2. CSV schemas
 # ============================================================
@@ -659,6 +691,9 @@ STAGE2_LAB_FIELDS = [
     "data_quality_status",
     "enriched_at",
     "lab_url_status",
+    "affiliation_evidence",
+    "field_provenance",
+    "data_state",
     "enricher_version",
 ]
 
@@ -825,11 +860,17 @@ class RespectfulClient:
 
         with sync_playwright() as playwright:
             browser = playwright.chromium.launch(headless=True)
-            page = browser.new_page(user_agent=USER_AGENT, locale="ko-KR")
-            page.goto(url, wait_until="networkidle", timeout=self.timeout_seconds * 1000)
-            html = page.content()
-            final_url = page.url
-            browser.close()
+            try:
+                page = browser.new_page(user_agent=USER_AGENT, locale="ko-KR")
+                # networkidle is unreliable on university sites that keep
+                # analytics/websocket connections open. DOMContentLoaded plus
+                # a short settle period is more deterministic.
+                page.goto(url, wait_until="domcontentloaded", timeout=self.timeout_seconds * 1000)
+                page.wait_for_timeout(1200)
+                html = page.content()
+                final_url = page.url
+            finally:
+                browser.close()
         return PageResult(final_url, html, "playwright", 200)
 
     @staticmethod
@@ -846,16 +887,34 @@ class RespectfulClient:
         if cache_key in self._cache:
             return self._cache[cache_key]
 
+        static_result: Optional[PageResult] = None
         try:
-            result = self._static_fetch(url)
-            if (force_browser or self._needs_browser(result.html)) and self.browser_fallback:
-                result = self._browser_fetch(result.url)
+            static_result = self._static_fetch(url)
+            result = static_result
+            should_render = force_browser or (
+                self._needs_browser(static_result.html) and self.browser_fallback
+            )
+            if should_render:
+                try:
+                    rendered = self._browser_fetch(static_result.url)
+                    # Never replace a usable static page with an empty rendered
+                    # shell. This is important for life.postech.ac.kr, which can
+                    # intermittently fail under headless Chromium.
+                    if not self._needs_browser(rendered.html) or self._needs_browser(static_result.html):
+                        result = rendered
+                except Exception:
+                    if self._needs_browser(static_result.html):
+                        raise
+                    result = static_result
         except PermissionError:
             raise
         except Exception:
-            if not self.browser_fallback:
+            if static_result is not None and not self._needs_browser(static_result.html):
+                result = static_result
+            elif not (force_browser or self.browser_fallback):
                 raise
-            result = self._browser_fetch(url)
+            else:
+                result = self._browser_fetch(url)
 
         self._cache[cache_key] = result
         return result
@@ -1073,14 +1132,24 @@ def append_jsonl(path: Path, payload: dict) -> None:
         file.write(json.dumps(payload, ensure_ascii=False) + "\n")
 
 
+def deep_merge_dict(base: dict, override: dict) -> dict:
+    result = json.loads(json.dumps(base, ensure_ascii=False))
+    for key, value in override.items():
+        if isinstance(value, dict) and isinstance(result.get(key), dict):
+            result[key] = deep_merge_dict(result[key], value)
+        else:
+            result[key] = value
+    return result
+
+
 def load_overrides(path: Path) -> dict:
-    if not path.exists():
-        return {}
-    with path.open("r", encoding="utf-8-sig") as file:
-        payload = json.load(file)
-    if not isinstance(payload, dict):
-        raise ValueError("site_overrides.json 최상위 값은 객체여야 합니다.")
-    return payload
+    external: dict = {}
+    if path.exists():
+        with path.open("r", encoding="utf-8-sig") as file:
+            external = json.load(file)
+        if not isinstance(external, dict):
+            raise ValueError("site_overrides.json 최상위 값은 객체여야 합니다.")
+    return deep_merge_dict(BUILTIN_SITE_OVERRIDES, external)
 
 
 def is_noise_exact(value: str) -> bool:
@@ -1319,6 +1388,26 @@ def clean_location_value(value: str) -> str:
         return ""
     if any(token in low for token in ("accepted to", "publication", "conference", "work on", "award", "news", "display 20")):
         return ""
+    if text.startswith("[") or re.search(
+        r"(?:교수\s*(?:연구팀|POSTECH)|연구팀|최종\s*선정|기사\s*중\s*발췌|"
+        r"국제공동연구|기술\s*개발|공동\s*연구를\s*통해|수상|게재|보도자료)",
+        text,
+        re.I,
+    ):
+        return ""
+
+    # Some official profiles place the room before the building, for example
+    # "326, POSTECH Biotech Center (PBC), 55, Jigok-ro ...". Preserve the
+    # campus building/room pair and discard the postal-address tail.
+    room_first = re.match(
+        r"^#?(?P<room>[A-Za-z]?\d{2,4})(?:호)?(?:\s*[,/\-]\s*|\s+)"
+        r"(?P<building>[^,;]{2,90}?(?:관|동|센터|연구소|Building|Bldg\.?|Center)(?:\s*\([^)]+\))?)"
+        r"(?:\s*[,;]|$)",
+        text,
+        re.I,
+    )
+    if room_first:
+        return clean_text(f"{room_first.group('building')} {room_first.group('room')}")
 
     # POSTECH pages frequently use compact building codes such as "C5 309".
     # These are valid locations even without the Korean "호" suffix.
@@ -1417,6 +1506,19 @@ def clean_summary_value(value: str) -> str:
         return ""
 
     text = strip_urls(text)
+    citation_markers = sum(
+        bool(pattern.search(text))
+        for pattern in (
+            re.compile(r"\bdoi\s*:", re.I),
+            re.compile(r"\bvol\.?\s*\d+", re.I),
+            re.compile(r"\bp\.?\s*\d+\s*[–-]\s*\d+", re.I),
+            re.compile(r"[\"“][^\"”]{15,}[\"”]"),
+            re.compile(r"^(?:[A-Z가-힣][^,]{0,35},\s*){2,}"),
+            re.compile(r"\b(?:19|20)\d{2}\.?$"),
+        )
+    )
+    if citation_markers >= 2:
+        return ""
     if PUBLICATION_ANNOUNCEMENT_RE.search(text):
         return ""
     if RECRUITMENT_ONLY_RE.search(text) and not SUBSTANTIVE_RESEARCH_RE.search(text):
@@ -1572,6 +1674,18 @@ def clean_keywords_value(value: str) -> str:
         "or",
         "and",
         "the",
+        "연구분야",
+        "연구 분야",
+        "전문분야",
+        "전문 분야",
+        "homepage 제작",
+        "홈페이지 제작",
+        "홈페이지 만들기",
+        "무료 홈페이지",
+        "포트폴리오 사이트",
+        "크리에이터링크",
+        "반응형웹",
+        "반응형 홈페이지",
     }
     raw_items = [clean_text(x) for x in re.split(r"[;|,•·\n]+", clean_text(value))]
     skip_indexes: set[int] = set()
@@ -1629,12 +1743,21 @@ def clean_profile_image_url(value: str) -> str:
 
 PROVENANCE_NOISE_RE = re.compile(
     r"(?i)(?:"
-    r"/(?:news|notice|admission|recruit|award|seminar|event|gallery)(?:/|$)"
+    r"/(?:news|notice|admission|recruit|award|seminar|event|gallery)(?:/|\.|$)"
+    r"|/(?:community|board)/(?:[^?#]*/)?(?:news|notice)(?:/|\.|$)"
+    r"|[?&](?:bd_id|bo_table|category|board)=?[^&#]*(?:news|notice|award|recruit)"
     r"|facultyapplication\.postech\.ac\.kr"
     r"|postechian\.org/alumni"
     r"|/invitation/"
     r")"
 )
+
+
+def is_non_identity_source_url(url: str) -> bool:
+    normalized = normalize_url(url)
+    if not normalized:
+        return True
+    return bool(PROVENANCE_NOISE_RE.search(normalized))
 
 
 def sanitize_enrichment_source_urls(
@@ -1671,7 +1794,7 @@ def sanitize_enrichment_source_urls(
         if url in anchor_set:
             kept.append(url)
             continue
-        if PROVENANCE_NOISE_RE.search(url):
+        if is_non_identity_source_url(url):
             continue
         if department_host and hostname(url) == department_host:
             low = url.casefold()
@@ -1698,6 +1821,36 @@ def sanitize_enrichment_source_urls(
     return ";".join(unique_preserve_order(kept)[:MAX_ENRICHMENT_SOURCE_URLS])
 
 
+def summary_looks_like_news_article(text: str) -> bool:
+    value = clean_text(text)
+    if not value:
+        return False
+    markers = sum(
+        bool(pattern.search(value))
+        for pattern in (
+            re.compile(r"(?:교수\s*연구팀|연구팀은|이번\s*연구|관련\s*링크)"),
+            re.compile(r"(?:성공했다|확인했다|입증했다|시사한다|의의를\s*지닌다)"),
+            re.compile(r"^[A-Z][^.!?]{20,180}(?:\s+[가-힣])"),
+            re.compile(r"[\"“][^\"”]{12,}[\"”]"),
+        )
+    )
+    return markers >= 1
+
+
+def summary_has_lab_intro_context(text: str) -> bool:
+    value = clean_text(text)
+    return bool(
+        re.search(
+            r"(?:본\s*연구실|우리\s*연구실|연구실(?:에서는|은|에서)|"
+            r"research\s+laboratory|our\s+lab|the\s+lab\s+(?:focus|stud|develop)|"
+            r"laboratory\s+(?:focus|involved|conduct|stud)|"
+            r"(?:은|는)\s+[^.]{2,80}\s+분야(?:입니다|이다))",
+            value,
+            re.I,
+        )
+    )
+
+
 def clean_existing_lab_row(row: dict[str, str], report: CleanReport) -> dict[str, str]:
     original = dict(row)
     cleaned = dict(row)
@@ -1714,6 +1867,12 @@ def clean_existing_lab_row(row: dict[str, str], report: CleanReport) -> dict[str
     cleaned["primary_field"] = clean_primary_field_value(cleaned.get("primary_field", ""))
     cleaned["keywords"] = clean_keywords_value(cleaned.get("keywords", ""))
     cleaned["research_summary"] = clean_summary_value(cleaned.get("research_summary", ""))
+    if (
+        cleaned["research_summary"]
+        and summary_looks_like_news_article(cleaned["research_summary"])
+        and not summary_has_lab_intro_context(cleaned["research_summary"])
+    ):
+        cleaned["research_summary"] = ""
     cleaned["profile_image_url"] = clean_profile_image_url(cleaned.get("profile_image_url", ""))
 
     old_lab_name = clean_text(cleaned.get("lab_name_kor", ""))
@@ -1748,7 +1907,6 @@ def clean_existing_lab_row(row: dict[str, str], report: CleanReport) -> dict[str
         cleaned.get("primary_department_id", "") or cleaned.get("department_id", "")
     )
     cleaned["enrichment_source_urls"] = sanitize_enrichment_source_urls(cleaned)
-    cleaned["enricher_version"] = ENRICHER_VERSION
 
     for field_name, value in cleaned.items():
         if clean_text(original.get(field_name, "")) != clean_text(value):
@@ -1904,6 +2062,254 @@ def remove_cross_department_contamination(rows: list[dict[str, str]], report: Cl
                 row["lab_name_kor"] = f"{professor} 교수 연구실" if professor else ""
 
 
+
+def remove_repeated_generic_values(rows: list[dict[str, str]], report: CleanReport) -> None:
+    """Remove page-wide text accidentally copied into many professor rows."""
+    lab_name_groups: defaultdict[str, list[dict[str, str]]] = defaultdict(list)
+    summary_groups: defaultdict[str, list[dict[str, str]]] = defaultdict(list)
+    for row in rows:
+        lab_name = clean_text(row.get("lab_name_kor", ""))
+        if lab_name:
+            lab_name_groups[lab_name.casefold()].append(row)
+        summary = clean_text(row.get("research_summary", ""))
+        if summary:
+            summary_groups[summary.casefold()].append(row)
+
+    for group in lab_name_groups.values():
+        professor_ids = {normalize_email(row.get("email", "")) or row.get("researcher_id", "") for row in group}
+        departments = {normalized_department_name(row.get("department_name", "")) for row in group}
+        value = clean_text(group[0].get("lab_name_kor", ""))
+        compact_generic = bool(re.fullmatch(r"(?i)[a-z0-9_-]{2,14}\s*lab", value)) or value.casefold() in {
+            "rllab", "lab", "research lab", "laboratory"
+        }
+        english_generic = bool(
+            re.fullmatch(r"(?i)[a-z][a-z0-9&+\- ]{1,60}\s+(?:lab|laboratory)", value)
+            and len(value.split()) <= 5
+        )
+        distinct_urls = {
+            normalize_url(row.get("lab_url", ""))
+            for row in group
+            if normalize_url(row.get("lab_url", ""))
+        }
+        distinct_fields = {
+            canonical_output_text(row.get("primary_field", ""))
+            for row in group
+            if canonical_output_text(row.get("primary_field", ""))
+        }
+        repeated_wrapper_title = (
+            len(professor_ids) >= 3
+            and len(distinct_urls) >= 3
+            and len(distinct_fields) >= 3
+        )
+        repeated_generic = (
+            (len(professor_ids) >= 4 and len(departments) >= 2 and compact_generic)
+            or (len(professor_ids) >= 3 and (compact_generic or english_generic))
+            or repeated_wrapper_title
+        )
+        if repeated_generic:
+            for row in group:
+                professor = clean_text(row.get("professor_name", ""))
+                row["lab_name_kor"] = f"{professor} 교수 연구실" if professor else ""
+                report.duplicate_noise["generic_lab_name"] += 1
+                report.changed_fields["lab_name_kor"] += 1
+
+    for group in summary_groups.values():
+        professor_ids = {normalize_email(row.get("email", "")) or row.get("researcher_id", "") for row in group}
+        if len(professor_ids) < 3:
+            continue
+        # An identical prose paragraph assigned to three or more different
+        # professors is almost always a department/page introduction.
+        for row in group:
+            row["research_summary"] = ""
+            report.duplicate_noise["generic_research_summary"] += 1
+            report.changed_fields["research_summary"] += 1
+
+
+def remove_other_professor_names_from_fields(rows: list[dict[str, str]], report: CleanReport) -> None:
+    known_display_names = {
+        clean_professor_name(row.get("professor_name", ""), row.get("department_name", ""))
+        for row in rows
+    }
+    known_display_names.discard("")
+    for row in rows:
+        own = clean_professor_name(row.get("professor_name", ""), row.get("department_name", ""))
+        value = clean_text(row.get("primary_field", ""))
+        if not value:
+            continue
+        parts: list[str] = []
+        changed = False
+        for part in re.split(r"[;|•·\n]+", value):
+            part = clean_text(part).strip(" .,:;|-/")
+            if not part:
+                continue
+            if part in known_display_names and part != own:
+                changed = True
+                continue
+            for name in known_display_names:
+                if name == own:
+                    continue
+                new_part = re.sub(rf"(?:^|[;,\s]){re.escape(name)}(?:$|[;,\s])", " ", part)
+                new_part = clean_text(new_part).strip(" .,:;|-/")
+                if new_part != part:
+                    changed = True
+                    part = new_part
+            if part:
+                parts.append(part)
+        new_value = "; ".join(unique_preserve_order(parts))[:MAX_PRIMARY_FIELD_CHARS]
+        if changed and new_value != value:
+            row["primary_field"] = clean_primary_field_value(new_value)
+            report.duplicate_noise["primary_field_professor_name"] += 1
+            report.changed_fields["primary_field"] += 1
+
+
+def authoritative_department_hosts(
+    department: dict[str, str],
+    override: dict,
+) -> set[str]:
+    hosts: set[str] = set()
+    for url in (
+        department.get("homepage_url", ""),
+        department.get("detail_url", ""),
+        *override.get("faculty_urls", []),
+    ):
+        host = hostname(normalize_url(clean_text(url)))
+        if host:
+            hosts.add(host.removeprefix("www."))
+    for raw in override.get("allowed_hosts", []):
+        host = clean_text(raw).lower().removeprefix("*.").removeprefix("www.")
+        if host:
+            hosts.add(host)
+    return hosts
+
+
+def reset_stale_cross_identity_contamination(
+    departments: list[dict[str, str]],
+    labs_by_id: dict[str, dict[str, str]],
+    overrides: dict,
+) -> Counter[str]:
+    """Remove persisted cross-identity values from homonymous professor rows.
+
+    Old runs could first add a false secondary affiliation, then use that
+    affiliation to make a name-only match on a different department page. Once
+    a plausible-looking field was stored, quality-based merging preserved it.
+    This routine is deliberately conservative: when two different e-mails share
+    an identical identity field, the copied value is removed from every affected
+    row and must be reacquired from an exact-email primary source.
+    """
+    department_by_id = {
+        clean_text(row.get("department_id", "")): row
+        for row in departments
+        if clean_text(row.get("department_id", ""))
+    }
+    hosts_by_department_id: dict[str, set[str]] = {}
+    for department_id, department in department_by_id.items():
+        hosts_by_department_id[department_id] = authoritative_department_hosts(
+            department,
+            resolve_department_override(overrides, department),
+        )
+
+    groups: defaultdict[str, list[dict[str, str]]] = defaultdict(list)
+    for row in labs_by_id.values():
+        name = normalize_name(row.get("professor_name", ""))
+        if name:
+            groups[name].append(row)
+
+    report: Counter[str] = Counter()
+    comparable_fields = (
+        "lab_name_kor",
+        "lab_name_eng",
+        "phone",
+        "location",
+        "primary_field",
+        "research_summary",
+    )
+
+    for group in groups.values():
+        distinct_emails = {
+            normalize_email(row.get("email", ""))
+            for row in group
+            if normalize_email(row.get("email", ""))
+        }
+        if len(distinct_emails) < 2:
+            continue
+
+        shared_values: dict[str, set[str]] = {}
+        shared_phrases: set[str] = set()
+        for field_name in comparable_fields:
+            value_rows: defaultdict[str, list[dict[str, str]]] = defaultdict(list)
+            for row in group:
+                value = clean_text(row.get(field_name, ""))
+                if not value:
+                    continue
+                if field_name == "lab_name_kor" and looks_placeholder_lab_name(value):
+                    continue
+                value_rows[value.casefold()].append(row)
+            duplicates = {value for value, owners in value_rows.items() if len(owners) >= 2}
+            if duplicates:
+                shared_values[field_name] = duplicates
+                shared_phrases.update(value for value in duplicates if len(value) >= 8)
+
+        group_has_copy_signal = bool(shared_values)
+        for row in group:
+            primary_id = clean_text(row.get("primary_department_id", "") or row.get("department_id", ""))
+            own_hosts = hosts_by_department_id.get(primary_id, set())
+            page_host = hostname(row.get("department_page_url", "")).removeprefix("www.")
+            foreign_page = bool(page_host and page_host not in own_hosts)
+
+            for field_name, duplicate_values in shared_values.items():
+                value = clean_text(row.get(field_name, ""))
+                if value and value.casefold() in duplicate_values:
+                    row[field_name] = ""
+                    report[field_name] += 1
+
+            # A copied research-field sentence often survives with a prefix such
+            # as "주요 연구 분야:". Remove it when it embeds a duplicated value.
+            summary = clean_text(row.get("research_summary", ""))
+            if summary and any(phrase in summary.casefold() for phrase in shared_phrases):
+                row["research_summary"] = ""
+                report["research_summary"] += 1
+
+            # In a homonym group, a lab URL acquired from a foreign department
+            # page cannot be validated by name alone. Exact-email recrawling must
+            # re-establish it. Manual URLs remain untouched.
+            if foreign_page and group_has_copy_signal and row.get("lab_url_status") != "manual":
+                if clean_text(row.get("lab_url", "")):
+                    row["lab_url"] = ""
+                    row["lab_url_status"] = "invalid"
+                    report["lab_url"] += 1
+
+            # Remove keyword items copied verbatim from another homonymous row.
+            other_tokens: set[str] = set()
+            for other in group:
+                if other is row:
+                    continue
+                other_tokens.update(item.casefold() for item in split_multi(other.get("keywords", "")))
+                other_tokens.update(item.casefold() for item in split_multi(other.get("primary_field", "")))
+            current_tokens = split_multi(row.get("keywords", ""))
+            kept_tokens = [item for item in current_tokens if item.casefold() not in other_tokens]
+            new_keywords = ";".join(unique_preserve_order(kept_tokens)[:MAX_KEYWORDS])
+            if new_keywords != clean_text(row.get("keywords", "")):
+                row["keywords"] = new_keywords
+                report["keywords"] += 1
+
+            if foreign_page:
+                row["department_page_url"] = ""
+                row["enrichment_source_urls"] = sanitize_enrichment_source_urls(
+                    {**row, "department_page_url": "", "enrichment_source_urls": ""}
+                )
+                report["department_page_url"] += 1
+                report["enrichment_source_urls"] += 1
+
+            if not clean_text(row.get("lab_name_kor", "")):
+                professor = clean_text(row.get("professor_name", ""))
+                row["lab_name_kor"] = f"{professor} 교수 연구실" if professor else ""
+            if group_has_copy_signal or foreign_page:
+                row["enrichment_status"] = "pending"
+                row["enrichment_message"] = "동명이인 교차오염 제거 후 정확 이메일 기반 재수집 대기"
+
+    return report
+
+
 def clean_all_labs(rows: list[dict[str, str]]) -> tuple[list[dict[str, str]], CleanReport]:
     originals = {clean_text(row.get("lab_id", "")): dict(row) for row in rows}
     report = CleanReport()
@@ -1911,10 +2317,11 @@ def clean_all_labs(rows: list[dict[str, str]]) -> tuple[list[dict[str, str]], Cl
     remove_duplicate_lab_urls(cleaned, report)
     remove_duplicate_profile_images(cleaned, report)
     remove_professor_name_keywords(cleaned, report)
+    remove_other_professor_names_from_fields(cleaned, report)
     remove_cross_department_contamination(cleaned, report)
+    remove_repeated_generic_values(cleaned, report)
     for row in cleaned:
         row["data_quality_status"] = data_quality_status(row)
-        row["enricher_version"] = ENRICHER_VERSION
 
     # Recompute final change counts from the actual output. Earlier stages may
     # touch the same field more than once, so incremental counters can overcount.
@@ -1952,7 +2359,9 @@ def page_link_score(anchor_text: str, href: str) -> int:
             score += 7
     for term in RESEARCH_LINK_TERMS:
         if term.casefold() in haystack:
-            score += 3
+            # A generic research/news page is not a faculty source. It may add
+            # a weak hint, but cannot enter the crawl queue by itself.
+            score += 1
     for term in EXCLUDE_LINK_TERMS:
         if term.casefold() in haystack:
             score -= 7
@@ -2021,7 +2430,7 @@ def is_profile_detail_link(
     href: str,
     known_names: Optional[set[str]] = None,
 ) -> bool:
-    if not href:
+    if not href or is_non_identity_source_url(href):
         return False
     parsed = urlparse(href)
     query = parse_qs(parsed.query)
@@ -2068,6 +2477,49 @@ def save_raw_html(paths: RuntimePaths, department_id: str, page_index: int, resu
     path.write_text(result.html, encoding="utf-8")
 
 
+def department_match_count_within_limit(override: dict, count: int) -> bool:
+    """Return False only when an explicit positive safety limit is exceeded."""
+    raw_limit = override.get("max_total_matches")
+    if raw_limit in (None, ""):
+        return True
+    try:
+        limit = int(raw_limit)
+    except (TypeError, ValueError):
+        return True
+    return limit < 1 or count <= limit
+
+
+def rollback_department_if_scope_overflow(
+    override: dict,
+    match_count: int,
+    department: dict[str, str],
+    labs_by_id: dict[str, dict[str, str]],
+    labs_snapshot: Optional[dict[str, dict[str, str]]],
+    touched_lab_ids: set[str],
+    touched_snapshot: Optional[set[str]],
+) -> bool:
+    """Transactionally undo one department when a scope leak is detected."""
+    if department_match_count_within_limit(override, match_count):
+        return False
+    if labs_snapshot is None or touched_snapshot is None:
+        raise RuntimeError("범위 상한이 설정된 학과에 롤백 스냅샷이 없습니다.")
+    max_matches = int(override["max_total_matches"])
+    labs_by_id.clear()
+    labs_by_id.update(deepcopy(labs_snapshot))
+    touched_lab_ids.clear()
+    touched_lab_ids.update(touched_snapshot)
+    department["faculty_page_urls"] = ""
+    department["faculty_match_count"] = "0"
+    department["enrichment_status"] = "scope_overflow"
+    department["enrichment_message"] = (
+        f"안전 상한 초과로 학과 단위 변경 전체 롤백: "
+        f"매칭 {match_count}명 > 상한 {max_matches}명"
+    )
+    department["enriched_at"] = now_iso()
+    department["enricher_version"] = ENRICHER_VERSION
+    return True
+
+
 def resolve_department_override(overrides: dict, department: dict[str, str]) -> dict:
     candidates = (
         clean_text(department.get("department_id", "")),
@@ -2079,6 +2531,43 @@ def resolve_department_override(overrides: dict, department: dict[str, str]) -> 
         if isinstance(value, dict):
             return value
     return {}
+
+
+def override_scope_query_params(override: dict) -> dict[str, set[str]]:
+    """Return strict query-parameter constraints declared by site_overrides.json.
+
+    Shared POSTECH portals use the same host and path for multiple programs.
+    Without a query scope guard, the crawler can follow sibling-program tabs
+    and incorrectly add every professor to every affiliated_programs value.
+    """
+    raw = override.get("scope_query_params", {})
+    if not isinstance(raw, dict):
+        return {}
+    result: dict[str, set[str]] = {}
+    for key, values in raw.items():
+        key = clean_text(key)
+        if not key:
+            continue
+        if isinstance(values, (str, int, float)):
+            values = [values]
+        if not isinstance(values, (list, tuple, set)):
+            continue
+        normalized = {clean_text(value) for value in values if clean_text(value)}
+        if normalized:
+            result[key] = normalized
+    return result
+
+
+def url_matches_override_scope(url: str, override: dict) -> bool:
+    constraints = override_scope_query_params(override)
+    if not constraints:
+        return True
+    query = parse_qs(urlparse(url).query, keep_blank_values=True)
+    for key, allowed_values in constraints.items():
+        actual_values = {clean_text(value) for value in query.get(key, []) if clean_text(value)}
+        if not actual_values or actual_values.isdisjoint(allowed_values):
+            return False
+    return True
 
 
 def discover_department_pages(
@@ -2115,10 +2604,11 @@ def discover_department_pages(
     allowed_hosts.update(hostname(url) for url in candidate_urls)
     allowed_hosts.update(clean_text(x).lower() for x in override.get("allowed_hosts", []) if clean_text(x))
     allowed_hosts.discard("")
+    follow_links = bool(override.get("follow_links", True))
 
     def host_allowed(url: str) -> bool:
         host = hostname(url)
-        if not host:
+        if not host or not url_matches_override_scope(url, override):
             return False
         normalized_host = host.removeprefix("www.")
         for allowed in allowed_hosts:
@@ -2178,6 +2668,26 @@ def discover_department_pages(
             )
             continue
 
+        # Redirects on shared portals can silently drop or change the department
+        # query parameter. Reject the final URL before parsing or affiliation merge.
+        if not host_allowed(result.url):
+            append_jsonl(
+                paths.log,
+                {
+                    "timestamp": now_iso(),
+                    "level": "scope_rejected",
+                    "department_id": department.get("department_id", ""),
+                    "department_type": department.get("department_type", ""),
+                    "department": department.get("department_name_kor", ""),
+                    "requested_url": url,
+                    "final_url": result.url,
+                    "message": "최종 URL이 site_overrides scope_query_params 범위를 벗어남",
+                    "enricher_version": ENRICHER_VERSION,
+                },
+            )
+            print(f"    [SCOPE-REJECT] {result.url}")
+            continue
+
         results.append(result)
         save_raw_html(paths, department.get("department_id", "UNKNOWN"), len(results), result, save_raw)
         soup = result.soup
@@ -2187,7 +2697,23 @@ def discover_department_pages(
             f"내용점수={content_score:02d} | {result.method} | {result.url}"
         )
 
-        if depth >= local_max_depth:
+        if depth < max(local_max_depth, 1) and override_scope_query_params(override):
+            # Shared portals often separate 전임/겸임/연구/대우교수 by a
+            # numeric ``position`` query while displaying all category links in
+            # the same navigation. Follow only professor-category URLs that keep
+            # the exact department scope; sibling departments remain rejected.
+            for anchor in soup.find_all("a"):
+                href = anchor_target_url(result.url, anchor)
+                if not href or not host_allowed(href) or is_non_identity_source_url(href):
+                    continue
+                query = parse_qs(urlparse(href).query, keep_blank_values=True)
+                if clean_text((query.get("sub") or [""])[0]) != "professor":
+                    continue
+                position = clean_text((query.get("position") or [""])[0])
+                if position and re.fullmatch(r"\d{1,2}", position):
+                    push(href, 1800, depth + 1)
+
+        if depth >= local_max_depth or not follow_links:
             continue
 
         for iframe_url in iter_iframe_urls(soup, result.url):
@@ -2197,14 +2723,15 @@ def discover_department_pages(
         faculty_hub = is_faculty_hub_page(soup, known_names)
         for anchor in soup.find_all("a"):
             href = anchor_target_url(result.url, anchor)
-            if not href or not host_allowed(href):
+            if not href or not host_allowed(href) or is_non_identity_source_url(href):
                 continue
             score = page_link_score(anchor.get_text(" ", strip=True), href)
             if faculty_hub and is_profile_detail_link(anchor, href, known_names):
                 score = max(score, 24)
             elif faculty_hub and is_pagination_link(anchor, result.url, href):
                 score = max(score, 18)
-            if score >= 3:
+            minimum_link_score = max(3, int(override.get("min_link_score", 5)))
+            if score >= minimum_link_score:
                 push(href, score, depth + 1)
 
     return results
@@ -2372,8 +2899,18 @@ def build_page_matches(
     if isinstance(email_selectors, str):
         email_selectors = [email_selectors]
 
+    max_card_emails = max(1, int(override.get("max_card_emails", 2)))
+    max_card_identities = max(1, int(override.get("max_card_identities", 2)))
+
     for card in cards:
+        card_text = clean_text(card.get_text(" ", strip=True))
         emails = card_candidate_emails(card, email_selectors)
+        # A selector accidentally targeting the list wrapper or page body must
+        # never be treated as one professor card.
+        if len(emails) > max_card_emails:
+            continue
+        if visible_identity_count(card_text, normalized_known_names) > max_card_identities:
+            continue
         matched_lab_id = next((labs_by_email[email] for email in emails if email in labs_by_email), "")
         method = "email_selector" if matched_lab_id else ""
         if not matched_lab_id:
@@ -2400,10 +2937,21 @@ def build_page_matches(
         )
         matches[lab_id] = MatchResult(lab_id, block, "email", result.url)
 
-    # Name-only matching is allowed only when the normalized professor name is
-    # globally unique in labs.csv. This avoids automatic matching of homonyms.
+    # Name-only matching is allowed only on a faculty hub or profile-like URL,
+    # and only when the normalized professor name is globally unique. This
+    # prevents news/research articles mentioning a professor from becoming a
+    # pseudo faculty card.
     page_text = clean_text(soup.get_text(" ", strip=True))
     normalized_page_text = normalize_name(page_text)
+    parsed_result_url = urlparse(result.url)
+    page_is_identity_source = bool(
+        is_faculty_hub_page(soup, normalized_known_names)
+        or PROFILE_DETAIL_PATH_RE.search(parsed_result_url.path)
+        or any(token in parsed_result_url.path.casefold() for token in PROFILE_PATH_HINTS)
+        or any(key in parse_qs(parsed_result_url.query) for key in PROFILE_DETAIL_QUERY_KEYS)
+    )
+    if not page_is_identity_source:
+        return list(matches.values())
     for normalized_name, lab_id in eligible_name_to_lab_id.items():
         if not normalized_name or normalized_name not in normalized_page_text or lab_id in matches:
             continue
@@ -2775,7 +3323,12 @@ def homepage_identity_score(
         page_email for page_email in page_emails
         if page_email.endswith("@postech.ac.kr") and page_email != email
     }
-    identity_conflict = bool(unrelated_postech_emails and not email_exact and not name_exact)
+    ambiguous_name = bool(lab.get("_name_is_ambiguous", False))
+    identity_conflict = bool(
+        unrelated_postech_emails
+        and not email_exact
+        and (ambiguous_name or not name_exact)
+    )
 
     if name_exact:
         score += 5
@@ -2795,6 +3348,10 @@ def homepage_identity_score(
         score += 2
     if unrelated_postech_emails and not email_exact:
         score -= min(4, len(unrelated_postech_emails))
+    if ambiguous_name and not email_exact:
+        # A duplicate display name is not identity evidence. Require the exact
+        # professor e-mail before exposing a homepage as verified.
+        score = min(score, 7)
     return max(score, 0), email_exact, identity_conflict
 
 
@@ -2998,6 +3555,9 @@ def merge_lab_update(
     changed: list[str] = []
     merged = dict(lab)
     update = sanitize_update(update, merged)
+    source_scope = clean_text(update.get("_source_scope", "primary")) or "primary"
+    allow_secondary_fields = bool(update.get("_allow_secondary_field_enrichment", False))
+    secondary_affiliation_only = source_scope == "secondary" and not allow_secondary_fields
 
     if affiliation:
         old = merged.get("affiliated_programs", "") or merged.get("department_name", "")
@@ -3021,7 +3581,7 @@ def merge_lab_update(
         "department_page_url",
     )
 
-    for field_name in merge_fields:
+    for field_name in (() if secondary_affiliation_only else merge_fields):
         incoming = clean_text(update.get(field_name, ""))
         if not incoming:
             continue
@@ -3035,8 +3595,12 @@ def merge_lab_update(
                 merged[field_name] = combined
                 changed.append(field_name)
 
-    incoming_url = clean_text(update.get("lab_url", ""))
-    incoming_status = "manual" if manual and incoming_url else clean_text(update.get("lab_url_status", ""))
+    incoming_url = "" if secondary_affiliation_only else clean_text(update.get("lab_url", ""))
+    incoming_status = (
+        "unverified"
+        if secondary_affiliation_only
+        else ("manual" if manual and incoming_url else clean_text(update.get("lab_url_status", "")))
+    )
     current_url = clean_text(merged.get("lab_url", ""))
     current_status = normalize_lab_url_status(merged.get("lab_url_status", ""), current_url)
 
@@ -3123,6 +3687,10 @@ def apply_manual_overrides(labs_by_id: dict[str, dict[str, str]], override_root:
                 manual=True,
             )
             if changed:
+                for affiliation in split_multi(values.get("affiliated_programs", "")):
+                    record_affiliation_evidence(merged, affiliation, "", "manual", False)
+                record_field_provenance(merged, changed, "manual", "", "manual")
+                merged["data_state"] = "manual_verified"
                 merged["enrichment_status"] = "manual_override"
                 merged["enrichment_message"] = "수동 override 적용: " + ", ".join(changed)
                 merged["enriched_at"] = now_iso()
@@ -3158,6 +3726,99 @@ def save_checkpoint(
     atomic_write_csv(paths.labs, labs_sorted, lab_fields)
 
 
+def reset_affiliations_for_full_rebuild(
+    departments: list[dict[str, str]],
+    labs_by_id: dict[str, dict[str, str]],
+) -> int:
+    """Reset derived affiliations before a full authoritative recrawl.
+
+    This is intentionally opt-in because older CSVs do not retain per-program
+    provenance for each affiliation. Resetting to the primary department is the
+    only safe way to remove previously accumulated cross-program contamination.
+    """
+    changed = 0
+    for lab in labs_by_id.values():
+        primary_name = clean_text(lab.get("department_name", ""))
+        if clean_text(lab.get("affiliated_programs", "")) != primary_name:
+            lab["affiliated_programs"] = primary_name
+            changed += 1
+    for department in departments:
+        department["faculty_page_urls"] = ""
+        department["faculty_match_count"] = "0"
+        department["enrichment_status"] = "pending"
+        department["enrichment_message"] = "소속 전체 재구축 대기"
+        department["enriched_at"] = ""
+        department["enricher_version"] = ENRICHER_VERSION
+    return changed
+
+
+def clear_non_authoritative_enrichment_for_full_rebuild(
+    labs_by_id: dict[str, dict[str, str]],
+) -> Counter[str]:
+    """Discard stale Stage-2 fields before an authoritative full recrawl.
+
+    A syntactically valid but wrong value can have the same quality score as a
+    correct incoming value and therefore survive forever. Full ``--force`` runs
+    now retain only manual values and fields independently verified from the
+    exact professor's lab homepage. Department-card-derived values are rebuilt.
+    """
+    report: Counter[str] = Counter()
+    for lab in labs_by_id.values():
+        status = clean_text(lab.get("lab_url_status", ""))
+        homepage_trusted = status in {"verified_homepage", "manual"}
+        homepage_fields_trusted = homepage_trusted and clean_text(lab.get("keyword_source", "")) in {
+            "lab_homepage",
+            "manual",
+        }
+
+        if not homepage_trusted:
+            if clean_text(lab.get("lab_url", "")):
+                lab["lab_url"] = ""
+                report["lab_url"] += 1
+            if clean_text(lab.get("lab_url_status", "")) != "unverified":
+                lab["lab_url_status"] = "unverified"
+                report["lab_url_status"] += 1
+
+        if not homepage_trusted:
+            for field_name in ("lab_name_eng", "location"):
+                if clean_text(lab.get(field_name, "")):
+                    lab[field_name] = ""
+                    report[field_name] += 1
+            lab_name = clean_text(lab.get("lab_name_kor", ""))
+            if lab_name and not looks_placeholder_lab_name(lab_name):
+                professor = clean_text(lab.get("professor_name", ""))
+                lab["lab_name_kor"] = f"{professor} 교수 연구실" if professor else ""
+                report["lab_name_kor"] += 1
+
+        if clean_text(lab.get("keyword_source", "")) != "manual" and clean_text(lab.get("primary_field", "")):
+            # primary_field is extracted from an official professor card; a lab
+            # homepage verification does not prove this separate field.
+            lab["primary_field"] = ""
+            report["primary_field"] += 1
+
+        if not homepage_fields_trusted:
+            for field_name in (
+                "research_summary",
+                "keywords",
+                "keyword_source",
+            ):
+                if clean_text(lab.get(field_name, "")):
+                    lab[field_name] = ""
+                    report[field_name] += 1
+
+        if clean_text(lab.get("department_page_url", "")):
+            lab["department_page_url"] = ""
+            report["department_page_url"] += 1
+        lab["enrichment_source_urls"] = sanitize_enrichment_source_urls(
+            {**lab, "department_page_url": "", "enrichment_source_urls": ""}
+        )
+        lab["enrichment_status"] = "pending"
+        lab["enrichment_message"] = "권위 소스 기반 전체 재수집 대기"
+        lab["enriched_at"] = ""
+        lab["enricher_version"] = ENRICHER_VERSION
+    return report
+
+
 def initialize_rows(
     departments: list[dict[str, str]],
     labs: list[dict[str, str]],
@@ -3184,7 +3845,9 @@ def initialize_rows(
         row.setdefault("enriched_at", "")
         row["lab_url_status"] = normalize_lab_url_status(row.get("lab_url_status", ""), row.get("lab_url", ""))
         row["data_quality_status"] = data_quality_status(row)
-        row["enricher_version"] = ENRICHER_VERSION
+        row.setdefault("affiliation_evidence", "")
+        row.setdefault("field_provenance", "")
+        row.setdefault("data_state", "legacy_unverified")
         labs_by_id[lab_id] = row
     return labs_by_id, department_by_id
 
@@ -3202,8 +3865,10 @@ def build_department_name_index(
             clean_text(row.get("primary_department_id", "")),
             clean_text(row.get("department_id", "")),
         }
-        affiliation_match = department_name and department_name in split_multi(row.get("affiliated_programs", ""))
-        if not (primary_match or affiliation_match):
+        # Name-only matching is restricted to the immutable primary department.
+        # Secondary/program affiliations must be established by exact e-mail;
+        # otherwise one stale affiliation can recursively create many more.
+        if not primary_match:
             continue
         name = normalize_name(row.get("professor_name", ""))
         # A name-only match is permitted only when it is unique both globally
@@ -3234,12 +3899,362 @@ def build_indexes(
 
 def clean_departments(departments: list[dict[str, str]]) -> None:
     for row in departments:
-        row["enricher_version"] = ENRICHER_VERSION
         if row.get("faculty_page_urls"):
             valid_urls = [
                 url for url in split_multi(row.get("faculty_page_urls", "")) if normalize_url(url)
             ]
             row["faculty_page_urls"] = merge_multi(*valid_urls)
+
+
+
+
+
+def authoritative_rebuild_requested(args: argparse.Namespace) -> bool:
+    return bool(
+        not getattr(args, "clean_only", False)
+        and not getattr(args, "department", None)
+        and getattr(args, "test_limit", None) is None
+        and not getattr(args, "incremental", False)
+    )
+
+def parse_json_dict(value: object) -> dict:
+    text = clean_text(value)
+    if not text:
+        return {}
+    try:
+        payload = json.loads(text)
+    except (TypeError, ValueError, json.JSONDecodeError):
+        return {}
+    return payload if isinstance(payload, dict) else {}
+
+
+def compact_json(value: object) -> str:
+    return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+
+
+def record_affiliation_evidence(
+    row: dict[str, str],
+    affiliation: str,
+    source_url: str,
+    method: str,
+    primary: bool,
+) -> None:
+    affiliation = clean_text(affiliation)
+    if not affiliation:
+        return
+    evidence = parse_json_dict(row.get("affiliation_evidence", ""))
+    evidence[affiliation] = {
+        "source_url": normalize_url(source_url),
+        "method": clean_text(method),
+        "primary": bool(primary),
+        "verified_at": now_iso(),
+    }
+    row["affiliation_evidence"] = compact_json(evidence)
+
+
+def record_field_provenance(
+    row: dict[str, str],
+    fields: Iterable[str],
+    source_scope: str,
+    source_url: str,
+    method: str,
+) -> None:
+    provenance = parse_json_dict(row.get("field_provenance", ""))
+    for field_name in fields:
+        if field_name in {
+            "enrichment_source_urls", "enrichment_status", "enrichment_message",
+            "enriched_at", "enricher_version", "data_quality_status",
+            "affiliated_programs", "affiliation_evidence", "field_provenance",
+            "data_state",
+        }:
+            continue
+        provenance[field_name] = {
+            "scope": clean_text(source_scope),
+            "source_url": normalize_url(source_url),
+            "method": clean_text(method),
+            "verified_at": now_iso(),
+        }
+    row["field_provenance"] = compact_json(provenance)
+
+
+def primary_affiliation_evidence(row: dict[str, str]) -> str:
+    primary_name = clean_text(row.get("department_name", ""))
+    if not primary_name:
+        return ""
+    source_url = normalize_url(row.get("source_url", ""))
+    evidence = {
+        primary_name: {
+            "source_url": source_url,
+            "method": "stage1_primary_department",
+            "primary": True,
+            "verified_at": clean_text(row.get("crawled_at", "")) or now_iso(),
+        }
+    }
+    return compact_json(evidence)
+
+
+def remove_self_name_and_labels_from_research_fields(row: dict[str, str]) -> Counter[str]:
+    changed: Counter[str] = Counter()
+    own_name = normalize_name(row.get("professor_name", ""))
+    field_labels = {normalize_name(value) for value in FIELD_LABELS}
+
+    primary_items = []
+    for item in split_multi(row.get("primary_field", "")):
+        normalized = normalize_name(item)
+        if not normalized or normalized == own_name or normalized in field_labels:
+            changed["primary_field"] += 1
+            continue
+        primary_items.append(item)
+    new_primary = clean_primary_field_value(";".join(primary_items))
+    if new_primary != clean_text(row.get("primary_field", "")):
+        row["primary_field"] = new_primary
+        changed["primary_field"] += 1
+
+    keyword_items = []
+    for item in split_multi(row.get("keywords", "")):
+        normalized = normalize_name(item)
+        low = item.casefold()
+        if normalized == own_name or normalized in field_labels:
+            changed["keywords"] += 1
+            continue
+        if any(token in low for token in (
+            "홈페이지 제작", "홈페이지 만들기", "무료 홈페이지", "포트폴리오 사이트",
+            "크리에이터링크", "반응형웹", "반응형 홈페이지",
+        )):
+            changed["keywords"] += 1
+            continue
+        if re.search(r"(?:교수|연구팀).{0,30}(?:수상|선정|개최|게재)|(?:호텔|행사|개최됐다)", item):
+            changed["keywords"] += 1
+            continue
+        keyword_items.append(item)
+    new_keywords = clean_keywords_value(";".join(keyword_items))
+    if new_keywords != clean_text(row.get("keywords", "")):
+        row["keywords"] = new_keywords
+        changed["keywords"] += 1
+
+    summary = clean_text(row.get("research_summary", ""))
+    if summary and re.fullmatch(r"[\"“‘][^\"”’]{20,}[\"”’]", summary):
+        row["research_summary"] = ""
+        changed["research_summary"] += 1
+    return changed
+
+
+def reset_foreign_department_provenance(
+    departments: list[dict[str, str]],
+    labs_by_id: dict[str, dict[str, str]],
+    overrides: dict,
+) -> Counter[str]:
+    """Quarantine fields whose last department page is foreign to the primary department.
+
+    Legacy rows have no per-field provenance. A foreign ``department_page_url`` is
+    therefore a strong contamination signal: another department/program page
+    supplied plausible-looking values that quality scoring could never replace.
+    Exact-homepage/manual values remain; card-derived values are blanked and must
+    be reacquired from the professor's primary department page.
+    """
+    departments_by_id = {
+        clean_text(row.get("department_id", "")): row
+        for row in departments if clean_text(row.get("department_id", ""))
+    }
+    report: Counter[str] = Counter()
+    for row in labs_by_id.values():
+        primary_id = clean_text(row.get("primary_department_id", "") or row.get("department_id", ""))
+        department = departments_by_id.get(primary_id)
+        if not department:
+            continue
+        own_hosts = authoritative_department_hosts(
+            department, resolve_department_override(overrides, department)
+        )
+        page_url = normalize_url(row.get("department_page_url", ""))
+        page_host = hostname(page_url).removeprefix("www.")
+        if not page_host or page_host in own_hosts:
+            continue
+
+        status = clean_text(row.get("lab_url_status", ""))
+        keep_homepage = status in {"verified_homepage", "manual"}
+        keep_homepage_content = keep_homepage and clean_text(row.get("keyword_source", "")) in {
+            "lab_homepage", "manual"
+        }
+
+        if not keep_homepage:
+            for field_name in (
+                "lab_name_eng", "phone", "location", "profile_image_url", "primary_field",
+            ):
+                if clean_text(row.get(field_name, "")):
+                    row[field_name] = ""
+                    report[field_name] += 1
+            lab_name = clean_text(row.get("lab_name_kor", ""))
+            if lab_name and not looks_placeholder_lab_name(lab_name):
+                professor = clean_text(row.get("professor_name", ""))
+                row["lab_name_kor"] = f"{professor} 교수 연구실" if professor else ""
+                report["lab_name_kor"] += 1
+            if clean_text(row.get("lab_url", "")):
+                row["lab_url"] = ""
+                report["lab_url"] += 1
+            row["lab_url_status"] = "unverified"
+
+        if not keep_homepage_content:
+            for field_name in ("research_summary", "keywords", "keyword_source"):
+                if clean_text(row.get(field_name, "")):
+                    row[field_name] = ""
+                    report[field_name] += 1
+
+        row["department_page_url"] = ""
+        row["enrichment_source_urls"] = sanitize_enrichment_source_urls(
+            {**row, "department_page_url": "", "enrichment_source_urls": ""}
+        )
+        row["field_provenance"] = ""
+        row["enrichment_status"] = "pending"
+        row["enrichment_message"] = "외부 학과 페이지 유래 필드 격리 후 주 소속 권위 페이지 재수집 대기"
+        row["data_state"] = "foreign_source_quarantined"
+        report["rows"] += 1
+    return report
+
+
+def quarantine_unverified_affiliations(
+    departments: list[dict[str, str]],
+    labs_by_id: dict[str, dict[str, str]],
+) -> int:
+    """Keep only primary affiliations when legacy rows have no evidence trail."""
+    changed = 0
+    for row in labs_by_id.values():
+        primary = clean_text(row.get("department_name", ""))
+        evidence = parse_json_dict(row.get("affiliation_evidence", ""))
+        valid_secondary = [
+            name for name, item in evidence.items()
+            if name != primary and isinstance(item, dict)
+            and clean_text(item.get("method", "")).startswith("email")
+            and normalize_url(item.get("source_url", ""))
+        ]
+        new_value = merge_multi(primary, valid_secondary)
+        if new_value != clean_text(row.get("affiliated_programs", "")):
+            row["affiliated_programs"] = new_value
+            changed += 1
+        retained_evidence = parse_json_dict(primary_affiliation_evidence(row))
+        for affiliation in valid_secondary:
+            retained_evidence[affiliation] = evidence[affiliation]
+        row["affiliation_evidence"] = compact_json(retained_evidence)
+        row["data_state"] = "affiliations_quarantined"
+    for department in departments:
+        department["faculty_page_urls"] = ""
+        department["faculty_match_count"] = "0"
+        department["enrichment_status"] = "pending"
+        department["enrichment_message"] = "증거 없는 과거 복수소속 격리 후 전체 재수집 대기"
+        department["enriched_at"] = ""
+    return changed
+
+
+def exact_page_email_lab_ids(result: PageResult, labs_by_email: dict[str, str]) -> set[str]:
+    return {
+        labs_by_email[email]
+        for email in {normalize_email(value) for value in EMAIL_RE.findall(result.html)}
+        if email in labs_by_email
+    }
+
+
+def affiliation_evidence_violations(labs: Iterable[dict[str, str]]) -> list[dict[str, str]]:
+    violations: list[dict[str, str]] = []
+    for row in labs:
+        primary = clean_text(row.get("department_name", ""))
+        evidence = parse_json_dict(row.get("affiliation_evidence", ""))
+        for affiliation in split_multi(row.get("affiliated_programs", "")):
+            if affiliation == primary:
+                continue
+            item = evidence.get(affiliation)
+            if not isinstance(item, dict):
+                violations.append({"lab_id": row.get("lab_id", ""), "affiliation": affiliation, "reason": "missing_evidence"})
+                continue
+            method = clean_text(item.get("method", ""))
+            source_url = normalize_url(item.get("source_url", ""))
+            if method == "manual":
+                continue
+            if not method.startswith("email") or not source_url:
+                violations.append({"lab_id": row.get("lab_id", ""), "affiliation": affiliation, "reason": "weak_evidence"})
+    return violations
+
+def minimum_primary_roster_matches(expected_count: int, override: dict) -> int:
+    """Minimum known-primary identities that must be recovered from a department page.
+
+    The baseline is the first-stage roster already keyed by stable e-mail. This is
+    not a guessed faculty count: it only prevents a one-card or menu-only parse
+    from being accepted as a successful full department rebuild.
+    """
+    if expected_count <= 0:
+        return 0
+    try:
+        ratio = float(override.get("min_primary_roster_coverage", DEFAULT_MIN_PRIMARY_ROSTER_COVERAGE))
+    except (TypeError, ValueError):
+        ratio = DEFAULT_MIN_PRIMARY_ROSTER_COVERAGE
+    ratio = min(1.0, max(0.0, ratio))
+    ratio_required = int(expected_count * ratio + 0.999)
+    floor = 1 if expected_count <= 3 else 2
+    return min(expected_count, max(floor, ratio_required))
+
+
+def foreign_department_page_violations(
+    departments: Sequence[dict[str, str]],
+    labs: Iterable[dict[str, str]],
+    overrides: dict,
+) -> list[dict[str, str]]:
+    department_by_id = {
+        clean_text(row.get("department_id", "")): row
+        for row in departments
+        if clean_text(row.get("department_id", ""))
+    }
+    violations: list[dict[str, str]] = []
+    for row in labs:
+        primary_id = clean_text(row.get("primary_department_id", "") or row.get("department_id", ""))
+        department = department_by_id.get(primary_id)
+        page_url = normalize_url(row.get("department_page_url", ""))
+        if not department or not page_url:
+            continue
+        own_hosts = authoritative_department_hosts(
+            department, resolve_department_override(overrides, department)
+        )
+        page_host = hostname(page_url).removeprefix("www.")
+        if page_host and page_host not in own_hosts:
+            violations.append(
+                {
+                    "lab_id": clean_text(row.get("lab_id", "")),
+                    "professor_name": clean_text(row.get("professor_name", "")),
+                    "department_page_url": page_url,
+                }
+            )
+    return violations
+
+
+def authoritative_commit_failure_reasons(
+    selected_departments: Sequence[dict[str, str]],
+    labs: Iterable[dict[str, str]],
+    overrides: dict,
+) -> tuple[list[str], dict[str, int]]:
+    successful_departments = sum(
+        clean_text(row.get("enrichment_status", "")) == "success"
+        for row in selected_departments
+    )
+    minimum_successes = max(
+        1, int(len(selected_departments) * MIN_AUTHORITATIVE_SUCCESS_RATIO + 0.999)
+    ) if selected_departments else 0
+    lab_rows = list(labs)
+    evidence_violations = affiliation_evidence_violations(lab_rows)
+    foreign_violations = foreign_department_page_violations(
+        selected_departments, lab_rows, overrides
+    )
+    reasons: list[str] = []
+    if successful_departments < minimum_successes:
+        reasons.append(
+            f"학과 성공 {successful_departments}/{len(selected_departments)} < 최소 {minimum_successes}"
+        )
+    if evidence_violations:
+        reasons.append(f"복수소속 증거 위반 {len(evidence_violations)}건")
+    if foreign_violations:
+        reasons.append(f"주 소속 외부 페이지 출처 {len(foreign_violations)}건")
+    return reasons, {
+        "successful_departments": successful_departments,
+        "minimum_successes": minimum_successes,
+        "affiliation_evidence_violations": len(evidence_violations),
+        "foreign_department_page_violations": len(foreign_violations),
+    }
 
 
 # ============================================================
@@ -3270,6 +4285,42 @@ def run_stage2(args: argparse.Namespace) -> None:
     cleaned_labs, clean_report = clean_all_labs(labs)
     clean_departments(departments)
     labs_by_id, department_by_id = initialize_rows(departments, cleaned_labs)
+    full_scope = not args.department and args.test_limit is None
+    # A normal unscoped run is authoritative by default. Incremental behavior
+    # must be explicitly requested; otherwise a stale "success" flag can freeze
+    # contaminated values indefinitely.
+    authoritative_rebuild = authoritative_rebuild_requested(args)
+    effective_force = bool(args.force or authoritative_rebuild)
+    # Full source-of-truth rebuilds are globally transactional. Intermediate
+    # department checkpoints remain in memory and are committed only after the
+    # minimum success ratio and evidence checks pass.
+    checkpoint_dry_run = bool(args.dry_run or authoritative_rebuild)
+    reset_affiliation_count = 0
+    authoritative_field_reset_report: Counter[str] = Counter()
+    stale_identity_report: Counter[str] = Counter()
+    foreign_source_report = reset_foreign_department_provenance(
+        departments, labs_by_id, overrides
+    )
+    quarantined_affiliation_count = 0
+    if args.clean_only:
+        quarantined_affiliation_count = quarantine_unverified_affiliations(
+            departments, labs_by_id
+        )
+    elif args.reset_affiliations or authoritative_rebuild:
+        reset_affiliation_count = reset_affiliations_for_full_rebuild(departments, labs_by_id)
+        for lab in labs_by_id.values():
+            lab["affiliation_evidence"] = primary_affiliation_evidence(lab)
+            lab["field_provenance"] = ""
+            lab["data_state"] = "authoritative_rebuild_pending"
+        authoritative_field_reset_report = clear_non_authoritative_enrichment_for_full_rebuild(labs_by_id)
+    stale_identity_report = reset_stale_cross_identity_contamination(
+        departments,
+        labs_by_id,
+        overrides,
+    )
+    extra_clean_report: Counter[str] = Counter()
+    for lab in labs_by_id.values():
+        extra_clean_report.update(remove_self_name_and_labels_from_research_fields(lab))
 
     print("=" * 100)
     print(f"POSTECH LAB DATABASE — STAGE 2 ENRICHER {ENRICHER_VERSION}")
@@ -3283,6 +4334,18 @@ def run_stage2(args: argparse.Namespace) -> None:
         f"필드 {sum(clean_report.changed_fields.values())}개, "
         f"반복 오염 {sum(clean_report.duplicate_noise.values())}개"
     )
+    if foreign_source_report:
+        print(f"외부 학과 출처 격리   : {dict(foreign_source_report)}")
+    if args.clean_only:
+        print(f"증거 없는 소속 격리   : {quarantined_affiliation_count}개 연구실")
+    if args.reset_affiliations or authoritative_rebuild:
+        mode_label = "명시적" if args.reset_affiliations else "기본 전체 권위 재구축"
+        print(f"소속 전체 초기화      : {reset_affiliation_count}개 연구실 ({mode_label})")
+        print(f"비권위 필드 초기화    : {dict(authoritative_field_reset_report)}")
+    if stale_identity_report:
+        print(f"동명이인 오염 초기화  : {dict(stale_identity_report)}")
+    if extra_clean_report:
+        print(f"연구필드 추가 정제    : {dict(extra_clean_report)}")
     print()
 
     if args.clean_only:
@@ -3292,10 +4355,11 @@ def run_stage2(args: argparse.Namespace) -> None:
         manual_count = apply_manual_overrides(labs_by_id, overrides)
         for lab in labs_by_id.values():
             lab["data_quality_status"] = data_quality_status(lab)
+            lab["data_state"] = "clean_only_quarantined"
             lab["enricher_version"] = ENRICHER_VERSION
         for row in departments:
             row["enricher_version"] = ENRICHER_VERSION
-        save_checkpoint(paths, departments, labs_by_id, department_fields, lab_fields, args.dry_run)
+        save_checkpoint(paths, departments, labs_by_id, department_fields, lab_fields, checkpoint_dry_run)
         append_jsonl(
             paths.log,
             {
@@ -3322,6 +4386,19 @@ def run_stage2(args: argparse.Namespace) -> None:
         return
 
     labs_by_email, unique_name_to_lab_id, normalized_known_names, duplicate_emails = build_indexes(labs_by_id)
+    primary_lab_ids_by_department: defaultdict[str, set[str]] = defaultdict(set)
+    for lab_id, lab in labs_by_id.items():
+        primary_id = clean_text(lab.get("primary_department_id", "") or lab.get("department_id", ""))
+        if primary_id:
+            primary_lab_ids_by_department[primary_id].add(lab_id)
+    professor_name_counts = Counter(
+        normalize_name(lab.get("professor_name", ""))
+        for lab in labs_by_id.values()
+        if normalize_name(lab.get("professor_name", ""))
+    )
+    ambiguous_professor_names = {
+        name for name, count in professor_name_counts.items() if count >= 2
+    }
 
     client = RespectfulClient(
         delay_seconds=args.delay,
@@ -3364,7 +4441,7 @@ def run_stage2(args: argparse.Namespace) -> None:
         type_label = classify_department_label(department_type)
         homepage = clean_text(department.get("homepage_url", ""))
 
-        if not args.force and clean_text(department.get("enrichment_status", "")) == "success":
+        if not effective_force and clean_text(department.get("enrichment_status", "")) == "success":
             skipped_success_departments += 1
             print(
                 f"[SKIP-DEPT] {department_index:02d}/{len(selected_departments):02d} | "
@@ -3380,6 +4457,14 @@ def run_stage2(args: argparse.Namespace) -> None:
         )
 
         override = resolve_department_override(overrides, department)
+        # Shared-portal runs are transactional. If a selector/navigation defect
+        # suddenly matches an implausibly large number of professors, every lab
+        # mutation made by this department is rolled back before any checkpoint.
+        guarded_department = bool(override.get("scope_query_params"))
+        # Every department run is transactional in memory. A scope/completeness
+        # failure restores the state from immediately before that department.
+        department_lab_snapshot = deepcopy(labs_by_id)
+        touched_lab_ids_snapshot = set(touched_lab_ids)
         eligible_name_to_lab_id = build_department_name_index(labs_by_id, department, unique_name_to_lab_id)
         try:
             pages = discover_department_pages(
@@ -3398,14 +4483,17 @@ def run_stage2(args: argparse.Namespace) -> None:
             department["enriched_at"] = now_iso()
             department["enricher_version"] = ENRICHER_VERSION
             print(f"[FAIL-DEPT] {department_name} | {exc}")
-            save_checkpoint(paths, departments, labs_by_id, department_fields, lab_fields, args.dry_run)
+            save_checkpoint(paths, departments, labs_by_id, department_fields, lab_fields, checkpoint_dry_run)
             continue
 
         department_match_ids: set[str] = set()
         faculty_pages: set[str] = set()
         field_update_counts: Counter[str] = Counter()
+        page_exact_evidence_ids: set[str] = set()
+        primary_name_evidence_ids: set[str] = set()
 
         for result in pages:
+            page_exact_evidence_ids.update(exact_page_email_lab_ids(result, labs_by_email))
             matches = build_page_matches(
                 result,
                 override,
@@ -3421,6 +4509,27 @@ def run_stage2(args: argparse.Namespace) -> None:
             for match in matches:
                 current = labs_by_id[match.lab_id]
                 update = extract_card_data(match.block, result.url, current, override)
+                current_primary_id = clean_text(
+                    current.get("primary_department_id", "") or current.get("department_id", "")
+                )
+                is_primary_source = bool(department_id and department_id == current_primary_id)
+                if not is_primary_source and not match.method.startswith("email"):
+                    print(
+                        f"    [REJECT] 학과={department_name} | 교수={current.get('professor_name', '-') or '-'} | "
+                        f"방식={match.method} | 보조소속은 정확 이메일 증거 필요"
+                    )
+                    continue
+                if is_primary_source and match.method.startswith("name"):
+                    primary_name_evidence_ids.add(match.lab_id)
+                update["_source_scope"] = "primary" if is_primary_source else "secondary"
+                update["_allow_secondary_field_enrichment"] = bool(
+                    override.get("allow_secondary_field_enrichment", False)
+                )
+                if not is_primary_source:
+                    # Secondary program pages establish affiliation only unless
+                    # explicitly opted in. They must not become the primary
+                    # source URL for a professor's research fields.
+                    update["department_page_url"] = ""
                 merged, changed_fields = merge_lab_update(current, update, department_name)
                 merged["enriched_at"] = now_iso()
                 merged["enricher_version"] = ENRICHER_VERSION
@@ -3439,6 +4548,23 @@ def run_stage2(args: argparse.Namespace) -> None:
                         f"{department_name}에서 {match.method} 매칭되었으나 신뢰도 높은 새 필드 없음"
                     )
 
+                record_affiliation_evidence(
+                    merged,
+                    department_name,
+                    result.url,
+                    match.method,
+                    is_primary_source,
+                )
+                record_field_provenance(
+                    merged,
+                    changed_fields,
+                    "primary" if is_primary_source else "secondary",
+                    result.url,
+                    match.method,
+                )
+                merged["data_state"] = (
+                    "authoritative_rebuilt" if authoritative_rebuild else "incremental_verified"
+                )
                 merged["data_quality_status"] = data_quality_status(merged)
                 labs_by_id[merged["lab_id"]] = merged
                 department_match_ids.add(merged["lab_id"])
@@ -3467,6 +4593,93 @@ def run_stage2(args: argparse.Namespace) -> None:
                     },
                 )
 
+        supported_ids = page_exact_evidence_ids | primary_name_evidence_ids
+        expected_primary_ids = primary_lab_ids_by_department.get(department_id, set())
+        recovered_primary_ids = supported_ids & expected_primary_ids
+        required_primary_matches = minimum_primary_roster_matches(
+            len(expected_primary_ids), override
+        )
+        if required_primary_matches and len(recovered_primary_ids) < required_primary_matches:
+            labs_by_id.clear()
+            labs_by_id.update(deepcopy(department_lab_snapshot))
+            touched_lab_ids.clear()
+            touched_lab_ids.update(touched_lab_ids_snapshot)
+            department["enrichment_status"] = "failed_completeness_guard"
+            department["enrichment_message"] = (
+                f"기존 주 소속 이메일 로스터 {len(expected_primary_ids)}명 중 "
+                f"{len(recovered_primary_ids)}명만 재확인; 최소 {required_primary_matches}명 필요"
+            )
+            department["faculty_match_count"] = "0"
+            department["enriched_at"] = now_iso()
+            department["enricher_version"] = ENRICHER_VERSION
+            print(
+                f"[ROLLBACK-COVERAGE] 학과={department_name} | "
+                f"재확인={len(recovered_primary_ids)}/{len(expected_primary_ids)} | "
+                f"최소={required_primary_matches}"
+            )
+            save_checkpoint(
+                paths, departments, labs_by_id, department_fields, lab_fields, checkpoint_dry_run
+            )
+            continue
+
+        if guarded_department:
+            allowed_matches = max(len(supported_ids) + 3, int(len(supported_ids) * 1.20) + 1)
+            unsupported_ids = department_match_ids - supported_ids
+            evidence_mismatch = bool(
+                department_match_ids
+                and (len(department_match_ids) > allowed_matches or len(unsupported_ids) > 3)
+            )
+            if evidence_mismatch:
+                labs_by_id.clear()
+                labs_by_id.update(deepcopy(department_lab_snapshot or {}))
+                touched_lab_ids.clear()
+                touched_lab_ids.update(touched_lab_ids_snapshot or set())
+                department["enrichment_status"] = "failed_scope_guard"
+                department["enrichment_message"] = (
+                    f"페이지 신원증거={len(supported_ids)}, 매칭={len(department_match_ids)}, "
+                    f"설명불가={len(unsupported_ids)}; 학과 변경 전체 롤백"
+                )
+                department["faculty_match_count"] = "0"
+                department["enriched_at"] = now_iso()
+                department["enricher_version"] = ENRICHER_VERSION
+                print(
+                    f"[ROLLBACK-DEPT] 학과={department_name} | 페이지증거={len(supported_ids)} | "
+                    f"매칭={len(department_match_ids)} | 설명불가={len(unsupported_ids)}"
+                )
+                save_checkpoint(paths, departments, labs_by_id, department_fields, lab_fields, checkpoint_dry_run)
+                continue
+
+        if rollback_department_if_scope_overflow(
+            override,
+            len(department_match_ids),
+            department,
+            labs_by_id,
+            department_lab_snapshot,
+            touched_lab_ids,
+            touched_lab_ids_snapshot,
+        ):
+            max_matches = int(override.get("max_total_matches"))
+            print(
+                f"[ROLLBACK-DEPT] 구분={type_label} | 학과={department_name} | "
+                f"매칭={len(department_match_ids)} > 상한={max_matches}"
+            )
+            append_jsonl(
+                paths.log,
+                {
+                    "timestamp": now_iso(),
+                    "level": "scope_overflow",
+                    "department_type": department_type,
+                    "department": department_name,
+                    "department_id": department_id,
+                    "matched_count": len(department_match_ids),
+                    "max_total_matches": max_matches,
+                    "rolled_back": True,
+                    "enricher_version": ENRICHER_VERSION,
+                },
+            )
+            save_checkpoint(paths, departments, labs_by_id, department_fields, lab_fields, checkpoint_dry_run)
+            continue
+
         if not args.skip_lab_homepages:
             for lab_id in sorted(department_match_ids):
                 lab = labs_by_id[lab_id]
@@ -3474,7 +4687,7 @@ def run_stage2(args: argparse.Namespace) -> None:
                 if not lab_url or lab.get("lab_url_status") in {"manual", "invalid"}:
                     continue
                 if (
-                    not args.force
+                    not effective_force
                     and lab.get("lab_url_status") == "verified_homepage"
                     and not looks_placeholder_lab_name(lab.get("lab_name_kor", ""))
                     and clean_text(lab.get("research_summary", ""))
@@ -3482,7 +4695,12 @@ def run_stage2(args: argparse.Namespace) -> None:
                 ):
                     continue
                 try:
-                    homepage_update = enrich_from_lab_homepage(client, lab)
+                    homepage_identity = dict(lab)
+                    homepage_identity["_name_is_ambiguous"] = (
+                        normalize_name(lab.get("professor_name", "")) in ambiguous_professor_names
+                    )
+                    homepage_update = enrich_from_lab_homepage(client, homepage_identity)
+                    homepage_update["_source_scope"] = "lab_homepage"
                 except Exception as exc:
                     lab["enrichment_message"] = merge_multi(
                         lab.get("enrichment_message", ""),
@@ -3499,6 +4717,12 @@ def run_stage2(args: argparse.Namespace) -> None:
                     )
                     merged["enriched_at"] = now_iso()
                     merged["enricher_version"] = ENRICHER_VERSION
+                    record_field_provenance(
+                        merged, changed, "lab_homepage", lab_url, "homepage_identity_verified"
+                    )
+                    merged["data_state"] = (
+                        "authoritative_rebuilt" if authoritative_rebuild else "incremental_verified"
+                    )
                     merged["data_quality_status"] = data_quality_status(merged)
                     labs_by_id[lab_id] = merged
                     touched_lab_ids.add(lab_id)
@@ -3530,7 +4754,7 @@ def run_stage2(args: argparse.Namespace) -> None:
         )
 
         if department_index % DEFAULT_CHECKPOINT_EVERY == 0:
-            save_checkpoint(paths, departments, labs_by_id, department_fields, lab_fields, args.dry_run)
+            save_checkpoint(paths, departments, labs_by_id, department_fields, lab_fields, checkpoint_dry_run)
 
     # Re-clean after crawling. This makes clean-only and full runs idempotent and
     # catches cross-department page-wide contamination introduced by a bad site.
@@ -3551,7 +4775,32 @@ def run_stage2(args: argparse.Namespace) -> None:
         if not lab.get("affiliated_programs"):
             lab["affiliated_programs"] = lab.get("department_name", "")
         lab["data_quality_status"] = data_quality_status(lab)
+        if lab.get("lab_id") in touched_lab_ids:
+            lab["data_state"] = "authoritative_rebuilt" if authoritative_rebuild else "incremental_verified"
+        elif authoritative_rebuild and clean_text(lab.get("data_state", "")) == "authoritative_rebuild_pending":
+            lab["data_state"] = "authoritative_no_match"
         lab["enricher_version"] = ENRICHER_VERSION
+
+    failure_reasons, commit_metrics = authoritative_commit_failure_reasons(
+        selected_departments, labs_by_id.values(), overrides
+    )
+    if authoritative_rebuild and not args.dry_run and failure_reasons:
+        append_jsonl(
+            paths.log,
+            {
+                "timestamp": now_iso(),
+                "level": "authoritative_commit_aborted",
+                "reasons": failure_reasons,
+                **commit_metrics,
+                "selected_departments": len(selected_departments),
+                "enricher_version": ENRICHER_VERSION,
+            },
+        )
+        print("\n[ABORT-COMMIT] 전체 권위 재구축 검증 실패")
+        for reason in failure_reasons:
+            print(f"  - {reason}")
+        print("원본 departments.csv/labs.csv는 변경하지 않았습니다. 백업만 생성되었습니다.")
+        return
 
     save_checkpoint(paths, departments, labs_by_id, department_fields, lab_fields, args.dry_run)
 
@@ -3611,9 +4860,1270 @@ def run_stage2(args: argparse.Namespace) -> None:
         print(f"저장: {paths.departments}")
         print(f"로그: {paths.log}")
 
+    if (
+        authoritative_rebuild
+        and not args.dry_run
+        and not args.skip_research_cleaning
+        and (paths.data_dir / "research_outputs.csv").exists()
+    ):
+        run_research_output_cleaner(args)
+    if authoritative_rebuild and not args.dry_run and not args.skip_final_audit:
+        run_data_audit(args)
+
 
 # ============================================================
-# 13. CLI
+# 13. Research-output integrity pipeline and data audit
+# ============================================================
+OUTPUT_FIELDS = [
+    "output_id",
+    "lab_id",
+    "researcher_id",
+    "output_type",
+    "output_subtype",
+    "title",
+    "year",
+    "venue_or_organization",
+    "authors_or_recipients",
+    "identifier",
+    "raw_text",
+    "url",
+    "source_url",
+    "crawled_at",
+]
+
+RECENT_OUTPUT_FIELDS = [
+    "output_id",
+    "lab_id",
+    "output_type",
+    "title",
+    "year",
+    "venue",
+    "authors",
+    "identifier",
+    "url",
+    "source_url",
+    "display_order",
+]
+
+OUTPUT_TYPE_PRECEDENCE = {
+    "publication": 1,
+    "presentation": 2,
+    "book": 3,
+    "patent": 4,
+}
+
+COUNTRY_TITLE_VALUES = {
+    "usa",
+    "us",
+    "u.s.",
+    "u.s.a.",
+    "korea",
+    "south korea",
+    "republic of korea",
+    "한국",
+    "대한민국",
+    "japan",
+    "일본",
+    "china",
+    "중국",
+    "germany",
+    "독일",
+    "europe",
+    "eu",
+    "pct",
+    "국제",
+    "taiwan",
+    "대만",
+    "canada",
+    "캐나다",
+    "france",
+    "프랑스",
+    "uk",
+    "united kingdom",
+    "영국",
+    "미국",
+    "ep",
+    "wipo",
+    "-",
+}
+
+PATENT_COUNTRY_PATTERN = (
+    r"USA|U\.?S\.?A\.?|US|Korea|South Korea|Republic of Korea|한국|대한민국|"
+    r"Japan|일본|China|중국|Germany|독일|Europe|EU|PCT|국제|Taiwan|대만|"
+    r"Canada|캐나다|France|프랑스|UK|United Kingdom|영국|미국|EP|WIPO|-"
+)
+
+
+def canonical_output_text(value: str) -> str:
+    text = unicodedata.normalize("NFKC", clean_text(value)).casefold()
+    text = re.sub(r"https?://\S+", " ", text)
+    return re.sub(r"[\W_]+", "", text, flags=re.UNICODE)
+
+
+def normalized_raw_text(value: str) -> str:
+    return unicodedata.normalize("NFKC", clean_text(value)).casefold()
+
+
+def normalize_output_type(value: str) -> str:
+    output_type = clean_text(value).casefold()
+    return output_type if output_type in OUTPUT_TYPE_PRECEDENCE else "publication"
+
+
+def normalize_output_year(value: str, raw_text: str = "") -> str:
+    current_year = datetime.now().year
+    match = re.search(r"\b(19\d{2}|20\d{2})\b", clean_text(value))
+    if match and 1900 <= int(match.group(1)) <= current_year:
+        return match.group(1)
+
+    raw = clean_text(raw_text)
+    trailing = re.findall(r"\((19\d{2}|20\d{2})\)\s*$", raw)
+    if trailing and 1900 <= int(trailing[-1]) <= current_year:
+        return trailing[-1]
+    years = [
+        year
+        for year in re.findall(r"\b(19\d{2}|20\d{2})\b", raw)
+        if 1900 <= int(year) <= current_year
+    ]
+    return years[-1] if years else ""
+
+
+def output_title_is_invalid(title: str, professor_name: str = "") -> bool:
+    text = clean_text(title).strip(" .,:;|-/")
+    if len(text) < 2 or re.fullmatch(r"[\W_]+", text):
+        return True
+    if text.casefold() in COUNTRY_TITLE_VALUES:
+        return True
+    if professor_name and canonical_output_text(text) == canonical_output_text(professor_name):
+        return True
+    parts = [clean_text(part) for part in text.split(",") if clean_text(part)]
+    if len(parts) >= 2 and len(parts) <= 8 and all(re.fullmatch(r"[가-힣]{2,4}", part) for part in parts):
+        return True
+    return False
+
+
+def looks_like_person_segment(value: str) -> bool:
+    text = clean_text(value).strip(" .,-")
+    title_terms = (
+        "방법", "장치", "시스템", "조성물", "제조", "용도", "센서", "소자",
+        "전지", "물질", "재료", "분석", "제어", "영상", "이미지", "데이터",
+        "모델", "프로그램", "매체", "공정", "구조", "광흡수제", "전해질",
+        "메타렌즈", "보안코드", "피펫", "큐벳", "장갑", "비행복", "방염복",
+        "소재", "기판", "탄소", "전극", "조직", "단백질", "화합물", "촉매",
+        "필터", "통신", "신호", "회로", "안테나", "디스플레이", "입자",
+        "질환", "치료", "진단", "예방", "발광", "전달", "검출", "생성",
+        "균주", "다당체", "세포", "바이오센서", "음악", "나노구조체",
+    )
+    grammatical_title_signal = re.search(
+        r"(?:을|를|은|는|의|에|로|으로|와|과)$|(?:하는|되는|가지는|포함하는|이용한|위한)$",
+        text,
+    )
+    # Five- or six-syllable transliterated names such as 트란마이란,
+    # 가미마샤마 and 비르마라비 occur in the patent export. Do not confuse
+    # them with compact Korean patent titles containing a technical noun.
+    if re.fullmatch(r"[가-힣]{2,8}", text):
+        return not any(term in text for term in title_terms) and not grammatical_title_signal
+    # Legacy researcher exports also contain transliterated foreign inventor
+    # names written as multiple Hangul words.
+    if re.fullmatch(r"[가-힣]{1,10}(?:\s+[가-힣]{1,10}){1,3}", text):
+        if not any(term in text for term in title_terms) and not grammatical_title_signal:
+            return True
+    if re.fullmatch(r"[A-Za-z0-9_-]{6,14}", text) and any(ch.isdigit() for ch in text):
+        return True
+    if re.fullmatch(r"[A-Za-z][A-Za-z.'’\-]*(?:\s+[A-Za-z][A-Za-z.'’\-]*){0,3}", text):
+        words = re.findall(r"[A-Za-z][A-Za-z.'’\-]*", text)
+        title_terms = {
+            "method", "methods", "system", "systems", "device", "devices", "composition",
+            "compositions", "apparatus", "protein", "proteins", "molecule", "molecules",
+            "therapy", "treatment", "vaccine", "measuring", "fabrication", "bioadhesive",
+        }
+        if any(word.casefold() in title_terms for word in words):
+            return False
+        return bool(words) and all(word[0].isupper() or word.isupper() for word in words)
+    return False
+
+
+def parse_patent_raw_text(raw_text: str) -> dict[str, str]:
+    """Parse patent rows from the right-hand country/identifier boundary.
+
+    POSTECH patent entries contain comma-separated inventors, a title, country,
+    and application number. The first crawler split US application numbers at
+    their internal comma, producing titles such as "USA". Parsing from the
+    country marker avoids that structural error.
+    """
+    raw = clean_text(raw_text)
+    match = re.match(
+        rf"^(?P<head>.*),\s*(?P<country>{PATENT_COUNTRY_PATTERN})\s*,\s*(?P<identifier>.+?)\s*$",
+        raw,
+        re.I,
+    )
+    if not match:
+        return {}
+
+    head = clean_text(match.group("head")).strip(" ,")
+    parts = [clean_text(part) for part in head.split(",")]
+    first_title = 0
+    while first_title < len(parts) and (
+        not parts[first_title]
+        or parts[first_title] == "-"
+        or looks_like_person_segment(parts[first_title])
+    ):
+        first_title += 1
+    if first_title >= len(parts):
+        # Very short Korean patent titles (for example "큐벳") are
+        # indistinguishable from a person name in isolation. The final segment
+        # before the country marker is nevertheless the title by source schema.
+        first_title = max(0, len(parts) - 1)
+
+    authors = ", ".join(part for part in parts[:first_title] if part and part != "-")
+    title = ", ".join(part for part in parts[first_title:] if part)
+    identifier = clean_text(match.group("identifier"))
+    identifier = re.sub(r"\s*\((?:19|20)\d{2}\)\s*$", "", identifier).strip()
+    if output_title_is_invalid(title):
+        return {}
+    return {
+        "title": title,
+        "authors_or_recipients": authors,
+        "venue_or_organization": "" if clean_text(match.group("country")) == "-" else clean_text(match.group("country")),
+        "identifier": identifier,
+    }
+
+
+
+def patent_identifier_year(identifier: str) -> str:
+    """Return a filing year only when the identifier format encodes it explicitly."""
+    text = clean_text(identifier)
+    current_year = datetime.now().year
+    patterns = (
+        r"^(?:10-)(?P<year>19\d{2}|20\d{2})-",
+        r"^PCT/KR(?P<year>19\d{2}|20\d{2})/",
+        r"^(?P<year>19\d{2}|20\d{2})-\d{4,}",
+    )
+    for pattern in patterns:
+        match = re.search(pattern, text, re.I)
+        if match and 1900 <= int(match.group("year")) <= current_year + 1:
+            return match.group("year")
+    return ""
+
+
+def comma_prefix_is_people(prefix: str) -> bool:
+    parts = [clean_text(part) for part in prefix.split(",") if clean_text(part)]
+    return bool(parts) and all(looks_like_person_segment(part) for part in parts)
+
+
+def parsed_patent_is_better(current_title: str, parsed_title: str) -> bool:
+    current = clean_text(current_title)
+    parsed = clean_text(parsed_title)
+    if not parsed:
+        return False
+    if output_title_is_invalid(current):
+        return True
+    current_key = canonical_output_text(current)
+    parsed_key = canonical_output_text(parsed)
+    if not current_key or current_key == parsed_key:
+        return False
+    # The old CSV often stored only the final comma-delimited title fragment
+    # and moved the preceding fragments into the inventor column.
+    if len(parsed) > len(current) and current_key in parsed_key:
+        first_segment = clean_text(parsed.split(",", 1)[0])
+        return not looks_like_person_segment(first_segment)
+    # The inverse error stores one or more inventor names at the beginning of
+    # the title. Remove them only when every removed comma segment is person-like.
+    if len(current) > len(parsed) and current_key.endswith(parsed_key):
+        suffix_index = current.casefold().rfind(parsed.casefold())
+        if suffix_index > 0:
+            return comma_prefix_is_people(current[:suffix_index].strip(" ,"))
+    return False
+
+
+def output_row_richness(row: dict[str, str]) -> tuple[int, int, int, str]:
+    populated = sum(
+        bool(clean_text(row.get(field_name, "")))
+        for field_name in (
+            "title",
+            "year",
+            "venue_or_organization",
+            "authors_or_recipients",
+            "identifier",
+            "url",
+        )
+    )
+    return (
+        populated,
+        len(clean_text(row.get("authors_or_recipients", ""))),
+        len(clean_text(row.get("title", ""))),
+        clean_text(row.get("crawled_at", "")),
+    )
+
+
+def normalize_output_row(
+    row: dict[str, str],
+    professor_by_lab_id: dict[str, str],
+) -> tuple[dict[str, str], bool]:
+    normalized = {field_name: clean_text(row.get(field_name, "")) for field_name in OUTPUT_FIELDS}
+    normalized["output_type"] = normalize_output_type(normalized.get("output_type", ""))
+    normalized["year"] = normalize_output_year(normalized.get("year", ""), normalized.get("raw_text", ""))
+    normalized["url"] = normalize_url(normalized.get("url", ""))
+    normalized["source_url"] = normalize_url(normalized.get("source_url", ""))
+    professor_name = professor_by_lab_id.get(normalized.get("lab_id", ""), "")
+
+    patent_reparsed = False
+    if normalized["output_type"] == "patent":
+        parsed = parse_patent_raw_text(normalized.get("raw_text", ""))
+        if parsed:
+            current_title = normalized.get("title", "")
+            if parsed_patent_is_better(current_title, parsed.get("title", "")):
+                normalized.update(parsed)
+                patent_reparsed = True
+            else:
+                # Country, identifier, and inventor fields are structurally
+                # recoverable even when the existing title is already better.
+                for field_name in ("venue_or_organization", "identifier"):
+                    if clean_text(parsed.get(field_name, "")) and not clean_text(normalized.get(field_name, "")):
+                        normalized[field_name] = parsed[field_name]
+                if clean_text(parsed.get("authors_or_recipients", "")) and not clean_text(normalized.get("authors_or_recipients", "")):
+                    normalized["authors_or_recipients"] = parsed["authors_or_recipients"]
+        encoded_year = patent_identifier_year(normalized.get("identifier", ""))
+        if encoded_year and encoded_year != clean_text(normalized.get("year", "")):
+            normalized["year"] = encoded_year
+            patent_reparsed = True
+
+    return normalized, patent_reparsed
+
+
+def choose_best_output_row(group: list[dict[str, str]]) -> dict[str, str]:
+    candidates = group
+    if group and group[0].get("output_type") == "patent":
+        title_counts = Counter(
+            canonical_output_text(row.get("title", ""))
+            for row in group
+            if canonical_output_text(row.get("title", ""))
+        )
+        if title_counts:
+            highest_frequency = title_counts.most_common(1)[0][1]
+            candidates = [
+                row
+                for row in group
+                if title_counts[canonical_output_text(row.get("title", ""))] == highest_frequency
+            ]
+    return max(candidates, key=output_row_richness)
+
+
+def output_identity_key(row: dict[str, str]) -> tuple[str, ...]:
+    """Canonical identity used by both deduplication and post-run auditing."""
+    lab_id = clean_text(row.get("lab_id", ""))
+    output_type = normalize_output_type(row.get("output_type", ""))
+    title_key = canonical_output_text(row.get("title", ""))
+    year = clean_text(row.get("year", ""))
+    if output_type == "patent":
+        identifier_key = canonical_output_text(row.get("identifier", ""))
+        if len(identifier_key) >= 5:
+            return (lab_id, output_type, "identifier", identifier_key)
+        return (lab_id, output_type, "title", title_key, year)
+    if year:
+        return (lab_id, output_type, "title_year", title_key, year)
+    return (
+        lab_id,
+        output_type,
+        "title_venue",
+        title_key,
+        canonical_output_text(row.get("venue_or_organization", "")),
+    )
+
+
+def clean_research_outputs_rows(
+    rows: list[dict[str, str]],
+    labs_by_id: dict[str, dict[str, str]],
+) -> tuple[list[dict[str, str]], dict[str, object]]:
+    professor_by_lab_id = {
+        lab_id: clean_text(row.get("professor_name", ""))
+        for lab_id, row in labs_by_id.items()
+    }
+    normalized_rows: list[dict[str, str]] = []
+    patent_reparsed = 0
+    for row in rows:
+        normalized, reparsed = normalize_output_row(row, professor_by_lab_id)
+        normalized_rows.append(normalized)
+        patent_reparsed += int(reparsed)
+
+    # First remove exact source duplicates. Type precedence is essential because
+    # every patent/book row in the current source was also parsed as publication.
+    exact_groups: dict[tuple[str, str], list[dict[str, str]]] = defaultdict(list)
+    for row in normalized_rows:
+        raw_key = normalized_raw_text(row.get("raw_text", ""))
+        key = (
+            clean_text(row.get("lab_id", "")),
+            raw_key or f"__OUTPUT_ID__{clean_text(row.get('output_id', ''))}",
+        )
+        exact_groups[key].append(row)
+
+    exact_deduped: list[dict[str, str]] = []
+    for group in exact_groups.values():
+        exact_deduped.append(
+            max(
+                group,
+                key=lambda row: (
+                    OUTPUT_TYPE_PRECEDENCE.get(row.get("output_type", ""), 0),
+                    output_row_richness(row),
+                ),
+            )
+        )
+    exact_removed = len(normalized_rows) - len(exact_deduped)
+
+    valid_rows: list[dict[str, str]] = []
+    invalid_title_counts: Counter[str] = Counter()
+    for row in exact_deduped:
+        professor_name = professor_by_lab_id.get(row.get("lab_id", ""), "")
+        if output_title_is_invalid(row.get("title", ""), professor_name):
+            invalid_title_counts[row.get("output_type", "publication")] += 1
+            continue
+        valid_rows.append(row)
+
+    # Then collapse semantic duplicates conservatively within the same lab/type.
+    identity_groups: dict[tuple[str, ...], list[dict[str, str]]] = defaultdict(list)
+    for row in valid_rows:
+        identity_groups[output_identity_key(row)].append(row)
+
+    cleaned: list[dict[str, str]] = []
+    for identity_key, group in identity_groups.items():
+        row = dict(choose_best_output_row(group))
+        row["output_id"] = stable_id("OUT", *identity_key, length=16)
+        cleaned.append(row)
+
+    type_sort_order = {"publication": 0, "patent": 1, "book": 2, "presentation": 3}
+    cleaned.sort(
+        key=lambda row: (
+            clean_text(row.get("lab_id", "")),
+            type_sort_order.get(row.get("output_type", ""), 9),
+            -(int(row["year"]) if clean_text(row.get("year", "")).isdigit() else -1),
+            canonical_output_text(row.get("title", "")),
+        )
+    )
+
+    report: dict[str, object] = {
+        "input_rows": len(rows),
+        "patents_reparsed": patent_reparsed,
+        "exact_source_duplicates_removed": exact_removed,
+        "invalid_titles_dropped": dict(invalid_title_counts),
+        "semantic_duplicates_removed": len(valid_rows) - len(cleaned),
+        "clean_rows": len(cleaned),
+        "type_counts": dict(Counter(row.get("output_type", "") for row in cleaned)),
+        "missing_year_rows": sum(not clean_text(row.get("year", "")) for row in cleaned),
+    }
+    return cleaned, report
+
+
+def build_recent_outputs(cleaned_rows: list[dict[str, str]]) -> list[dict[str, str]]:
+    by_lab: defaultdict[str, list[dict[str, str]]] = defaultdict(list)
+    for row in cleaned_rows:
+        by_lab[clean_text(row.get("lab_id", ""))].append(row)
+
+    recent_rows: list[dict[str, str]] = []
+    for lab_id, rows in by_lab.items():
+        ordered = sorted(
+            rows,
+            key=lambda row: (
+                int(row["year"]) if clean_text(row.get("year", "")).isdigit() else -1,
+                clean_text(row.get("crawled_at", "")),
+                canonical_output_text(row.get("title", "")),
+            ),
+            reverse=True,
+        )
+        selected = (
+            [row for row in ordered if row.get("output_type") == "publication"][:5]
+            + [row for row in ordered if row.get("output_type") == "patent"][:3]
+            + [row for row in ordered if row.get("output_type") in {"book", "presentation"}][:3]
+        )
+        for display_order, row in enumerate(selected, start=1):
+            recent_rows.append(
+                {
+                    "output_id": row.get("output_id", ""),
+                    "lab_id": lab_id,
+                    "output_type": row.get("output_type", ""),
+                    "title": row.get("title", ""),
+                    "year": row.get("year", ""),
+                    "venue": row.get("venue_or_organization", ""),
+                    "authors": row.get("authors_or_recipients", ""),
+                    "identifier": row.get("identifier", ""),
+                    "url": row.get("url", ""),
+                    "source_url": row.get("source_url", ""),
+                    "display_order": str(display_order),
+                }
+            )
+    recent_rows.sort(key=lambda row: (row["lab_id"], int(row["display_order"])))
+    return recent_rows
+
+
+def recompute_lab_output_counts(
+    labs_by_id: dict[str, dict[str, str]],
+    cleaned_rows: list[dict[str, str]],
+) -> int:
+    counts: defaultdict[str, Counter[str]] = defaultdict(Counter)
+    for row in cleaned_rows:
+        counts[clean_text(row.get("lab_id", ""))][row.get("output_type", "")] += 1
+    changed = 0
+    for lab_id, lab in labs_by_id.items():
+        publication_count = str(counts[lab_id]["publication"])
+        patent_count = str(counts[lab_id]["patent"])
+        if clean_text(lab.get("publication_count", "")) != publication_count:
+            lab["publication_count"] = publication_count
+            changed += 1
+        if clean_text(lab.get("patent_count", "")) != patent_count:
+            lab["patent_count"] = patent_count
+            changed += 1
+    return changed
+
+
+def run_research_output_cleaner(args: argparse.Namespace) -> None:
+    data_dir = Path(args.data_dir).expanduser().resolve()
+    outputs_path = data_dir / "research_outputs.csv"
+    labs_path = data_dir / "labs.csv"
+    clean_path = data_dir / "research_outputs_clean.csv"
+    recent_path = data_dir / "recent_outputs.csv"
+
+    output_rows, _ = read_csv_rows(outputs_path)
+    lab_rows, lab_fields = read_csv_rows(labs_path)
+    labs_by_id = {
+        clean_text(row.get("lab_id", "")): dict(row)
+        for row in lab_rows
+        if clean_text(row.get("lab_id", ""))
+    }
+    cleaned_rows, report = clean_research_outputs_rows(output_rows, labs_by_id)
+    recent_rows = build_recent_outputs(cleaned_rows)
+    changed_count_fields = recompute_lab_output_counts(labs_by_id, cleaned_rows)
+
+    if args.dry_run:
+        print(json.dumps({**report, "recent_rows": len(recent_rows), "lab_count_fields_changed": changed_count_fields}, ensure_ascii=False, indent=2))
+        print("DRY RUN이므로 파일을 기록하지 않았습니다.")
+        return
+
+    run_slug = timestamp_slug()
+    backup_file(labs_path, data_dir / "backups", run_slug)
+    atomic_write_csv(clean_path, cleaned_rows, OUTPUT_FIELDS)
+    atomic_write_csv(recent_path, recent_rows, RECENT_OUTPUT_FIELDS)
+    atomic_write_csv(
+        labs_path,
+        sorted(labs_by_id.values(), key=lambda row: (row.get("department_name", ""), row.get("professor_name", ""))),
+        lab_fields,
+    )
+    report_path = data_dir / "research_outputs_clean_summary.json"
+    report_payload = {
+        **report,
+        "recent_rows": len(recent_rows),
+        "lab_count_fields_changed": changed_count_fields,
+        "raw_source_modified": False,
+        "enricher_version": ENRICHER_VERSION,
+    }
+    report_path.write_text(json.dumps(report_payload, ensure_ascii=False, indent=2), encoding="utf-8")
+
+    print("=" * 100)
+    print("RESEARCH OUTPUT CLEANING COMPLETE")
+    print("=" * 100)
+    print(json.dumps(report_payload, ensure_ascii=False, indent=2))
+    print(f"원본 유지 : {outputs_path}")
+    print(f"정제 저장 : {clean_path}")
+    print(f"최근 저장 : {recent_path}")
+    print(f"집계 갱신 : {labs_path}")
+
+
+def count_affiliations(labs: list[dict[str, str]]) -> Counter[str]:
+    counts: Counter[str] = Counter()
+    for row in labs:
+        for affiliation in split_multi(row.get("affiliated_programs", "")):
+            counts[affiliation] += 1
+    return counts
+
+
+def build_data_audit_report(
+    departments: list[dict[str, str]],
+    labs: list[dict[str, str]],
+    outputs: list[dict[str, str]],
+) -> dict[str, object]:
+    labs_by_id = {
+        clean_text(row.get("lab_id", "")): row
+        for row in labs
+        if clean_text(row.get("lab_id", ""))
+    }
+    professor_by_lab = {
+        lab_id: clean_text(row.get("professor_name", ""))
+        for lab_id, row in labs_by_id.items()
+    }
+
+    field_counts = {
+        field_name: sum(bool(clean_text(row.get(field_name, ""))) for row in labs)
+        for field_name in (
+            "professor_name",
+            "email",
+            "phone",
+            "location",
+            "lab_url",
+            "profile_image_url",
+            "primary_field",
+            "research_summary",
+            "keywords",
+        )
+    }
+    field_counts["actual_lab_name"] = sum(
+        bool(clean_text(row.get("lab_name_kor", "")))
+        and not looks_placeholder_lab_name(row.get("lab_name_kor", ""))
+        for row in labs
+    )
+    field_counts["trusted_lab_url"] = sum(
+        bool(clean_text(row.get("lab_url", "")))
+        and clean_text(row.get("lab_url_status", "")) in TRUSTED_LAB_URL_STATUSES
+        for row in labs
+    )
+
+    duplicate_name_groups: list[dict[str, object]] = []
+    names: defaultdict[str, list[dict[str, str]]] = defaultdict(list)
+    for row in labs:
+        normalized_name = normalize_name(row.get("professor_name", ""))
+        if normalized_name:
+            names[normalized_name].append(row)
+    for group in names.values():
+        emails = {normalize_email(row.get("email", "")) for row in group if normalize_email(row.get("email", ""))}
+        if len(emails) < 2:
+            continue
+        shared_fields: dict[str, list[str]] = {}
+        for field_name in (
+            "lab_name_kor",
+            "phone",
+            "location",
+            "lab_url",
+            "primary_field",
+            "research_summary",
+        ):
+            values = Counter(
+                clean_text(row.get(field_name, "")).casefold()
+                for row in group
+                if clean_text(row.get(field_name, ""))
+                and not (field_name == "lab_name_kor" and looks_placeholder_lab_name(row.get(field_name, "")))
+            )
+            duplicates = [value for value, count in values.items() if count >= 2]
+            if duplicates:
+                shared_fields[field_name] = duplicates
+        duplicate_name_groups.append(
+            {
+                "professor_name": clean_text(group[0].get("professor_name", "")),
+                "emails": sorted(emails),
+                "shared_fields": shared_fields,
+            }
+        )
+
+    repeated_lab_names = []
+    lab_name_rows: defaultdict[str, list[dict[str, str]]] = defaultdict(list)
+    for row in labs:
+        name = clean_text(row.get("lab_name_kor", ""))
+        if name and not looks_placeholder_lab_name(name):
+            lab_name_rows[name.casefold()].append(row)
+    for name, group in lab_name_rows.items():
+        emails = {normalize_email(row.get("email", "")) for row in group if normalize_email(row.get("email", ""))}
+        if len(emails) >= 3:
+            repeated_lab_names.append(
+                {
+                    "lab_name": clean_text(group[0].get("lab_name_kor", "")),
+                    "professor_count": len(emails),
+                    "departments": sorted({clean_text(row.get("department_name", "")) for row in group}),
+                }
+            )
+
+    exact_raw_groups: defaultdict[tuple[str, str], list[dict[str, str]]] = defaultdict(list)
+    invalid_titles: Counter[str] = Counter()
+    for row in outputs:
+        raw_key = normalized_raw_text(row.get("raw_text", ""))
+        if raw_key:
+            exact_raw_groups[(clean_text(row.get("lab_id", "")), raw_key)].append(row)
+        output_type = normalize_output_type(row.get("output_type", ""))
+        if output_title_is_invalid(
+            row.get("title", ""), professor_by_lab.get(clean_text(row.get("lab_id", "")), "")
+        ):
+            invalid_titles[output_type] += 1
+    duplicate_raw_groups = [group for group in exact_raw_groups.values() if len(group) >= 2]
+    mixed_type_duplicate_groups = sum(
+        len({normalize_output_type(row.get("output_type", "")) for row in group}) >= 2
+        for group in duplicate_raw_groups
+    )
+
+    raw_output_counts: defaultdict[str, Counter[str]] = defaultdict(Counter)
+    for row in outputs:
+        raw_output_counts[clean_text(row.get("lab_id", ""))][normalize_output_type(row.get("output_type", ""))] += 1
+    count_mismatch_labs = 0
+    for lab_id, lab in labs_by_id.items():
+        if clean_text(lab.get("publication_count", "")) != str(raw_output_counts[lab_id]["publication"]):
+            count_mismatch_labs += 1
+            continue
+        if clean_text(lab.get("patent_count", "")) != str(raw_output_counts[lab_id]["patent"]):
+            count_mismatch_labs += 1
+
+    affiliation_counts = count_affiliations(labs)
+    affiliation_guard_violations = affiliation_evidence_violations(labs)
+
+    department_by_id = {
+        clean_text(row.get("department_id", "")): row
+        for row in departments if clean_text(row.get("department_id", ""))
+    }
+    foreign_department_page_rows = []
+    for row in labs:
+        primary_id = clean_text(row.get("primary_department_id", "") or row.get("department_id", ""))
+        department = department_by_id.get(primary_id)
+        page_url = normalize_url(row.get("department_page_url", ""))
+        if not department or not page_url:
+            continue
+        own_hosts = authoritative_department_hosts(
+            department, resolve_department_override(BUILTIN_SITE_OVERRIDES, department)
+        )
+        page_host = hostname(page_url).removeprefix("www.")
+        if page_host and page_host not in own_hosts:
+            foreign_department_page_rows.append({
+                "lab_id": clean_text(row.get("lab_id", "")),
+                "professor_name": clean_text(row.get("professor_name", "")),
+                "primary_department": clean_text(row.get("department_name", "")),
+                "department_page_url": page_url,
+            })
+
+    return {
+        "enricher_version": ENRICHER_VERSION,
+        "departments_total": len(departments),
+        "labs_total": len(labs),
+        "outputs_total": len(outputs),
+        "unique_lab_ids": len({clean_text(row.get("lab_id", "")) for row in labs if clean_text(row.get("lab_id", ""))}),
+        "unique_emails": len({normalize_email(row.get("email", "")) for row in labs if normalize_email(row.get("email", ""))}),
+        "field_counts": field_counts,
+        "quality_counts": dict(Counter(clean_text(row.get("data_quality_status", "")) or "unknown" for row in labs)),
+        "enrichment_status_counts": dict(Counter(clean_text(row.get("enrichment_status", "")) or "unknown" for row in labs)),
+        "lab_url_status_counts": dict(Counter(clean_text(row.get("lab_url_status", "")) or "unknown" for row in labs)),
+        "affiliation_counts": dict(affiliation_counts.most_common()),
+        "affiliation_guard_violations": affiliation_guard_violations,
+        "affiliation_evidence_violation_count": len(affiliation_guard_violations),
+        "foreign_department_page_rows": foreign_department_page_rows,
+        "foreign_department_page_count": len(foreign_department_page_rows),
+        "data_state_counts": dict(Counter(clean_text(row.get("data_state", "")) or "unknown" for row in labs)),
+        "duplicate_name_groups": duplicate_name_groups,
+        "repeated_lab_names": repeated_lab_names,
+        "research_outputs": {
+            "type_counts": dict(Counter(normalize_output_type(row.get("output_type", "")) for row in outputs)),
+            "exact_duplicate_groups": len(duplicate_raw_groups),
+            "exact_duplicate_rows_excess": sum(len(group) - 1 for group in duplicate_raw_groups),
+            "mixed_type_duplicate_groups": mixed_type_duplicate_groups,
+            "invalid_title_counts": dict(invalid_titles),
+            "labs_with_raw_count_mismatch": count_mismatch_labs,
+        },
+    }
+
+
+def validate_clean_output_artifacts(
+    labs: list[dict[str, str]],
+    outputs: list[dict[str, str]],
+    recent: list[dict[str, str]],
+) -> dict[str, object]:
+    output_ids = [clean_text(row.get("output_id", "")) for row in outputs]
+    identity_counts = Counter(output_identity_key(row) for row in outputs)
+    current_year = datetime.now().year
+    known_lab_ids = {clean_text(row.get("lab_id", "")) for row in labs}
+    output_id_set = set(output_ids)
+
+    recent_counts: defaultdict[str, Counter[str]] = defaultdict(Counter)
+    display_orders: defaultdict[str, list[int]] = defaultdict(list)
+    recent_unknown_output_ids = 0
+    for row in recent:
+        lab_id = clean_text(row.get("lab_id", ""))
+        output_type = normalize_output_type(row.get("output_type", ""))
+        bucket = "other" if output_type in {"book", "presentation"} else output_type
+        recent_counts[lab_id][bucket] += 1
+        if clean_text(row.get("output_id", "")) not in output_id_set:
+            recent_unknown_output_ids += 1
+        order = clean_text(row.get("display_order", ""))
+        if order.isdigit():
+            display_orders[lab_id].append(int(order))
+
+    recent_limit_violations = []
+    for lab_id, counts in recent_counts.items():
+        if counts["publication"] > 5 or counts["patent"] > 3 or counts["other"] > 3:
+            recent_limit_violations.append({"lab_id": lab_id, **dict(counts)})
+
+    non_contiguous_display_orders = sum(
+        sorted(values) != list(range(1, len(values) + 1))
+        for values in display_orders.values()
+    )
+
+    output_counts: defaultdict[str, Counter[str]] = defaultdict(Counter)
+    for row in outputs:
+        output_counts[clean_text(row.get("lab_id", ""))][normalize_output_type(row.get("output_type", ""))] += 1
+    lab_count_mismatches = 0
+    for lab in labs:
+        lab_id = clean_text(lab.get("lab_id", ""))
+        if clean_text(lab.get("publication_count", "")) != str(output_counts[lab_id]["publication"]):
+            lab_count_mismatches += 1
+            continue
+        if clean_text(lab.get("patent_count", "")) != str(output_counts[lab_id]["patent"]):
+            lab_count_mismatches += 1
+
+    report = {
+        "rows": len(outputs),
+        "type_counts": dict(Counter(normalize_output_type(row.get("output_type", "")) for row in outputs)),
+        "duplicate_output_ids": len(output_ids) - len(set(output_ids)),
+        "semantic_duplicate_keys": sum(count - 1 for count in identity_counts.values() if count > 1),
+        "invalid_titles": sum(output_title_is_invalid(row.get("title", "")) for row in outputs),
+        "future_years": sum(
+            clean_text(row.get("year", "")).isdigit()
+            and int(clean_text(row.get("year", ""))) > current_year
+            for row in outputs
+        ),
+        "unknown_lab_ids": sum(clean_text(row.get("lab_id", "")) not in known_lab_ids for row in outputs),
+        "recent_rows": len(recent),
+        "recent_limit_violations": recent_limit_violations,
+        "recent_unknown_output_ids": recent_unknown_output_ids,
+        "non_contiguous_display_order_labs": non_contiguous_display_orders,
+        "lab_count_mismatches": lab_count_mismatches,
+    }
+    report["valid"] = not any(
+        (
+            report["duplicate_output_ids"],
+            report["semantic_duplicate_keys"],
+            report["invalid_titles"],
+            report["future_years"],
+            report["unknown_lab_ids"],
+            len(recent_limit_violations),
+            report["recent_unknown_output_ids"],
+            report["non_contiguous_display_order_labs"],
+            report["lab_count_mismatches"],
+        )
+    )
+    return report
+
+
+def run_data_audit(args: argparse.Namespace) -> None:
+    data_dir = Path(args.data_dir).expanduser().resolve()
+    departments, _ = read_csv_rows(data_dir / "departments.csv")
+    labs, _ = read_csv_rows(data_dir / "labs.csv")
+    outputs, _ = read_csv_rows(data_dir / "research_outputs.csv")
+    report = build_data_audit_report(departments, labs, outputs)
+    clean_path = data_dir / "research_outputs_clean.csv"
+    recent_path = data_dir / "recent_outputs.csv"
+    if clean_path.exists() and recent_path.exists():
+        clean_outputs, _ = read_csv_rows(clean_path)
+        recent_outputs, _ = read_csv_rows(recent_path)
+        clean_validation = validate_clean_output_artifacts(
+            labs, clean_outputs, recent_outputs
+        )
+        report["clean_output_artifacts"] = clean_validation
+        report["research_outputs"]["lab_count_basis"] = "research_outputs_clean.csv"
+        report["research_outputs"]["labs_with_active_count_mismatch"] = clean_validation[
+            "lab_count_mismatches"
+        ]
+    else:
+        report["research_outputs"]["lab_count_basis"] = "research_outputs.csv"
+        report["research_outputs"]["labs_with_active_count_mismatch"] = report[
+            "research_outputs"
+        ]["labs_with_raw_count_mismatch"]
+    print(json.dumps(report, ensure_ascii=False, indent=2))
+    if not args.dry_run:
+        report_path = data_dir / "data_audit_report.json"
+        report_path.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
+        print(f"감사 보고서: {report_path}")
+
+
+def run_self_test() -> None:
+    tests = 0
+
+    # Shared-portal scope must reject sibling programs.
+    override = BUILTIN_SITE_OVERRIDES["푸드테크융합전공"]
+    assert url_matches_override_scope(
+        "https://gscst.postech.ac.kr/web/?depart=16&position=1&sub=professor&top=member",
+        override,
+    )
+    assert not url_matches_override_scope(
+        "https://gscst.postech.ac.kr/web/?depart=14&position=1&sub=professor&top=member",
+        override,
+    )
+    tests += 1
+
+    # Static faculty-count guesses are not used; evidence must be attached to
+    # every secondary affiliation instead.
+    evidence_row = {
+        "lab_id": "L1", "department_name": "컴퓨터공학과",
+        "affiliated_programs": "컴퓨터공학과;푸드테크융합전공",
+        "affiliation_evidence": "",
+    }
+    assert len(affiliation_evidence_violations([evidence_row])) == 1
+    record_affiliation_evidence(
+        evidence_row, "푸드테크융합전공",
+        "https://gscst.postech.ac.kr/web/?depart=16&position=1&sub=professor&top=member",
+        "email", False,
+    )
+    assert not affiliation_evidence_violations([evidence_row])
+    tests += 1
+
+    # Official-list-shaped HTML must produce one exact-email match per card.
+    official_like = PageResult(
+        "https://gscst.postech.ac.kr/web/?depart=16&position=1&sub=professor&top=member",
+        """<html><body><ul>
+        <li class='person'><h4>박주홍</h4><p>연구분야 IoT, Healthcare Architecture</p>
+        <p>연락처 054-279-8875</p><p>이메일 juhpark@postech.ac.kr</p></li>
+        <li class='person'><h4>홍길동</h4><p>연구분야 Other Field</p>
+        <p>이메일 other@postech.ac.kr</p></li>
+        </ul></body></html>""",
+        "requests",
+    )
+    official_labs = {
+        "L1": {"lab_id": "L1", "professor_name": "박주홍", "email": "juhpark@postech.ac.kr", "department_name": "컴퓨터공학과"},
+        "L2": {"lab_id": "L2", "professor_name": "홍길동", "email": "other@postech.ac.kr", "department_name": "전자전기공학과"},
+    }
+    official_matches = build_page_matches(
+        official_like,
+        {"faculty_card_selectors": ["li.person"], "max_card_emails": 2, "max_card_identities": 2},
+        official_labs,
+        {"juhpark@postech.ac.kr": "L1", "other@postech.ac.kr": "L2"},
+        {},
+        {normalize_name("박주홍"), normalize_name("홍길동")},
+    )
+    assert {match.lab_id for match in official_matches} == {"L1", "L2"}
+    first_match = next(match for match in official_matches if match.lab_id == "L1")
+    first_update = extract_card_data(first_match.block, official_like.url, official_labs["L1"], {})
+    assert "IoT" in first_update["primary_field"]
+    assert first_update["phone"] == "054-279-8875"
+    assert "other@postech.ac.kr" not in first_match.block.get_text(" ", strip=True)
+    tests += 1
+
+    # Name fallback must never use a derived affiliation.
+    department = {"department_id": "D2", "department_name_kor": "프로그램B"}
+    lab_rows = {
+        "L1": {
+            "lab_id": "L1",
+            "department_id": "D1",
+            "primary_department_id": "D1",
+            "department_name": "학과A",
+            "affiliated_programs": "학과A;프로그램B",
+            "professor_name": "홍길동",
+        }
+    }
+    assert not build_department_name_index(lab_rows, department, {normalize_name("홍길동"): "L1"})
+    tests += 1
+
+    # Secondary program pages may add affiliation but cannot overwrite fields.
+    lab = {
+        "lab_id": "L1",
+        "professor_name": "홍길동",
+        "department_name": "학과A",
+        "affiliated_programs": "학과A",
+        "lab_name_kor": "정상 연구실",
+        "primary_field": "정상 분야",
+        "lab_url": "",
+        "lab_url_status": "unverified",
+    }
+    merged, changed = merge_lab_update(
+        lab,
+        {
+            "_source_scope": "secondary",
+            "_allow_secondary_field_enrichment": False,
+            "lab_name_kor": "오염 연구실",
+            "primary_field": "오염 분야",
+        },
+        "프로그램B",
+    )
+    assert merged["lab_name_kor"] == "정상 연구실"
+    assert merged["primary_field"] == "정상 분야"
+    assert "프로그램B" in split_multi(merged["affiliated_programs"])
+    assert changed == ["affiliated_programs"]
+    tests += 1
+
+    # Homonymous copied values must be blanked before exact-email recrawl.
+    departments = [
+        {"department_id": "D1", "department_name_kor": "학과A", "homepage_url": "https://a.postech.ac.kr"},
+        {"department_id": "D2", "department_name_kor": "학과B", "homepage_url": "https://b.postech.ac.kr"},
+    ]
+    homonyms = {
+        "L1": {
+            "lab_id": "L1", "department_id": "D1", "primary_department_id": "D1",
+            "department_name": "학과A", "professor_name": "김동명", "email": "one@postech.ac.kr",
+            "lab_name_kor": "Copied Lab", "primary_field": "Copied Field",
+            "research_summary": "주요 연구 분야: Copied Field",
+            "department_page_url": "https://b.postech.ac.kr/faculty", "lab_url": "https://wrong.example.com",
+            "lab_url_status": "verified_homepage", "keywords": "Copied Field",
+        },
+        "L2": {
+            "lab_id": "L2", "department_id": "D2", "primary_department_id": "D2",
+            "department_name": "학과B", "professor_name": "김동명", "email": "two@postech.ac.kr",
+            "lab_name_kor": "Copied Lab", "primary_field": "Copied Field",
+            "research_summary": "주요 연구 분야: Copied Field",
+            "department_page_url": "https://b.postech.ac.kr/faculty", "lab_url": "",
+            "lab_url_status": "unverified", "keywords": "Copied Field",
+        },
+    }
+    contamination = reset_stale_cross_identity_contamination(departments, homonyms, {})
+    assert contamination["lab_name_kor"] == 2
+    assert all(looks_placeholder_lab_name(row["lab_name_kor"]) for row in homonyms.values())
+    assert not homonyms["L1"]["lab_url"]
+    tests += 1
+
+    # Exact raw duplicate must keep the patent row and repair a split US patent.
+    labs_for_outputs = {"L1": {"lab_id": "L1", "professor_name": "이승용"}}
+    raw = "이승용,손형석, 이미지 처리 방법 및 장치, USA, 15/441,145 (2017)"
+    output_rows = [
+        {
+            "output_id": "A", "lab_id": "L1", "researcher_id": "R1", "output_type": "publication",
+            "output_subtype": "journal", "title": "이승용", "year": "2017", "venue_or_organization": "손형석",
+            "authors_or_recipients": "", "identifier": "", "raw_text": raw, "url": "", "source_url": "", "crawled_at": "",
+        },
+        {
+            "output_id": "B", "lab_id": "L1", "researcher_id": "R1", "output_type": "patent",
+            "output_subtype": "patent", "title": "USA", "year": "2017", "venue_or_organization": "15/441",
+            "authors_or_recipients": "이승용,손형석, 이미지 처리 방법 및 장치", "identifier": "145",
+            "raw_text": raw, "url": "", "source_url": "", "crawled_at": "",
+        },
+    ]
+    cleaned, report = clean_research_outputs_rows(output_rows, labs_for_outputs)
+    assert len(cleaned) == 1 and cleaned[0]["output_type"] == "patent"
+    assert cleaned[0]["title"] == "이미지 처리 방법 및 장치"
+    assert cleaned[0]["identifier"] == "15/441,145"
+    assert report["exact_source_duplicates_removed"] == 1
+    tests += 1
+
+    # Recent-output limits: 5 publications, 3 patents, 3 book/presentation.
+    synthetic: list[dict[str, str]] = []
+    for output_type, count in (("publication", 7), ("patent", 5), ("presentation", 5)):
+        for index in range(count):
+            synthetic.append(
+                {
+                    "output_id": f"{output_type}-{index}", "lab_id": "L1", "output_type": output_type,
+                    "title": f"Title {index}", "year": str(2020 + index), "venue_or_organization": "V",
+                    "authors_or_recipients": "A", "identifier": "", "url": "", "source_url": "", "crawled_at": "",
+                }
+            )
+    recent = build_recent_outputs(synthetic)
+    assert Counter(row["output_type"] for row in recent) == Counter({"publication": 5, "patent": 3, "presentation": 3})
+    tests += 1
+
+    # Duplicate professor names require exact e-mail on a homepage.
+    ambiguous_soup = BeautifulSoup(
+        "<html><body><h1>김동명 Lab</h1><p>other@postech.ac.kr</p><p>Research laboratory</p></body></html>",
+        "lxml",
+    )
+    score, email_exact, conflict = homepage_identity_score(
+        ambiguous_soup,
+        {
+            "professor_name": "김동명",
+            "email": "one@postech.ac.kr",
+            "lab_name_kor": "김동명 Lab",
+            "_name_is_ambiguous": True,
+        },
+    )
+    assert not email_exact and conflict and score <= 7
+    tests += 1
+
+    # Full rebuild preserves exact-homepage evidence but drops card-derived data.
+    rebuild_rows = {
+        "A": {
+            "lab_id": "A", "professor_name": "A교수", "lab_name_kor": "Trusted Lab",
+            "lab_name_eng": "Trusted Lab", "lab_url": "https://trusted.example.com",
+            "lab_url_status": "verified_homepage", "keyword_source": "lab_homepage",
+            "primary_field": "Card field", "research_summary": "Homepage summary", "keywords": "Homepage keyword",
+            "location": "Room 101", "department_page_url": "https://dept.example.com/faculty",
+        },
+        "B": {
+            "lab_id": "B", "professor_name": "B교수", "lab_name_kor": "Wrong Card Lab",
+            "lab_url": "https://candidate.example.com", "lab_url_status": "verified_card",
+            "primary_field": "Wrong field", "research_summary": "Wrong summary", "keywords": "Wrong keyword",
+            "keyword_source": "department_page", "location": "Room 202",
+            "department_page_url": "https://dept.example.com/faculty",
+        },
+    }
+    reset_report = clear_non_authoritative_enrichment_for_full_rebuild(rebuild_rows)
+    assert rebuild_rows["A"]["lab_url"] == "https://trusted.example.com"
+    assert rebuild_rows["A"]["lab_name_kor"] == "Trusted Lab"
+    assert rebuild_rows["A"]["research_summary"] == "Homepage summary"
+    assert rebuild_rows["A"]["primary_field"] == ""
+    assert rebuild_rows["B"]["lab_url"] == ""
+    assert looks_placeholder_lab_name(rebuild_rows["B"]["lab_name_kor"])
+    assert reset_report["department_page_url"] == 2
+    tests += 1
+
+    # Stable IDs remain unique when same title/no year appears at different venues.
+    no_year_rows = []
+    for index, venue in enumerate(("Venue A", "Venue B")):
+        no_year_rows.append(
+            {
+                "output_id": str(index), "lab_id": "L1", "researcher_id": "R1",
+                "output_type": "presentation", "output_subtype": "conference", "title": "Same title",
+                "year": "", "venue_or_organization": venue, "authors_or_recipients": "A",
+                "identifier": "", "raw_text": f"Same title, {venue}", "url": "", "source_url": "", "crawled_at": "",
+            }
+        )
+    no_year_cleaned, _ = clean_research_outputs_rows(no_year_rows, labs_for_outputs)
+    assert len(no_year_cleaned) == 2
+    assert len({row["output_id"] for row in no_year_cleaned}) == 2
+    tests += 1
+
+    # Generated clean/recent artifacts must pass the same audit used in production.
+    audit_labs = [{"lab_id": "L1", "publication_count": "0", "patent_count": "1"}]
+    audit_recent = build_recent_outputs(cleaned)
+    artifact_report = validate_clean_output_artifacts(audit_labs, cleaned, audit_recent)
+    assert artifact_report["valid"]
+    tests += 1
+
+
+    # Default unscoped execution is authoritative; incremental mode is opt-in.
+    assert authoritative_rebuild_requested(
+        argparse.Namespace(clean_only=False, department=None, test_limit=None, incremental=False)
+    )
+    assert not authoritative_rebuild_requested(
+        argparse.Namespace(clean_only=False, department=None, test_limit=None, incremental=True)
+    )
+    assert not authoritative_rebuild_requested(
+        argparse.Namespace(clean_only=False, department="생명과학과", test_limit=None, incremental=False)
+    )
+    tests += 1
+
+    # A department-card URL from another primary department is a quarantine
+    # signal, while independently verified homepage content is preserved.
+    fake_departments = [{
+        "department_id": "D1", "department_name_kor": "생명과학과",
+        "homepage_url": "https://life.postech.ac.kr/",
+    }]
+    foreign_rows = {
+        "L1": {
+            "lab_id": "L1", "department_id": "D1", "primary_department_id": "D1",
+            "department_name": "생명과학과", "professor_name": "김민성",
+            "lab_name_kor": "Wrong Math Lab", "phone": "054-279-0000",
+            "location": "수리과학관 223호", "primary_field": "동역학계",
+            "research_summary": "Wrong summary", "keywords": "동역학계",
+            "lab_url": "https://wrong.example.com", "lab_url_status": "verified_card",
+            "department_page_url": "https://math.postech.ac.kr/faculty",
+        },
+        "L2": {
+            "lab_id": "L2", "department_id": "D1", "primary_department_id": "D1",
+            "department_name": "생명과학과", "professor_name": "고아라",
+            "lab_name_kor": "Trusted Homepage Lab", "research_summary": "Trusted homepage summary about research",
+            "keywords": "Microbiome;Cancer", "keyword_source": "lab_homepage",
+            "lab_url": "https://trusted.example.com", "lab_url_status": "verified_homepage",
+            "department_page_url": "https://math.postech.ac.kr/faculty",
+        },
+    }
+    foreign_report = reset_foreign_department_provenance(
+        fake_departments, foreign_rows, BUILTIN_SITE_OVERRIDES
+    )
+    assert foreign_report["rows"] == 2
+    assert looks_placeholder_lab_name(foreign_rows["L1"]["lab_name_kor"])
+    assert not foreign_rows["L1"]["location"] and not foreign_rows["L1"]["lab_url"]
+    assert foreign_rows["L2"]["lab_name_kor"] == "Trusted Homepage Lab"
+    assert foreign_rows["L2"]["research_summary"] == "Trusted homepage summary about research"
+    tests += 1
+
+    # Clean-only quarantine retains only exact-email-evidenced secondary
+    # affiliations and keeps their evidence record intact.
+    evidence_lab = {
+        "L1": {
+            "lab_id": "L1", "department_name": "컴퓨터공학과",
+            "affiliated_programs": "컴퓨터공학과;푸드테크융합전공;오염전공",
+            "crawled_at": "2026-01-01T00:00:00+09:00",
+            "affiliation_evidence": compact_json({
+                "푸드테크융합전공": {
+                    "source_url": "https://gscst.postech.ac.kr/web/?depart=16&position=2&sub=professor&top=member",
+                    "method": "email", "primary": False,
+                }
+            }),
+        }
+    }
+    quarantine_unverified_affiliations([], evidence_lab)
+    assert evidence_lab["L1"]["affiliated_programs"] == "컴퓨터공학과;푸드테크융합전공"
+    assert "푸드테크융합전공" in parse_json_dict(evidence_lab["L1"]["affiliation_evidence"])
+    assert not affiliation_evidence_violations(evidence_lab.values())
+    tests += 1
+
+    # Shared-portal category discovery follows only same-depart professor
+    # categories even when general link traversal is disabled.
+    seed_url = "https://gscst.postech.ac.kr/web/?depart=16&position=1&sub=professor&top=member"
+    same_scope_url = "https://gscst.postech.ac.kr/web/?depart=16&position=2&sub=professor&top=member"
+    sibling_url = "https://gscst.postech.ac.kr/web/?depart=14&position=2&sub=professor&top=member"
+    class FakeClient:
+        def fetch(self, url: str, force_browser: bool = False) -> PageResult:
+            if normalize_url(url) == normalize_url(seed_url):
+                return PageResult(url, f"<html><body><a href='{same_scope_url}'>겸임교수</a><a href='{sibling_url}'>국방</a></body></html>", "fake")
+            return PageResult(url, "<html><body><p>faculty category</p></body></html>", "fake")
+    fake_dir = Path(tempfile.mkdtemp(prefix="postech-selftest-"))
+    try:
+        fake_paths = RuntimePaths.from_args(fake_dir, None)
+        discovered = discover_department_pages(
+            FakeClient(),
+            {"department_id": "D16", "department_name_kor": "테스트전공", "homepage_url": ""},
+            {
+                "faculty_urls": [seed_url], "allowed_hosts": ["gscst.postech.ac.kr"],
+                "scope_query_params": {"depart": ["16"]}, "follow_links": False, "max_depth": 0,
+            },
+            max_pages=4, max_depth=0, known_names=set(), paths=fake_paths, save_raw=False,
+        )
+        discovered_urls = {page.url for page in discovered}
+        assert normalize_url(seed_url) in discovered_urls and normalize_url(same_scope_url) in discovered_urls
+        assert normalize_url(sibling_url) not in discovered_urls
+    finally:
+        shutil.rmtree(fake_dir, ignore_errors=True)
+    tests += 1
+
+    # Full authoritative commit requires every selected department and rejects
+    # both evidence-less affiliations and foreign primary source pages.
+    commit_departments = [
+        {"department_id": "D1", "department_name_kor": "학과A", "homepage_url": "https://a.postech.ac.kr", "enrichment_status": "success"},
+        {"department_id": "D2", "department_name_kor": "학과B", "homepage_url": "https://b.postech.ac.kr", "enrichment_status": "success"},
+    ]
+    commit_labs = [
+        {
+            "lab_id": "L1", "department_id": "D1", "primary_department_id": "D1",
+            "department_name": "학과A", "affiliated_programs": "학과A",
+            "department_page_url": "https://a.postech.ac.kr/faculty",
+        }
+    ]
+    reasons, metrics = authoritative_commit_failure_reasons(
+        commit_departments, commit_labs, {}
+    )
+    assert not reasons and metrics["successful_departments"] == 2
+    commit_departments[1]["enrichment_status"] = "failed"
+    reasons, _ = authoritative_commit_failure_reasons(commit_departments, commit_labs, {})
+    assert reasons and "학과 성공" in reasons[0]
+    tests += 1
+
+    # Roster coverage guard scales from the known first-stage e-mail roster and
+    # never accepts a single accidental card for a normal-sized department.
+    assert minimum_primary_roster_matches(19, {}) == 4
+    assert minimum_primary_roster_matches(3, {}) == 1
+    assert minimum_primary_roster_matches(0, {}) == 0
+    tests += 1
+
+    assert clean_summary_value(
+        'Miao, L., Murray, D., Jung, W.-S., "The latent structure of national scientific development," '
+        'Nature Human Behaviour, vol. 6, p. 1206-1217, 2022. doi: 10.1038/example'
+    ) == ""
+    assert clean_location_value(
+        "326, POSTECH Biotech Center (PBC), 55, Jigok-ro, Nam-gu, Pohang-si"
+    ) == "POSTECH Biotech Center (PBC) 326"
+    assert looks_like_person_segment("트란마이란")
+    assert not looks_like_person_segment("나노구조체")
+    assert clean_location_value(
+        "#214 LG Research Bldg, #77 Cheongam-ro Pohang-si, Republic of Korea"
+    ) == "LG Research Bldg 214"
+    assert clean_location_value(
+        "[25.05] 김용태 교수 POSTECH 컨소시엄, 대규모 수소 국제공동연구 사업 최종 선정"
+    ) == ""
+    assert is_non_identity_source_url(
+        "https://me.postech.ac.kr/ko/board/view?bd_id=news01&wr_id=929"
+    )
+    assert is_non_identity_source_url(
+        "https://ph.postech.ac.kr/physics/community/news.do?mode=view&articleNo=1"
+    )
+    assert summary_looks_like_news_article(
+        '김석 교수 연구팀, "반도체도 초고층 시대" 성능 높인다'
+    )
+    assert not summary_has_lab_intro_context(
+        '김석 교수 연구팀, "반도체도 초고층 시대" 성능 높인다'
+    )
+    assert summary_has_lab_intro_context(
+        "MARCH 연구실에서는 휴먼-로봇 인터페이스 연구를 수행합니다."
+    )
+    tests += 1
+
+    print(f"SELF TEST PASSED: {tests} tests")
+
+
+# ============================================================
+# 14. CLI
 # ============================================================
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
@@ -3630,14 +6140,49 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--max-depth", type=int, default=DEFAULT_MAX_DEPTH)
     parser.add_argument("--delay", type=float, default=DEFAULT_REQUEST_DELAY_SECONDS)
     parser.add_argument("--timeout", type=int, default=DEFAULT_TIMEOUT_SECONDS)
-    parser.add_argument("--force", action="store_true", help="이전 성공 상태도 다시 수집")
+    parser.add_argument("--force", action="store_true", help="부분/증분 실행에서도 이전 성공 상태를 다시 수집")
+    parser.add_argument(
+        "--incremental",
+        action="store_true",
+        help="기존 성공 학과를 건너뛰는 증분 모드. 기본 전체 실행은 권위 소스 재구축",
+    )
     parser.add_argument("--dry-run", action="store_true", help="CSV를 수정하지 않고 정제/수집 결과만 출력")
     parser.add_argument("--clean-only", action="store_true", help="네트워크 요청 없이 기존 CSV 오염값만 정제")
+    parser.add_argument(
+        "--reset-affiliations",
+        action="store_true",
+        help="전체 강제 재수집 전에 affiliated_programs를 주 소속으로 초기화하여 과거 교차오염 제거",
+    )
     parser.add_argument("--skip-lab-homepages", action="store_true", help="개별 연구실 홈페이지 검증·보완 생략")
     parser.add_argument("--browser-fallback", action="store_true", help="정적 HTML 부족 시 Playwright 사용")
     parser.add_argument("--allow-insecure", action="store_true", help="SSL 인증서 검증 실패 사이트 허용")
     parser.add_argument("--ignore-robots", action="store_true", help="robots.txt 검사 생략")
     parser.add_argument("--save-raw-html", action="store_true", help="수집 HTML을 <data-dir>/raw_stage2에 저장")
+    parser.add_argument(
+        "--audit-only",
+        action="store_true",
+        help="네트워크·CSV 수정 없이 departments/labs/research_outputs 데이터 무결성 감사",
+    )
+    parser.add_argument(
+        "--clean-research-outputs",
+        action="store_true",
+        help="원본 research_outputs.csv는 유지하고 clean/recent 파일 생성 및 labs 집계 갱신",
+    )
+    parser.add_argument(
+        "--skip-research-cleaning",
+        action="store_true",
+        help="기본 전체 재구축 후 research_outputs_clean/recent 생성 생략",
+    )
+    parser.add_argument(
+        "--skip-final-audit",
+        action="store_true",
+        help="기본 전체 재구축 후 최종 데이터 감사 생략",
+    )
+    parser.add_argument(
+        "--self-test",
+        action="store_true",
+        help="내장 범위 잠금·매칭·출처격리·동명이인·연구실적 정제 테스트 실행",
+    )
     return parser
 
 
@@ -3652,12 +6197,32 @@ def validate_args(parser: argparse.ArgumentParser, args: argparse.Namespace) -> 
         parser.error("--timeout은 1 이상이어야 합니다.")
     if args.test_limit is not None and args.test_limit < 1:
         parser.error("--test-limit은 1 이상이어야 합니다.")
+    if args.reset_affiliations and args.clean_only:
+        parser.error("--reset-affiliations는 --clean-only와 함께 사용할 수 없습니다.")
+    if args.reset_affiliations and (args.department or args.test_limit is not None):
+        parser.error("--reset-affiliations는 일부 학과 실행과 함께 사용할 수 없습니다. 전체 재수집에만 사용하세요.")
+    if args.incremental and args.reset_affiliations:
+        parser.error("--incremental과 --reset-affiliations는 함께 사용할 수 없습니다.")
+    exclusive_modes = sum(bool(value) for value in (args.audit_only, args.clean_research_outputs, args.self_test))
+    if exclusive_modes > 1:
+        parser.error("--audit-only, --clean-research-outputs, --self-test는 동시에 사용할 수 없습니다.")
+    if (args.audit_only or args.clean_research_outputs or args.self_test) and args.clean_only:
+        parser.error("감사/연구실적/자체테스트 모드는 --clean-only와 함께 사용할 수 없습니다.")
 
 
 def main() -> None:
     parser = build_parser()
     args = parser.parse_args()
     validate_args(parser, args)
+    if args.self_test:
+        run_self_test()
+        return
+    if args.audit_only:
+        run_data_audit(args)
+        return
+    if args.clean_research_outputs:
+        run_research_output_cleaner(args)
+        return
     run_stage2(args)
 
 
