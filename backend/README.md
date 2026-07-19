@@ -54,6 +54,16 @@ alembic upgrade head
 # Insert clearly fictional, idempotent fixture records after migration.
 python -m scripts.seed
 
+# Inspect the POSTECH crawler output without changing the database.
+python -m scripts.import_postech --dry-run
+
+# Import validated POSTECH data into an empty development/demo database.
+# The default retains the 10 newest outputs per lab for recommendation evidence.
+python -m scripts.import_postech --max-publications-per-lab 10
+
+# Import all valid publication records (explicitly opt in; can be large).
+python -m scripts.import_postech --all-publications
+
 # Start the API.
 uvicorn app.main:app --host 127.0.0.1 --port 8000
 
@@ -82,6 +92,29 @@ OpenAPI docs at `http://127.0.0.1:8000/api/v1/docs`.
 | `DOCUMENT_MAX_UPLOAD_BYTES` | `10485760` | Maximum PDF size (10 MiB) |
 
 Production and test environments have no default CORS origins, and reject `*`.
+
+## Fixture versus real POSTECH data
+
+Fixtures and real crawler data are deliberately separate commands. Tests create a
+temporary SQLite schema and call `scripts.seed`; they never read `Crawler/data` or
+the network. The POSTECH importer refuses a database containing fixture labs unless
+`--allow-mixed` is supplied explicitly. For a clean local reset, delete only the
+configured local SQLite database, run `alembic upgrade head`, then choose exactly one
+of `python -m scripts.seed` or `python -m scripts.import_postech`.
+
+Each import writes `import_reports/postech-import-<batch-id>.json` containing planned
+or applied creates/updates plus skipped/error records. The report is gitignored.
+Records with invalid URLs, names, departments, duplicate professor/lab pairs, invalid
+years, or papers linked to excluded labs are omitted rather than coerced into the DB.
+Only `output_type=publication` enters `papers`: presentation, patent, and book outputs
+remain in the immutable raw CSV because the recommendation engine currently consumes
+publication text only.
+
+SQLite is used for local/test development and enables foreign keys per connection.
+PostgreSQL uses the same SQLAlchemy models and Alembic migration; run the importer
+against its production `DATABASE_URL` only after a dry run and backup. The importer
+uses one transaction, so a database exception rolls the batch back; individual input
+validation failures are reported and do not stop valid records.
 
 ## Docker
 
