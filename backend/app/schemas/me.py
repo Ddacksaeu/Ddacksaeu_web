@@ -49,6 +49,14 @@ class CalendarEventCreate(ApiSchema):
     memo: str | None = Field(default=None, max_length=2_000)
 
 
+class CalendarEventUpdate(ApiSchema):
+    title: str | None = Field(default=None, min_length=1, max_length=200)
+    kind: EventKind | None = None
+    date: date | None = None
+    lab_id: str | None = Field(default=None, max_length=120)
+    memo: str | None = Field(default=None, max_length=2_000)
+
+
 class CalendarEventResponse(CalendarEventCreate):
     id: str
     created_at: datetime

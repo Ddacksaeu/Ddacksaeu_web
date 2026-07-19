@@ -6,6 +6,6 @@ type ContactPageProperties = Readonly<{ searchParams: Promise<Readonly<Record<st
 
 export default async function ContactPage({ searchParams }: ContactPageProperties) {
   const value = (await searchParams)["professor"];
-  const professor = typeof value === "string" ? value : "Professor 02";
+  const professor = typeof value === "string" ? value : "";
   return <div className="site-shell"><AppHeader current="contact" /><main className={styles["page"]}><header className={styles["hero"]}><p className={styles["eyebrow"]}>OUTREACH</p><h1>Outreach email draft</h1><p>Connect your CV experience with the professor’s recent work, then edit the draft yourself.</p></header><ContactWorkspace initialProfessor={professor} /></main></div>;
 }

@@ -15,7 +15,10 @@ async function proxy(request: Request, { params }: Context): Promise<Response> {
   if (upstream.status === 204 || upstream.status === 304) {
     return new Response(null, { status: upstream.status });
   }
-  return new Response(await upstream.arrayBuffer(), { status: upstream.status, headers: { "Content-Type": upstream.headers.get("content-type") ?? "application/json" } });
+  const responseHeaders = new Headers({ "Content-Type": upstream.headers.get("content-type") ?? "application/json" });
+  const disposition = upstream.headers.get("content-disposition");
+  if (disposition) responseHeaders.set("Content-Disposition", disposition);
+  return new Response(await upstream.arrayBuffer(), { status: upstream.status, headers: responseHeaders });
 }
 
 export const GET = proxy;

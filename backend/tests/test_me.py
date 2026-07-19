@@ -39,5 +39,13 @@ def test_profile_favorites_and_calendar_are_persisted(
     event_id = created.json()["id"]
     events = client.get("/api/v1/me/calendar-events", headers=headers)
     assert [item["id"] for item in events.json()["items"]] == [event_id]
+    updated = client.patch(
+        f"/api/v1/me/calendar-events/{event_id}",
+        json={"title": "Follow up", "date": "2026-08-02"},
+        headers=headers,
+    )
+    assert updated.status_code == 200
+    assert updated.json()["title"] == "Follow up"
+    assert updated.json()["date"] == "2026-08-02"
     deleted = client.delete(f"/api/v1/me/calendar-events/{event_id}", headers=headers)
     assert deleted.status_code == 204

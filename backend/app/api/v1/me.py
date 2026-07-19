@@ -14,6 +14,7 @@ from app.schemas.me import (
     CalendarEventCreate,
     CalendarEventListResponse,
     CalendarEventResponse,
+    CalendarEventUpdate,
     FavoriteListResponse,
     UserProfileResponse,
     UserProfileUpdate,
@@ -130,6 +131,24 @@ def create_event(
         return _event(MeRepository(session, user.id).create_event(**payload.model_dump()))
     except LookupError as error:
         raise HTTPException(status_code=404) from error
+
+
+@router.patch("/calendar-events/{event_id}", response_model=CalendarEventResponse)
+def update_event(
+    event_id: str,
+    payload: CalendarEventUpdate,
+    session: Annotated[Session, Depends(get_db_session)],
+    user: Annotated[User, Depends(current_user)],
+) -> CalendarEventResponse:
+    try:
+        event = MeRepository(session, user.id).update_event(
+            event_id, **payload.model_dump(exclude_unset=True)
+        )
+    except LookupError as error:
+        raise HTTPException(status_code=404) from error
+    if event is None:
+        raise HTTPException(status_code=404)
+    return _event(event)
 
 
 @router.delete("/calendar-events/{event_id}", status_code=204)

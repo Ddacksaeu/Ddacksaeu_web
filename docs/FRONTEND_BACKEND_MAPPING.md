@@ -37,6 +37,24 @@ of browser storage.
 The existing owner-cookie `/api/profile`, CV, calendar, and contact draft
 flows remain separate until their API contracts are migrated in later slices.
 
+## Frontend_v2 complete user flow (2026-07-19)
+
+`frontend_v2` now uses the existing `/api/backend/[...path]` BFF for all
+personal API calls. The browser never receives the backend JWT: the BFF reads
+the HttpOnly session cookie and forwards a Bearer header server-side. A `401`
+is preserved for the UI to direct the user to `/login`; it is never converted
+into an empty result.
+
+| Surface | BFF route | Backend API | Notes |
+| --- | --- | --- | --- |
+| Profile | `/api/backend/me/profile` | `GET`, `PATCH /me/profile` | Only API-defined profile fields are editable. |
+| Latest CV | `/api/backend/documents/latest` | `GET /documents/latest` | A 404 means no analysis yet. |
+| Saved labs | `/api/backend/me/favorites` | `GET /me/favorites` | Lab details are fetched from the real lab catalogue. |
+| Personal dates | `/api/backend/me/calendar-events` | `GET`, `POST /me/calendar-events`; `PATCH`, `DELETE /me/calendar-events/{id}` | User-owned events are validated and persisted. |
+| Admissions | `/api/backend/admissions` | `GET /admissions` | Empty data stays empty; no display fixture is substituted. |
+| ICS export | `/api/backend/admissions/export.ics` | `GET /admissions/export.ics` | BFF preserves calendar content type and download disposition. |
+| Contact draft | `/api/backend/email/draft` | `POST /email/draft` | Generates an editable draft only; it never sends email. |
+
 ## 현재 라우트와 필요한 API
 
 | 화면 | 현재 데이터·상태 | MVP에서 바로 구현할 API | 해커톤 이후 구현 또는 확장 |
