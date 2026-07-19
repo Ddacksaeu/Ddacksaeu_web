@@ -15,15 +15,18 @@ Next.js proxies versioned backend requests through the same origin:
 
 | Frontend_v2 URL | Backend URL |
 | --- | --- |
-| `GET /backend-api/health` | `GET /api/v1/health` |
-| `GET /backend-api/labs` | `GET /api/v1/labs` |
-| `GET /backend-api/labs/{id}` | `GET /api/v1/labs/{id}` |
+| `GET /api/backend/health` | `GET /api/v1/health` |
+| `GET /api/backend/labs` | `GET /api/v1/labs` |
+| `GET /api/backend/labs/{id}` | `GET /api/v1/labs/{id}` |
+| `POST /api/backend/documents/analyze` | `POST /api/v1/documents/analyze` |
+| `GET /api/backend/documents/latest` | `GET /api/v1/documents/latest` |
+| `GET /api/backend/documents` | `GET /api/v1/documents` |
 
 The default matches `backend`'s local Uvicorn address. Start the backend first
 with `backend/.venv/Scripts/python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8000`
 from the `backend` directory, then run `npm run dev` from `frontend_v2`.
 
 This proxy avoids exposing server configuration in `NEXT_PUBLIC_*` variables
-and avoids browser CORS coupling. Authentication-bearing API integration is
-intentionally not enabled here because frontend_v2's current profile model uses
-its own owner cookie while the backend uses JWT authentication.
+and avoids browser CORS coupling. It reads the HttpOnly
+`ddacksaeu_session` cookie server-side and forwards it as a backend Bearer
+token. The browser never receives or stores that token.
