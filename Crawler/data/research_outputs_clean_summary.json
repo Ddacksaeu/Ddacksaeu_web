@@ -1,0 +1,19 @@
+{
+  "input_rows": 54340,
+  "patents_reparsed": 0,
+  "exact_source_duplicates_removed": 0,
+  "invalid_titles_dropped": {},
+  "semantic_duplicates_removed": 0,
+  "clean_rows": 54340,
+  "type_counts": {
+    "publication": 29478,
+    "patent": 7854,
+    "presentation": 16676,
+    "book": 332
+  },
+  "missing_year_rows": 1840,
+  "recent_rows": 2445,
+  "lab_count_fields_changed": 0,
+  "raw_source_modified": false,
+  "enricher_version": "0.12.3-provenance-state-repair"
+}
