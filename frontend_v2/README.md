@@ -33,9 +33,23 @@ npm run start
 The independently running Next.js app keeps its local profile API at
 `/api/profile`. To reach this repository's FastAPI backend, configure
 `BACKEND_API_ORIGIN` in `.env.local`; the backend API is then available through
-`/backend-api/*` (for example, `http://localhost:3000/backend-api/health`).
+`/api/backend/*` (for example, `http://localhost:3000/api/backend/health`).
 See [docs/backend-connection.md](docs/backend-connection.md) for the local
 startup commands and the routing contract.
+
+## CV analysis
+
+After signing in, open **Profile** to upload a PDF, DOCX, or TXT CV (up to
+10 MB) and view the latest result plus recent analysis history. The browser
+uses the existing `/api/backend/documents/*` BFF proxy, which reads the
+HttpOnly session cookie and forwards authentication to FastAPI; no backend
+token is stored in browser storage.
+
+Analysis is local rule-based processing on the backend. No external AI API or
+OCR is used, so image-only PDFs cannot be analyzed; use a text-based PDF,
+DOCX, or TXT file instead. Start the backend with its documented environment
+and migrations before using this screen. Current history is limited to the
+metadata returned by the API; it has no detail-selection route.
 
 ## 검증
 
