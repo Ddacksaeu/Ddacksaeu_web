@@ -4,8 +4,8 @@ Revision ID: 20260719_0005
 Revises: 20260719_0004
 """
 
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 
 revision = "20260719_0005"
 down_revision = "20260719_0004"
@@ -26,9 +26,15 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint("id"),
     )
     for table in ("labs", "papers"):
-        op.add_column(table, sa.Column("source_type", sa.String(50), nullable=False, server_default="fixture"))
+        op.add_column(
+            table,
+            sa.Column("source_type", sa.String(50), nullable=False, server_default="fixture"),
+        )
         op.add_column(table, sa.Column("import_batch_id", sa.String(36)))
-        op.add_column(table, sa.Column("validation_status", sa.String(32), nullable=False, server_default="valid"))
+        op.add_column(
+            table,
+            sa.Column("validation_status", sa.String(32), nullable=False, server_default="valid"),
+        )
         op.create_index(f"ix_{table}_import_batch_id", table, ["import_batch_id"])
 
 

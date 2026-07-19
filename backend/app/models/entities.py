@@ -71,7 +71,10 @@ class Professor(TimestampedModel, Base):
     __tablename__ = "professors"
     __table_args__ = (
         UniqueConstraint(
-            "university_id", "department_id", "name", name="uq_professors_university_department_name"
+            "university_id",
+            "department_id",
+            "name",
+            name="uq_professors_university_department_name",
         ),
     )
 
@@ -262,7 +265,9 @@ class ImportBatch(Base):
     source_type: Mapped[str] = mapped_column(String(50), nullable=False)
     source_path: Mapped[str] = mapped_column(String(500), nullable=False)
     status: Mapped[str] = mapped_column(String(32), nullable=False)
-    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, nullable=False)
+    started_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now, nullable=False
+    )
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     report_json: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict, nullable=False)
 

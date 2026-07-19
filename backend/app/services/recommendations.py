@@ -190,8 +190,7 @@ class RecommendationService:
                 EvidenceItem(
                     type="research_paper_similarity",
                     text=(
-                        "Recent available publications share terms with your CV "
-                        "research interests."
+                        "Recent available publications share terms with your CV research interests."
                     ),
                 )
             )

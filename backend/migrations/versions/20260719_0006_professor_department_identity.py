@@ -23,4 +23,6 @@ def upgrade() -> None:
 def downgrade() -> None:
     with op.batch_alter_table("professors", recreate="always") as batch_op:
         batch_op.drop_constraint("uq_professors_university_department_name", type_="unique")
-        batch_op.create_unique_constraint("uq_professors_university_name", ["university_id", "name"])
+        batch_op.create_unique_constraint(
+            "uq_professors_university_name", ["university_id", "name"]
+        )
