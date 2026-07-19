@@ -243,7 +243,27 @@ fixture. No real dates, event types, URLs, descriptions, or estimate flags may
 be inferred from it. After the schema migration, fixture seed rows must retain
 `origin="fixture"` and be labelled as fixture data in every API response.
 
-## Recommendation API implementation (2026-07-18)
+## Explainable CV recommendations (Phase 3, 2026-07-19)
+
+`GET /api/v1/recommendations` is calculated for the authenticated user at
+request time. It requires that user's latest completed local CV analysis; when
+none exists it returns `409` and never reads another user's analysis. The
+Next.js professor catalogue calls it through `GET /api/backend/recommendations`,
+so the browser never receives the backend JWT.
+
+The response is deliberately not persisted. Each item includes `total_score`,
+matched and missing keywords, component scores, factual evidence, warnings,
+data completeness, and the lab data origin. Component maxima are configured in
+`backend/app/config/recommendation_weights.py`: keyword overlap 35, CV/lab
+TF-IDF 30, recent-paper TF-IDF 20, preferences 10, and freshness 5.
+
+Unavailable source data contributes zero to its own component and is reported
+as unavailable; it is never silently redistributed. The implementation uses
+only local normalization, scikit-learn TF-IDF, and rule templates. No LLM,
+embedding API, or OpenAI API is called by this recommendation flow. Fixture
+labs continue to work and are explicitly labelled in the response/UI.
+
+## Previous recommendation API implementation (2026-07-18)
 
 The backend now exposes `GET /api/v1/recommendations` for persisted results
 and `POST /api/v1/recommendations/recompute` for explicit refresh. The Lovable
