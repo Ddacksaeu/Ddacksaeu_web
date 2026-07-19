@@ -1,0 +1,162 @@
+{
+  "enricher_version": "0.10.4-evidence-contract",
+  "departments_total": 29,
+  "labs_total": 290,
+  "outputs_total": 66842,
+  "unique_lab_ids": 290,
+  "unique_emails": 290,
+  "field_counts": {
+    "professor_name": 290,
+    "email": 290,
+    "phone": 194,
+    "location": 89,
+    "lab_url": 78,
+    "profile_image_url": 178,
+    "primary_field": 49,
+    "research_summary": 76,
+    "keywords": 57,
+    "actual_lab_name": 68,
+    "trusted_lab_url": 67
+  },
+  "quality_counts": {
+    "basic_only": 206,
+    "partial": 66,
+    "complete": 18
+  },
+  "enrichment_status_counts": {
+    "success": 242,
+    "no_match": 28,
+    "matched_identity_only": 20
+  },
+  "lab_url_status_counts": {
+    "unverified": 210,
+    "verified_homepage": 57,
+    "candidate_card": 11,
+    "verified_card": 8,
+    "manual": 2,
+    "invalid": 2
+  },
+  "affiliation_counts": {
+    "국방과학기술전공": 57,
+    "전자전기공학과": 42,
+    "시스템생명공학부": 41,
+    "의과학전공": 40,
+    "컴퓨터공학과": 33,
+    "반도체대학원": 31,
+    "물리학과": 30,
+    "생명과학과": 29,
+    "신소재공학과": 28,
+    "기계공학과": 27,
+    "화학공학과": 24,
+    "수학과": 23,
+    "산업경영공학과": 22,
+    "IT융합공학과": 20,
+    "산업데이터사이언스전공": 20,
+    "인공지능대학원": 20,
+    "화학과": 19,
+    "양자정보과학전공": 17,
+    "첨단재료과학부": 14,
+    "친환경소재대학원 친환경소재학과": 11,
+    "합성생물학전공": 10,
+    "환경공학부": 10,
+    "정보통신대학원": 8,
+    "첨단원자력공학부": 8,
+    "친환경소재대학원 배터리공학과": 7,
+    "소셜데이터사이언스(SDS) 전공": 7,
+    "푸드테크융합전공": 6,
+    "반도체공학과": 4,
+    "경영과학전공": 1
+  },
+  "affiliation_guard_violations": [],
+  "affiliation_evidence_violation_count": 0,
+  "foreign_department_page_rows": [],
+  "foreign_department_page_count": 0,
+  "data_state_counts": {
+    "authoritative_rebuilt": 246,
+    "authoritative_no_match": 28,
+    "authoritative_identity_only": 11,
+    "authoritative_central_identity_fallback": 5
+  },
+  "duplicate_name_groups": [
+    {
+      "professor_name": "이승우",
+      "emails": [
+        "monk@postech.ac.kr",
+        "swleego@postech.ac.kr"
+      ],
+      "shared_fields": {}
+    },
+    {
+      "professor_name": "김민성",
+      "emails": [
+        "cggs@postech.ac.kr",
+        "minsung@postech.ac.kr"
+      ],
+      "shared_fields": {}
+    },
+    {
+      "professor_name": "김영진",
+      "emails": [
+        "powersys@postech.ac.kr",
+        "yjkim01@postech.ac.kr"
+      ],
+      "shared_fields": {}
+    },
+    {
+      "professor_name": "김정훈",
+      "emails": [
+        "joungkim@postech.ac.kr",
+        "junghoonkim@postech.ac.kr"
+      ],
+      "shared_fields": {}
+    },
+    {
+      "professor_name": "이상민",
+      "emails": [
+        "sangma@postech.ac.kr",
+        "sminlee@postech.ac.kr"
+      ],
+      "shared_fields": {}
+    }
+  ],
+  "repeated_lab_names": [],
+  "research_outputs": {
+    "type_counts": {
+      "publication": 40075,
+      "patent": 9092,
+      "presentation": 17329,
+      "book": 346
+    },
+    "exact_duplicate_groups": 9507,
+    "exact_duplicate_rows_excess": 9507,
+    "mixed_type_duplicate_groups": 9506,
+    "invalid_title_counts": {
+      "patent": 1221,
+      "publication": 7973,
+      "presentation": 3
+    },
+    "labs_with_raw_count_mismatch": 215,
+    "lab_count_basis": "research_outputs_clean.csv",
+    "labs_with_active_count_mismatch": 0
+  },
+  "clean_output_artifacts": {
+    "rows": 54340,
+    "type_counts": {
+      "publication": 29478,
+      "patent": 7854,
+      "presentation": 16676,
+      "book": 332
+    },
+    "duplicate_output_ids": 0,
+    "semantic_duplicate_keys": 0,
+    "invalid_titles": 0,
+    "future_years": 0,
+    "unknown_lab_ids": 0,
+    "recent_rows": 2445,
+    "recent_limit_violations": [],
+    "recent_unknown_output_ids": 0,
+    "non_contiguous_display_order_labs": 0,
+    "lab_count_mismatches": 0,
+    "valid": true
+  }
+}

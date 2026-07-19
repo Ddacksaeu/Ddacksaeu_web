@@ -1,0 +1,428 @@
+{
+  "generated_at": "2026-07-19T16:29:22+09:00",
+  "enricher_version": "0.10.4-evidence-contract",
+  "committed": true,
+  "failure_reasons": [],
+  "successful_departments": 29,
+  "minimum_successes": 29,
+  "failed_departments": [],
+  "affiliation_evidence_violations": 0,
+  "affiliation_evidence_violation_details": [],
+  "foreign_department_page_violations": 0,
+  "departments": [
+    {
+      "department_id": "DEPT_15F9EAC6D592",
+      "department_name": "IT융합공학과",
+      "department_type": "department",
+      "status": "success",
+      "faculty_match_count": "20",
+      "message": "교수/랩 20명 권위 확인; affiliated_programs=14, department_page_url=6, enrichment_source_urls=7, keyword_source=1, keywords=1, lab_name_kor=1, lab_url=1, lab_url_status=1, research_summary=1",
+      "faculty_page_urls": [
+        "https://cite.postech.ac.kr/",
+        "https://cite.postech.ac.kr/bbs/board.php?bo_table=sub2_1_a",
+        "https://cite.postech.ac.kr/bbs/board.php?bo_table=sub2_1_b",
+        "https://cite.postech.ac.kr/bbs/board.php?bo_table=sub5_1&wr_id=268"
+      ]
+    },
+    {
+      "department_id": "DEPT_D4706A86BD1E",
+      "department_name": "기계공학과",
+      "department_type": "department",
+      "status": "success",
+      "faculty_match_count": "10",
+      "message": "교수/랩 10명 권위 확인; affiliated_programs=4, department_page_url=6, enrichment_source_urls=6, lab_name_eng=1, research_summary=2",
+      "faculty_page_urls": [
+        "https://me.postech.ac.kr/ko/",
+        "https://me.postech.ac.kr/ko/page/member03",
+        "https://me.postech.ac.kr/ko/page/professor01",
+        "https://me.postech.ac.kr/ko/page/professor02",
+        "https://me.postech.ac.kr/ko/page/professor03"
+      ]
+    },
+    {
+      "department_id": "DEPT_6397BFCF9BBE",
+      "department_name": "물리학과",
+      "department_type": "department",
+      "status": "success",
+      "faculty_match_count": "19",
+      "message": "교수/랩 19명 권위 확인; affiliated_programs=5, department_page_url=14, enrichment_source_urls=26, keyword_source=11, keywords=11, lab_name_eng=1, lab_name_kor=2, lab_url=4, lab_url_status=4, location=3, primary_field=9, research_summary=10",
+      "faculty_page_urls": [
+        "https://ph.postech.ac.kr/physics/index.do",
+        "https://ph.postech.ac.kr/physics/member/professor.do",
+        "https://ph.postech.ac.kr/physics/member/professor.do?mode=list&srCategoryId=948",
+        "https://ph.postech.ac.kr/physics/member/professor.do?mode=list&srCategoryId=950",
+        "https://ph.postech.ac.kr/physics/member/researcher.do"
+      ]
+    },
+    {
+      "department_id": "DEPT_E832BE14535C",
+      "department_name": "반도체공학과",
+      "department_type": "department",
+      "status": "success",
+      "faculty_match_count": "4",
+      "message": "교수/랩 4명 권위 확인; department_page_url=4, enrichment_source_urls=4, profile_image_url=1, research_summary=4",
+      "faculty_page_urls": [
+        "https://semi.postech.ac.kr/semi/people/professor.do"
+      ]
+    },
+    {
+      "department_id": "DEPT_9174BD414A1A",
+      "department_name": "산업경영공학과",
+      "department_type": "department",
+      "status": "success",
+      "faculty_match_count": "22",
+      "message": "교수/랩 22명 권위 확인; affiliated_programs=5, department_page_url=17, enrichment_source_urls=26, keyword_source=13, keywords=10, lab_name_eng=4, lab_name_kor=5, lab_url=5, lab_url_status=8, location=5, primary_field=8, profile_image_url=1, recruiting_status=1, research_summary=14",
+      "faculty_page_urls": [
+        "https://ime.postech.ac.kr/ime/index.do",
+        "https://ime.postech.ac.kr/ime/people/faculty.do",
+        "https://ime.postech.ac.kr/ime/people/professor.do",
+        "https://ime.postech.ac.kr/ime/research/cooration.do?mode=view&articleNo=44933",
+        "https://ime.postech.ac.kr/ime/research/cooration.do?mode=view&articleNo=44934",
+        "https://ime.postech.ac.kr/ime/research/cooration.do?mode=view&articleNo=44935",
+        "https://ime.postech.ac.kr/ime/research/cooration.do?mode=view&articleNo=44936",
+        "https://ime.postech.ac.kr/ime/research/cooration.do?mode=view&articleNo=44937",
+        "https://ime.postech.ac.kr/ime/research/cooration.do?mode=view&articleNo=44938"
+      ]
+    },
+    {
+      "department_id": "DEPT_72FA8A502789",
+      "department_name": "생명과학과",
+      "department_type": "department",
+      "status": "success_identity_fallback",
+      "faculty_match_count": "6",
+      "message": "교수/랩 6명 권위 확인; central_profile_identity=6",
+      "faculty_page_urls": []
+    },
+    {
+      "department_id": "DEPT_8C4E5FA11DD7",
+      "department_name": "수학과",
+      "department_type": "department",
+      "status": "success",
+      "faculty_match_count": "23",
+      "message": "교수/랩 23명 권위 확인; affiliated_programs=2, department_page_url=21, enrichment_source_urls=79, keyword_source=4, keywords=6, lab_url=13, lab_url_status=15, location=17, phone=3, primary_field=4, profile_image_url=6, research_summary=3",
+      "faculty_page_urls": [
+        "https://math.postech.ac.kr/bbs/board.php?bo_table=m02_01&page=1",
+        "https://math.postech.ac.kr/bbs/board.php?bo_table=m02_01&page=2",
+        "https://math.postech.ac.kr/bbs/board.php?bo_table=m02_01&sca=%EC%A0%84%EC%9E%84%EA%B5%90%EC%88%98",
+        "https://math.postech.ac.kr/bbs/board.php?bo_table=m02_01&wr_id=10&sca=%EC%A0%84%EC%9E%84%EA%B5%90%EC%88%98",
+        "https://math.postech.ac.kr/bbs/board.php?bo_table=m02_01&wr_id=11&sca=%EC%A0%84%EC%9E%84%EA%B5%90%EC%88%98",
+        "https://math.postech.ac.kr/bbs/board.php?bo_table=m02_01&wr_id=12&sca=%EC%A0%84%EC%9E%84%EA%B5%90%EC%88%98",
+        "https://math.postech.ac.kr/bbs/board.php?bo_table=m02_01&wr_id=13&sca=%EC%A0%84%EC%9E%84%EA%B5%90%EC%88%98",
+        "https://math.postech.ac.kr/bbs/board.php?bo_table=m02_01&wr_id=16",
+        "https://math.postech.ac.kr/bbs/board.php?bo_table=m02_01&wr_id=3",
+        "https://math.postech.ac.kr/en/bbs/board.php?bo_table=m02_01",
+        "https://math.postech.ac.kr/en/bbs/board.php?bo_table=m02_01&page=1",
+        "https://math.postech.ac.kr/en/bbs/board.php?bo_table=m02_01&page=2"
+      ]
+    },
+    {
+      "department_id": "DEPT_E1957EAD7FC5",
+      "department_name": "신소재공학과",
+      "department_type": "department",
+      "status": "success",
+      "faculty_match_count": "27",
+      "message": "교수/랩 27명 권위 확인; affiliated_programs=6, department_page_url=21, enrichment_source_urls=22, lab_name_kor=3, research_summary=6",
+      "faculty_page_urls": [
+        "https://mse.postech.ac.kr/",
+        "https://mse.postech.ac.kr/bbs/board.php?bo_table=mse_gallery&wr_id=90",
+        "https://mse.postech.ac.kr/theme/mse/html/proff.php",
+        "https://mse.postech.ac.kr/theme/mse/html/proff_ja.php"
+      ]
+    },
+    {
+      "department_id": "DEPT_5AA4565E41E4",
+      "department_name": "전자전기공학과",
+      "department_type": "department",
+      "status": "success",
+      "faculty_match_count": "14",
+      "message": "교수/랩 14명 권위 확인; affiliated_programs=7, central_profile_identity=7",
+      "faculty_page_urls": [
+        "https://ee.postech.ac.kr/faculty-research/adjunct_professor-2/",
+        "https://ee.postech.ac.kr/faculty-research/adjunct_professor-2/?professor_type=%EB%85%B8%EC%A4%80%EC%84%9D",
+        "https://ee.postech.ac.kr/faculty-research/adjunct_professor-2/?professor_type=%EB%B0%95%EC%84%B1%EB%AF%BC",
+        "https://ee.postech.ac.kr/faculty-research/adjunct_professor-2/?professor_type=%EB%B0%B1%EC%B0%BD%EA%B8%B0",
+        "https://ee.postech.ac.kr/faculty-research/adjunct_professor-2/?professor_type=%EC%98%A4%EB%AA%85%EC%B2%A0",
+        "https://ee.postech.ac.kr/faculty-research/adjunct_professor-2/?professor_type=%EC%9C%A0%EC%84%A0%EC%B2%A0",
+        "https://ee.postech.ac.kr/faculty-research/adjunct_professor-2/?professor_type=%EC%9D%B4%EC%84%A0%EA%B7%9C"
+      ]
+    },
+    {
+      "department_id": "DEPT_9921730F17C8",
+      "department_name": "컴퓨터공학과",
+      "department_type": "department",
+      "status": "success",
+      "faculty_match_count": "33",
+      "message": "교수/랩 33명 권위 확인; affiliated_programs=15, department_page_url=18, enrichment_source_urls=20, keyword_source=2, keywords=1, lab_name_eng=1, lab_name_kor=7, lab_url=8, lab_url_status=8, location=7, phone=7, primary_field=1, profile_image_url=7, research_summary=2",
+      "faculty_page_urls": [
+        "https://cse.postech.ac.kr/csepostech/index.do",
+        "https://cse.postech.ac.kr/csepostech/people/faculty.do"
+      ]
+    },
+    {
+      "department_id": "DEPT_D6BD23E2DA3D",
+      "department_name": "화학공학과",
+      "department_type": "department",
+      "status": "success",
+      "faculty_match_count": "24",
+      "message": "교수/랩 24명 권위 확인; affiliated_programs=3, department_page_url=21, enrichment_source_urls=32, keyword_source=5, keywords=5, lab_name_eng=3, lab_name_kor=3, lab_url=7, lab_url_status=8, location=21, phone=6, primary_field=4, profile_image_url=6, recruiting_status=2, research_summary=5",
+      "faculty_page_urls": [
+        "https://ce.postech.ac.kr/",
+        "https://ce.postech.ac.kr/bbs/board.php?bo_table=sub6_3_a&wr_id=1459",
+        "https://ce.postech.ac.kr/bbs/board.php?bo_table=sub6_3_a&wr_id=1461",
+        "https://ce.postech.ac.kr/bbs/board.php?bo_table=sub6_3_a&wr_id=1463",
+        "https://ce.postech.ac.kr:443/bbs/board.php?bo_table=sub2_1&wr_id=10",
+        "https://ce.postech.ac.kr:443/bbs/board.php?bo_table=sub2_1&wr_id=112",
+        "https://ce.postech.ac.kr:443/bbs/board.php?bo_table=sub2_1&wr_id=114",
+        "https://ce.postech.ac.kr:443/bbs/board.php?bo_table=sub2_1&wr_id=121",
+        "https://ce.postech.ac.kr:443/bbs/board.php?bo_table=sub2_1&wr_id=132",
+        "https://ce.postech.ac.kr:443/bbs/board.php?bo_table=sub2_1&wr_id=133"
+      ]
+    },
+    {
+      "department_id": "DEPT_8540E8D01A3B",
+      "department_name": "화학과",
+      "department_type": "department",
+      "status": "success",
+      "faculty_match_count": "4",
+      "message": "교수/랩 4명 권위 확인; department_page_url=4, enrichment_source_urls=14, lab_name_eng=1, research_summary=2",
+      "faculty_page_urls": [
+        "https://chem.postech.ac.kr/",
+        "https://chem.postech.ac.kr/bbs/board.php?bo_table=sub5_3&wr_id=127",
+        "https://chem.postech.ac.kr/bbs/board.php?bo_table=sub5_3&wr_id=128",
+        "https://chem.postech.ac.kr/bbs/board.php?bo_table=sub5_3&wr_id=129",
+        "https://chem.postech.ac.kr/bbs/board.php?bo_table=sub5_3&wr_id=130"
+      ]
+    },
+    {
+      "department_id": "DEPT_9903AEDBEA8B",
+      "department_name": "시스템생명공학부",
+      "department_type": "division",
+      "status": "success",
+      "faculty_match_count": "41",
+      "message": "교수/랩 41명 권위 확인; affiliated_programs=39, lab_name_eng=2, scoped_unique_name_affiliation=2",
+      "faculty_page_urls": [
+        "https://ibio.postech.ac.kr:443/web/?depart=1&position=1&sub=professor&top=member",
+        "https://ibio.postech.ac.kr:443/web/?depart=1&position=2&sub=professor&top=member",
+        "https://ibio.postech.ac.kr:443/web/?top=member&sub=professor&depart=1&position=1",
+        "https://ibio.postech.ac.kr:443/web/?top=member&sub=professor&depart=1&position=2"
+      ]
+    },
+    {
+      "department_id": "DEPT_B146E8596359",
+      "department_name": "첨단원자력공학부",
+      "department_type": "division",
+      "status": "success",
+      "faculty_match_count": "8",
+      "message": "교수/랩 8명 권위 확인; affiliated_programs=1, department_page_url=7, enrichment_source_urls=8, keyword_source=9, keywords=8, lab_name_kor=6, lab_url=4, lab_url_status=5, location=3, phone=6, primary_field=7, profile_image_url=6, research_summary=8",
+      "faculty_page_urls": [
+        "https://dane.postech.ac.kr/member/faculty.php"
+      ]
+    },
+    {
+      "department_id": "DEPT_8D6C38C916DF",
+      "department_name": "첨단재료과학부",
+      "department_type": "division",
+      "status": "success",
+      "faculty_match_count": "14",
+      "message": "교수/랩 14명 권위 확인; affiliated_programs=13, department_page_url=1, enrichment_source_urls=2",
+      "faculty_page_urls": [
+        "https://gscst.postech.ac.kr:443/web/?depart=2&position=1&sub=professor&top=member",
+        "https://gscst.postech.ac.kr:443/web/?depart=2&position=2&sub=professor&top=member",
+        "https://gscst.postech.ac.kr:443/web/?top=member&sub=professor&depart=2&position=1",
+        "https://gscst.postech.ac.kr:443/web/?top=member&sub=professor&depart=2&position=2"
+      ]
+    },
+    {
+      "department_id": "DEPT_E45348E53785",
+      "department_name": "환경공학부",
+      "department_type": "division",
+      "status": "success",
+      "faculty_match_count": "10",
+      "message": "교수/랩 10명 권위 확인; affiliated_programs=1, department_page_url=9, enrichment_source_urls=12, keyword_source=1, keywords=1, lab_name_eng=1, lab_name_kor=5, lab_url=5, lab_url_status=8, location=5, phone=2, profile_image_url=2, research_summary=6",
+      "faculty_page_urls": [
+        "http://dese.postech.ac.kr/",
+        "http://dese.postech.ac.kr/bbs/board.php?bo_table=sub2_1_a",
+        "https://dese.postech.ac.kr/bbs/board.php?bo_table=sub6_2_a&wr_id=1115",
+        "https://dese.postech.ac.kr/bbs/board.php?bo_table=sub6_2_a&wr_id=1117",
+        "https://dese.postech.ac.kr/bbs/board.php?bo_table=sub6_2_a&wr_id=1121"
+      ]
+    },
+    {
+      "department_id": "DEPT_13FD4CA3DB40",
+      "department_name": "반도체대학원",
+      "department_type": "graduate_school",
+      "status": "success",
+      "faculty_match_count": "31",
+      "message": "교수/랩 31명 권위 확인; affiliated_programs=29, scoped_unique_name_affiliation=6",
+      "faculty_page_urls": [
+        "https://gradsemi.postech.ac.kr/",
+        "https://gradsemi.postech.ac.kr/members/professor/"
+      ]
+    },
+    {
+      "department_id": "DEPT_421872121F66",
+      "department_name": "인공지능대학원",
+      "department_type": "graduate_school",
+      "status": "success",
+      "faculty_match_count": "16",
+      "message": "교수/랩 16명 권위 확인; department_page_url=15, enrichment_source_urls=15, keyword_source=14, keywords=14, lab_name_kor=1, location=1, primary_field=14, profile_image_url=1, research_summary=14, exact_email_identity_only=1",
+      "faculty_page_urls": [
+        "https://ai.postech.ac.kr/",
+        "https://ai.postech.ac.kr/research/view/id/819",
+        "https://ai.postech.ac.kr/research/view/id/820",
+        "https://ai.postech.ac.kr/research/view/id/849",
+        "https://ai.postech.ac.kr/research/view/id/850",
+        "https://ai.postech.ac.kr/research/view/id/851",
+        "https://ai.postech.ac.kr/research/view/id/852",
+        "https://ai.postech.ac.kr/research/view/id/853",
+        "https://ai.postech.ac.kr/staff",
+        "https://ai.postech.ac.kr/sub020101",
+        "https://ai.postech.ac.kr/sub020102",
+        "https://ai.postech.ac.kr/sub030104"
+      ]
+    },
+    {
+      "department_id": "DEPT_C61E657812D7",
+      "department_name": "정보통신대학원",
+      "department_type": "graduate_school",
+      "status": "success",
+      "faculty_match_count": "8",
+      "message": "교수/랩 8명 권위 확인; affiliated_programs=7, scoped_unique_name_affiliation=1",
+      "faculty_page_urls": [
+        "https://eecs.postech.ac.kr/teaching-and-research/professor/?dept=103"
+      ]
+    },
+    {
+      "department_id": "DEPT_F7EB6E018B00",
+      "department_name": "친환경소재대학원 배터리공학과",
+      "department_type": "graduate_school",
+      "status": "success",
+      "faculty_match_count": "6",
+      "message": "교수/랩 6명 권위 확인; affiliated_programs=2, department_page_url=4, enrichment_source_urls=4, profile_image_url=1, research_summary=2",
+      "faculty_page_urls": [
+        "https://gift.postech.ac.kr/bbs/board.php?bo_table=sub2_8_N&sca=%EC%B9%9C%ED%99%98%EA%B2%BD%EC%86%8C%EC%9E%AC%ED%95%99%EA%B3%BC",
+        "https://gift.postech.ac.kr/index.php"
+      ]
+    },
+    {
+      "department_id": "DEPT_F9190CC58D37",
+      "department_name": "친환경소재대학원 친환경소재학과",
+      "department_type": "graduate_school",
+      "status": "success",
+      "faculty_match_count": "4",
+      "message": "교수/랩 4명 권위 확인; affiliated_programs=2, department_page_url=1, enrichment_source_urls=1, profile_image_url=1, research_summary=1, central_profile_identity=1",
+      "faculty_page_urls": [
+        "https://gift.postech.ac.kr/bbs/board.php?bo_table=sub2_8_N&sca=%EC%B9%9C%ED%99%98%EA%B2%BD%EC%86%8C%EC%9E%AC%ED%95%99%EA%B3%BC",
+        "https://gift.postech.ac.kr/index.php"
+      ]
+    },
+    {
+      "department_id": "DEPT_D8AE1063CB93",
+      "department_name": "경영과학전공",
+      "department_type": "program",
+      "status": "success",
+      "faculty_match_count": "1",
+      "message": "교수/랩 1명 권위 확인; affiliated_programs=1",
+      "faculty_page_urls": [
+        "https://gscst.postech.ac.kr:443/web/?depart=15&position=1&sub=professor&top=member",
+        "https://gscst.postech.ac.kr:443/web/?top=member&sub=professor&depart=15&position=1"
+      ]
+    },
+    {
+      "department_id": "DEPT_0EA86739E68C",
+      "department_name": "국방과학기술전공",
+      "department_type": "program",
+      "status": "success",
+      "faculty_match_count": "57",
+      "message": "교수/랩 57명 권위 확인; affiliated_programs=55, scoped_unique_name_affiliation=2",
+      "faculty_page_urls": [
+        "https://gscst.postech.ac.kr:443/web/?depart=14&position=1&sub=professor&top=member",
+        "https://gscst.postech.ac.kr:443/web/?depart=14&position=2&sub=professor&top=member",
+        "https://gscst.postech.ac.kr:443/web/?top=member&sub=professor&depart=14&position=1",
+        "https://gscst.postech.ac.kr:443/web/?top=member&sub=professor&depart=14&position=2"
+      ]
+    },
+    {
+      "department_id": "DEPT_62D0B669C458",
+      "department_name": "산업데이터사이언스전공",
+      "department_type": "program",
+      "status": "success",
+      "faculty_match_count": "20",
+      "message": "교수/랩 20명 권위 확인; affiliated_programs=18, scoped_unique_name_affiliation=2",
+      "faculty_page_urls": [
+        "https://gscst.postech.ac.kr:443/web/?depart=18&position=1&sub=professor&top=member",
+        "https://gscst.postech.ac.kr:443/web/?depart=18&position=2&sub=professor&top=member",
+        "https://gscst.postech.ac.kr:443/web/?top=member&sub=professor&depart=18&position=1",
+        "https://gscst.postech.ac.kr:443/web/?top=member&sub=professor&depart=18&position=2"
+      ]
+    },
+    {
+      "department_id": "DEPT_BDCC9BF6871E",
+      "department_name": "소셜데이터사이언스(SDS) 전공",
+      "department_type": "program",
+      "status": "success",
+      "faculty_match_count": "7",
+      "message": "교수/랩 7명 권위 확인; affiliated_programs=7, scoped_unique_name_affiliation=1",
+      "faculty_page_urls": [
+        "https://psds.postech.ac.kr/",
+        "https://psds.postech.ac.kr/professor",
+        "https://psds.postech.ac.kr/professor/10",
+        "https://psds.postech.ac.kr/professor/16"
+      ]
+    },
+    {
+      "department_id": "DEPT_B0BC0528CB64",
+      "department_name": "양자정보과학전공",
+      "department_type": "program",
+      "status": "success",
+      "faculty_match_count": "17",
+      "message": "교수/랩 17명 권위 확인; affiliated_programs=17",
+      "faculty_page_urls": [
+        "https://gscst.postech.ac.kr:443/web/?depart=17&position=1&sub=professor&top=member",
+        "https://gscst.postech.ac.kr:443/web/?top=member&sub=professor&depart=17&position=1"
+      ]
+    },
+    {
+      "department_id": "DEPT_411348FEAEB7",
+      "department_name": "의과학전공",
+      "department_type": "program",
+      "status": "success",
+      "faculty_match_count": "40",
+      "message": "교수/랩 40명 권위 확인; affiliated_programs=39, lab_name_eng=1, research_summary=1, scoped_unique_name_affiliation=1",
+      "faculty_page_urls": [
+        "https://gscst.postech.ac.kr:443/web/?depart=11&position=1&sub=professor&top=member",
+        "https://gscst.postech.ac.kr:443/web/?top=member&sub=professor&depart=11&position=1"
+      ]
+    },
+    {
+      "department_id": "DEPT_4505C634A00C",
+      "department_name": "푸드테크융합전공",
+      "department_type": "program",
+      "status": "success",
+      "faculty_match_count": "6",
+      "message": "교수/랩 6명 권위 확인; affiliated_programs=6",
+      "faculty_page_urls": [
+        "https://gscst.postech.ac.kr:443/web/?depart=16&position=1&sub=professor&top=member",
+        "https://gscst.postech.ac.kr:443/web/?depart=16&position=2&sub=professor&top=member",
+        "https://gscst.postech.ac.kr:443/web/?top=member&sub=professor&depart=16&position=1",
+        "https://gscst.postech.ac.kr:443/web/?top=member&sub=professor&depart=16&position=2"
+      ]
+    },
+    {
+      "department_id": "DEPT_EFAF183ABB57",
+      "department_name": "합성생물학전공",
+      "department_type": "program",
+      "status": "success",
+      "faculty_match_count": "10",
+      "message": "교수/랩 10명 권위 확인; affiliated_programs=10, scoped_unique_name_affiliation=1",
+      "faculty_page_urls": [
+        "https://synbio.postech.ac.kr/faculty",
+        "https://synbio.postech.ac.kr/faculty/55",
+        "https://synbio.postech.ac.kr/faculty/56",
+        "https://synbio.postech.ac.kr/faculty/57",
+        "https://synbio.postech.ac.kr/faculty/58",
+        "https://synbio.postech.ac.kr/index_ko"
+      ]
+    }
+  ]
+}
