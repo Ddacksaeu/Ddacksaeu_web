@@ -376,6 +376,11 @@ class DocumentAnalysis(Base):
         DateTime(timezone=True), default=utc_now, nullable=False
     )
     error_code: Mapped[str | None] = mapped_column(String(100))
+    structured_analysis_json: Mapped[dict[str, Any]] = mapped_column(
+        JSON, default=dict, nullable=False
+    )
+    search_text: Mapped[str] = mapped_column(Text, default="", nullable=False)
+    warnings_json: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
 
 
 class CrawlSource(TimestampedModel, Base):

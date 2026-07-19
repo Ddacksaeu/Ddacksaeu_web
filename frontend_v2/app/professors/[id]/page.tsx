@@ -8,7 +8,7 @@ import { ProfessorDetailSections } from "../../../src/features/professors/profes
 import { ProfessorProfileAlignment } from "../../../src/features/professors/professor-profile-alignment";
 import { SaveProfessorButton } from "../../../src/features/professors/save-professor-button";
 import styles from "../../../src/features/professors/professor-explorer.module.css";
-import { LAB_CATALOG_FIXTURES } from "../../../src/fixtures/catalog";
+import { fetchBackendLab } from "../../../src/server/backend/labs";
 
 type ProfessorDetailPageProperties = Readonly<{
   params: Promise<{ readonly id: string }>;
@@ -16,8 +16,8 @@ type ProfessorDetailPageProperties = Readonly<{
 
 export default async function ProfessorDetailPage({ params }: ProfessorDetailPageProperties) {
   const { id } = await params;
-  const professor = LAB_CATALOG_FIXTURES.find((item) => item.id === id);
-  if (professor === undefined) notFound();
+  const professor = await fetchBackendLab(id);
+  if (professor === null) notFound();
   const detail = createDemoProfessorDetail(professor);
 
   return (

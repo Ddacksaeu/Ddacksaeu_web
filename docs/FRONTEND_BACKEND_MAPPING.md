@@ -18,6 +18,25 @@ public, but only an authenticated request receives that user's favorite/recommen
 | `/recommendations` | `POST /documents/analyze`, `/recommendations/*` | JWT `sub` |
 | `/lab/$id/email` | `POST /email/draft` | JWT `sub` |
 
+## Frontend_v2 authentication and lab discovery integration (planned)
+
+`frontend_v2` is the Next.js UI selected for the next integration slice. It
+uses server-side route handlers as a BFF: the backend JWT is stored only in an
+HttpOnly same-site cookie, and browser code calls `/api/backend/*` rather than
+the FastAPI origin directly. This keeps the backend origin and bearer token out
+of browser storage.
+
+| Frontend_v2 surface | BFF route | Backend API |
+| --- | --- | --- |
+| Login and sign-up | `POST /api/auth/login`, `POST /api/auth/signup` | `POST /auth/login`, `POST /auth/signup` |
+| Sign-out | `POST /api/auth/logout` | Clears local session cookie only |
+| Professor search | `GET /api/backend/labs` | `GET /labs` |
+| Professor detail | `GET /api/backend/labs/{id}` | `GET /labs/{id}` |
+| Saved professors | `GET`, `PUT`, `DELETE /api/backend/me/favorites/*` | `/me/favorites/*` |
+
+The existing owner-cookie `/api/profile`, CV, calendar, and contact draft
+flows remain separate until their API contracts are migrated in later slices.
+
 ## 현재 라우트와 필요한 API
 
 | 화면 | 현재 데이터·상태 | MVP에서 바로 구현할 API | 해커톤 이후 구현 또는 확장 |
