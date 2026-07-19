@@ -10,6 +10,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
+    "test:e2e:release": "PLAYWRIGHT_RELEASE_SMOKE=1 playwright test release-smoke.spec.ts",
     "doctor": "npx react-doctor@latest"
   },
   "dependencies": {

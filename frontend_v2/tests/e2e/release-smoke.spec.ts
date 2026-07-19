@@ -1,0 +1,26 @@
+import { expect, test } from "@playwright/test";
+
+test.describe("release API smoke", () => {
+  test.skip(process.env["PLAYWRIGHT_RELEASE_SMOKE"] !== "1", "requires the isolated release-smoke backend database");
+  test("new applicant completes the supported API-backed workflow", async ({ page }) => {
+    const email = `release-smoke-${Date.now()}@example.test`;
+    await page.goto("/login");
+    await page.getByRole("button", { name: "New here? Create an account" }).click();
+    await page.getByLabel("Name").fill("Release Smoke"); await page.getByLabel("Email").fill(email);
+    await page.getByLabel("Password").fill("release-smoke-password");
+    await page.getByRole("button", { name: "Create account" }).click(); await expect(page).toHaveURL(/\/onboarding$/);
+    await page.evaluate(() => { localStorage.setItem("ddaksaewoo:demo-session", "signed-in"); localStorage.setItem("ddaksaewoo:demo-onboarding", "complete"); });
+    await page.goto("/cv");
+    await page.getByLabel("Select CV file").setInputFiles({ name: "release-smoke.txt", mimeType: "text/plain", buffer: Buffer.from("Computer vision, machine learning, robotics, Python research project.") });
+    await page.getByRole("button", { name: "Upload and analyze" }).click(); await expect(page.getByText("CV uploaded and analyzed successfully.")).toBeVisible();
+    await page.goto("/professors"); await page.getByRole("button", { name: "Match with my CV" }).click();
+    await expect(page.getByRole("heading", { name: "Recommendations" })).toBeVisible();
+    const firstLab = page.getByRole("link", { name: "View details" }).first(); await expect(firstLab).toBeVisible(); await firstLab.click();
+    await page.getByRole("button", { name: "Save lab" }).click(); await expect(page.getByText("Saved lab.")).toBeVisible(); await page.reload();
+    await expect(page.getByRole("button", { name: "Remove saved lab" })).toBeVisible();
+    await page.getByRole("link", { name: "Create contact email draft" }).click(); await expect(page.getByRole("heading", { name: "Outreach email draft" })).toBeVisible();
+    await page.goto("/calendar"); await page.getByPlaceholder("Event title").fill("Release smoke reminder"); await page.locator('input[name="date"]').fill("2026-12-01"); await page.getByRole("button", { name: "Add event" }).click(); await expect(page.getByText("Release smoke reminder")).toBeVisible();
+    const ics = await page.request.get("/api/backend/admissions/export.ics"); expect(ics.ok()).toBeTruthy(); expect(ics.headers()["content-disposition"]).toContain("admissions-calendar.ics");
+    await page.getByRole("button", { name: "Sign out" }).click(); await page.goto("/cv"); await expect(page).toHaveURL(/\/login$/);
+  });
+});

@@ -20,7 +20,8 @@ export default defineConfig({
     env: {
       OWNER_SESSION_SECRET: "playwright-owner-secret-at-least-16",
       NEXT_PUBLIC_DISABLE_REACT_DEVTOOLS: "1",
-      PROFILE_DATA_FILE: ".data/playwright-profile-records.json"
+      PROFILE_DATA_FILE: ".data/playwright-profile-records.json",
+      BACKEND_API_ORIGIN: process.env["BACKEND_API_ORIGIN"] ?? "http://127.0.0.1:8000"
     }
   }
 });
