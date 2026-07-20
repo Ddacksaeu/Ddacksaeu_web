@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { CvRecommendations } from "../recommendations/cv-recommendations";
 import type { DocumentAnalysis } from "./document-analysis";
-import { analyzeDocument, getDocumentHistory, getLatestDocumentAnalysis, validateDocumentFile, type DocumentApiError } from "./documents-api";
+import { analyzeDocument, DocumentApiError, getDocumentHistory, getLatestDocumentAnalysis, validateDocumentFile } from "./documents-api";
 import { CvAnalysisResult } from "./cv-analysis-result";
 
 function formatSize(size: number): string { return `${Math.max(1, Math.ceil(size / 1024))} KB`; }
@@ -22,10 +22,11 @@ export function CvAnalysisPanel() {
     void Promise.all([getLatestDocumentAnalysis(), getDocumentHistory()]).then(([latest, items]) => {
       if (!active) return;
       setAnalysis(latest); setHistory(items); setState("idle");
-    }).catch((error: DocumentApiError) => {
+    }).catch((error: unknown) => {
       if (!active) return;
-      setState(error.status === 401 || error.status === 403 ? "unauthenticated" : "error");
-      setMessage(error.message);
+      const apiError = error instanceof DocumentApiError ? error : new DocumentApiError(0, "Could not connect to the server. Check that the backend is running.");
+      setState(apiError.status === 401 || apiError.status === 403 ? "unauthenticated" : "error");
+      setMessage(apiError.message);
     });
     return () => { active = false; };
   }, []);
@@ -48,7 +49,7 @@ export function CvAnalysisPanel() {
       if (input.current !== null) input.current.value = "";
       setState("idle");
     } catch (error) {
-      const apiError = error as DocumentApiError;
+      const apiError = error instanceof DocumentApiError ? error : new DocumentApiError(0, "Could not connect to the server. Check that the backend is running.");
       setState(apiError.status === 401 || apiError.status === 403 ? "unauthenticated" : "error"); setMessage(apiError.message);
     }
   }
@@ -64,6 +65,6 @@ export function CvAnalysisPanel() {
     {state === "idle" && message && <p className="form-status" aria-live="polite">{message}</p>}
     {analysis === null && state === "idle" && <div className="profile-dashboard-empty"><strong>No analyzed CV yet</strong><p>Upload a CV to view its local rule-based analysis.</p></div>}
     {analysis !== null && <><CvAnalysisResult analysis={analysis} /><CvRecommendations analysisId={analysis.analysis_id} /></>}
-    {history.length > 1 && <section className="cv-history" aria-labelledby="cv-history-title"><h3 id="cv-history-title">Recent analyses</h3><ul>{history.map((item) => <li key={item.analysis_id}><strong>{item.original_filename ?? "Untitled CV"}</strong><span>{item.file_type ?? "Unknown format"} · {item.analyzer_origin}</span></li>)}</ul></section>}
+    {history.length > 1 && <section className="cv-history" aria-labelledby="cv-history-title"><h3 id="cv-history-title">Recent analyses</h3><ul>{history.map((item) => <li key={item.analysis_id}><button aria-pressed={item.analysis_id === analysis?.analysis_id} onClick={() => setAnalysis(item)} type="button"><strong>{item.original_filename ?? "Untitled CV"}</strong><span>{item.file_type ?? "Unknown format"} · {item.analyzer_origin}</span></button></li>)}</ul></section>}
   </section>;
 }

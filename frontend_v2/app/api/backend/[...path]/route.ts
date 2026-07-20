@@ -11,7 +11,15 @@ async function proxy(request: Request, { params }: Context): Promise<Response> {
   if (contentType) headers.set("Content-Type", contentType);
   const init: RequestInit = { method: request.method, headers, cache: "no-store" };
   if (request.method !== "GET" && request.method !== "HEAD") init.body = await request.arrayBuffer();
-  const upstream = await fetch(target, init);
+  let upstream: Response;
+  try {
+    upstream = await fetch(target, init);
+  } catch {
+    return Response.json(
+      { error: { code: "backend_unavailable", message: "Backend service is unavailable" } },
+      { status: 503 },
+    );
+  }
   if (upstream.status === 204 || upstream.status === 304) {
     return new Response(null, { status: upstream.status });
   }

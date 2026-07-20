@@ -55,6 +55,21 @@ into an empty result.
 | ICS export | `/api/backend/admissions/export.ics` | `GET /admissions/export.ics` | BFF preserves calendar content type and download disposition. |
 | Contact draft | `/api/backend/email/draft` | `POST /email/draft` | Generates an editable draft only; it never sends email. |
 
+## Frontend_v2 integration failure contract (2026-07-20)
+
+All browser requests for FastAPI resources continue to use the same-origin
+`/api/backend/*` BFF.  The BFF forwards the HttpOnly session cookie as a
+Bearer token and preserves the upstream status and JSON body.  If it cannot
+reach FastAPI at all, it returns a safe `503` response with
+`error.code=backend_unavailable`; it does not turn an upstream `401`, `404`,
+`422`, or `500` into a network error.
+
+| Frontend_v2 surface | BFF route | Empty state | Error handling |
+| --- | --- | --- | --- |
+| CV latest and history | `GET /api/backend/documents/latest`, `GET /api/backend/documents` | `404` from `latest` means no analyzed CV and keeps `/cv` usable | `401` prompts sign-in; `503` states that the backend is unavailable; `500` states that processing failed. |
+| CV upload | `POST /api/backend/documents/analyze` | N/A | Client-side and FastAPI validation agree on PDF/DOCX/TXT and 10 MiB; `413`, `415`, and `422` have distinct messages. |
+| Profile workspace | `/api/backend/me/profile`, favorites, calendar, and latest CV | An empty CV is not a profile failure | The profile request is required; optional empty CV data is handled independently. |
+
 ## 현재 라우트와 필요한 API
 
 | 화면 | 현재 데이터·상태 | MVP에서 바로 구현할 API | 해커톤 이후 구현 또는 확장 |

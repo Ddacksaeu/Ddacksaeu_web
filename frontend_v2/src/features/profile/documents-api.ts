@@ -3,7 +3,12 @@ import { documentAnalysisSchema, type DocumentAnalysis } from "./document-analys
 export const MAX_DOCUMENT_BYTES = 10 * 1024 * 1024;
 const ALLOWED_EXTENSIONS = new Set(["pdf", "docx", "txt"]);
 
-export type DocumentApiError = Readonly<{ status: number; message: string }>;
+export class DocumentApiError extends Error {
+  constructor(readonly status: number, message: string) {
+    super(message);
+    this.name = "DocumentApiError";
+  }
+}
 
 function extensionOf(file: File): string {
   return file.name.split(".").pop()?.toLowerCase() ?? "";
@@ -17,12 +22,16 @@ export function validateDocumentFile(file: File): string | null {
 }
 
 function userMessage(status: number, code?: string): string {
-  if (status === 401 || status === 403) return "Your login has expired. Please sign in again.";
-  if (code === "invalid_file_type") return "Only PDF, DOCX, and TXT files can be uploaded.";
-  if (code === "file_too_large") return "The selected file exceeds the allowed upload size.";
+  if (status === 0 || code === "backend_unavailable") return "Could not connect to the server. Check that the backend is running.";
+  if (status === 401) return "Your session has expired. Please sign in again.";
+  if (status === 403) return "You do not have permission to access this CV.";
+  if (status === 404) return "The requested CV analysis could not be found.";
+  if (status === 413 || code === "file_too_large") return "The selected file exceeds the 10 MB limit.";
+  if (status === 415 || code === "invalid_file_type") return "Please upload a PDF, DOCX, or TXT file.";
   if (code === "empty_file") return "The selected file is empty.";
   if (code === "pdf_text_extraction_failed" || code === "insufficient_text") return "Text could not be extracted from this PDF. OCR is not available; please use a text-based PDF, DOCX, or TXT file.";
-  if (status >= 500) return "Could not connect to the server. Please try again shortly.";
+  if (status === 422) return "The CV request is invalid. Please check the selected file and try again.";
+  if (status >= 500) return "The server could not process this request.";
   return "The CV could not be analyzed. Please check the file and try again.";
 }
 
@@ -30,7 +39,7 @@ async function request(path: string, init?: RequestInit): Promise<Response> {
   try {
     return await fetch(`/api/backend/documents${path}`, { ...init, cache: "no-store" });
   } catch {
-    throw { status: 0, message: "Could not connect to the server. Please try again shortly." } satisfies DocumentApiError;
+    throw new DocumentApiError(0, userMessage(0));
   }
 }
 
@@ -43,7 +52,7 @@ async function throwForError(response: Response): Promise<never> {
       if (typeof error === "object" && error !== null && "code" in error && typeof error.code === "string") code = error.code;
     }
   } catch { /* Preserve a safe, user-facing error below. */ }
-  throw { status: response.status, message: userMessage(response.status, code) } satisfies DocumentApiError;
+  throw new DocumentApiError(response.status, userMessage(response.status, code));
 }
 
 async function parseAnalysis(response: Response): Promise<DocumentAnalysis> {

@@ -44,8 +44,10 @@ export function ProfileWorkspace() {
   const [savingTargetId, setSavingTargetId] = useState<string | null>(null);
   const [status, setStatus] = useState("");
   const [loadState, setLoadState] = useState<LoadState>("loading");
+  const [loadError, setLoadError] = useState("");
 
   async function loadWorkspace(): Promise<void> {
+    setLoadState("loading"); setLoadError("");
     try {
       const [profile, favorites, events, analysis] = await Promise.all([
         getProfile(), getFavorites(), getEvents(),
@@ -60,6 +62,7 @@ export function ProfileWorkspace() {
       setLoadState("ready");
     } catch (error) {
       setLoadState(error instanceof WorkspaceApiError && error.status === 401 ? "unauthorized" : "error");
+      setLoadError(error instanceof WorkspaceApiError ? error.message : "Could not connect to the server. Check that the backend is running.");
     }
   }
 
@@ -117,7 +120,7 @@ export function ProfileWorkspace() {
     return <div className="profile-layout"><section className="profile-intro"><p className="kicker">MY RESEARCH PROFILE</p><h1>Log in to view your profile</h1><p>Your backend session has expired.</p><Link className="primary-button" href="/login">Log in</Link></section></div>;
   }
   if (loadState === "error" || data === null) {
-    return <div className="profile-layout"><section className="profile-intro"><p className="kicker">MY RESEARCH PROFILE</p><h1>Profile unavailable</h1><p>Could not load profile data from the backend.</p><button className="secondary-button" onClick={() => void loadWorkspace()} type="button">Try again</button></section></div>;
+    return <div className="profile-layout"><section className="profile-intro"><p className="kicker">MY RESEARCH PROFILE</p><h1>Profile unavailable</h1><p>{loadError || "Could not load profile data from the backend."}</p><button className="secondary-button" onClick={() => void loadWorkspace()} type="button">Try again</button></section></div>;
   }
   if (data.profile !== null && !editing) {
     return <ProfileDashboard data={{ ...data, profile: data.profile }} onEdit={() => setEditing(true)} onToggleTarget={toggleTarget} savedLabs={savedLabs} savingTargetId={savingTargetId} status={status} />;

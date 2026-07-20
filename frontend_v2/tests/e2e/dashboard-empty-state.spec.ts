@@ -7,10 +7,10 @@ async function mockEmptyDashboard(page: Page): Promise<void> {
     await route.fulfill({
       json: {
         name: "New Researcher",
-        affiliation: "",
+        affiliation: "POSTECH",
         status: "",
         program: "",
-        interests: [],
+        interests: ["Machine learning"],
         skills: [],
         methodologies: [],
         projects: [],
@@ -46,6 +46,8 @@ test("Given a new account without a CV, when the dashboard loads, then it shows 
   // Then
   await expect(page.getByRole("heading", { name: "Home" })).toBeVisible();
   await expect(page.getByText("No recommendations yet. Analyze a CV to create personalized matches.")).toBeVisible();
-  await expect(page.getByRole("region", { name: "Application setup" })).toContainText("Profile ready - Next: add a CV");
+  const setupLink = page.getByRole("link", { name: "Application setup: 40% ready. Next: upload cv" });
+  await expect(setupLink).toHaveAttribute("href", "/cv");
+  await expect(page.getByRole("link", { name: "Upload CV", exact: true })).toHaveAttribute("href", "/cv");
   await expect(page.getByText("Could not load dashboard data.")).toHaveCount(0);
 });

@@ -3548,7 +3548,10 @@ button.calendar-day:focus-visible,
 .cv-evidence strong { color: var(--blue-dark); }
 .cv-history { margin-top: 20px; }
 .cv-history ul { display: grid; gap: 8px; margin: 10px 0 0; padding: 0; list-style: none; }
-.cv-history li { display: flex; justify-content: space-between; gap: 12px; padding: 12px; border-radius: 10px; background: var(--soft); font-size: 13px; }
+.cv-history li { border-radius: 10px; background: var(--soft); font-size: 13px; }
+.cv-history li button { display: flex; width: 100%; min-height: 48px; align-items: center; justify-content: space-between; gap: 12px; padding: 12px; border: 0; border-radius: inherit; color: inherit; background: transparent; font: inherit; text-align: left; cursor: pointer; }
+.cv-history li button:hover, .cv-history li button[aria-pressed="true"] { background: var(--blue-soft); }
+.cv-history li button:focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 2px; }
 .cv-history span { color: var(--muted); font-size: 12px; }
 @media (max-width: 560px) {
   .cv-analysis-panel, .cv-analysis-result { padding: 20px; }
