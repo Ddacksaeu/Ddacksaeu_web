@@ -244,6 +244,16 @@ their text does not leak into the preceding section. Skills and research terms
 are prioritized when they appear in explicit Skills, Interests, Research, or
 Projects sections.
 
+PDF extraction may place an entry title, organization, dates, location, and
+bullets on separate lines. The local analyzer therefore treats `WORK` as a
+standard work heading and detects a new work/project entry after an existing
+bullet block, while preserving wrapped bullet continuations. This prevents
+multiple positions or projects from being merged simply because the source CV
+does not use pipe-separated headings. Category feedback returns a separate
+`strengths` list in addition to gaps and suggested changes, so the frontend can
+explain why detected skills, outcomes, GPA, honors, and scholarships help the
+candidate instead of only reporting an item count.
+
 The local email draft service reads the authenticated user's latest structured
 CV analysis and the selected lab's stored public data. It selects a recent
 publication with the strongest lexical overlap, references the lab homepage

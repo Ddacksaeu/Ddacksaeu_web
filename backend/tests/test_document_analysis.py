@@ -119,6 +119,69 @@ Python, PyTorch, FastAPI, PostgreSQL, Computer Vision
     assert "FastAPI" in first.skills
 
 
+def test_pdf_style_separate_lines_keep_work_and_projects_distinct() -> None:
+    text = """WORK
+Computer Vision Research Intern
+POSTECH(Pohang University of Science and Technology)
+•Designed and implemented an OpenCV-based computer vision pipeline for
+automated defect detection in printed structures.
+06/2026 – 08/2026
+Pohang, South Korea
+•Optimized defect detection and reduced false positives.
+Part-time employee
+OXPC
+•Diagnosed PC, software, and network issues.
+10/2024 – 08/2025
+Busan, South Korea
+•Performed system maintenance and troubleshooting.
+EDUCATION
+Bachelor of Science in Computer Science
+University of Massachusetts Amherst
+•GPA: 4/4
+05/2029
+Amherst, MA
+•Chancellor's Award Scholarship ($16,000/year)
+•Dean's List — Fall 2025, Spring 2026
+SKILLS
+Python | C++ | JavaScript | OpenCV | FastAPI | React
+PROJECTS
+AI Application Development
+OpenAI Build Week Hackathon
+•Developed an AI-powered email generation tool using Python and FastAPI.
+07/2026 – 07/2026
+•Built a CV analysis system with structured information extraction.
+Hackathon-Hack(Her)
+University of Massachusetts Amherst
+•Developed a real-time safety monitoring application using Python and JavaScript.
+02/2026
+•Implemented automated emergency email alerts.
+"""
+
+    analysis = service.analyze_document_text(text)
+
+    assert [item.title for item in analysis.work_experience] == [
+        "Computer Vision Research Intern",
+        "Part-time employee",
+    ]
+    assert [item.organization for item in analysis.work_experience] == [
+        "POSTECH(Pohang University of Science and Technology)",
+        "OXPC",
+    ]
+    assert [item.name for item in analysis.projects] == [
+        "AI Application Development",
+        "Hackathon-Hack(Her)",
+    ]
+    assert analysis.projects[1].organization == "University of Massachusetts Amherst"
+    assert analysis.education[0].institution == "University of Massachusetts Amherst"
+    assert analysis.education[0].location == "Amherst, MA"
+    assert analysis.education[0].end_date == "05/2029"
+    feedback = {item.category: item for item in analysis.category_feedback}
+    assert feedback["Work experience"].strengths
+    assert any("measurable impact" in item for item in feedback["Work experience"].improvements)
+    assert "2 distinct projects" in feedback["Projects and outcomes"].strengths[0]
+    assert any("4/4 GPA" in item for item in feedback["Education"].strengths)
+
+
 def test_latest_analysis_is_authenticated_and_user_isolated(
     client: TestClient, monkeypatch
 ) -> None:
