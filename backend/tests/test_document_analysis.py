@@ -60,7 +60,7 @@ def test_analyze_pdf_persists_supported_fields_and_returns_structured_result(
 
     assert response.status_code == 201
     payload = response.json()
-    assert payload["education"] == ["B.S. in Computer Science"]
+    assert payload["education"][0]["degree"] == "B.S. in Computer Science"
     assert payload["keyword_weights"] == {"computer vision": 0.9, "pytorch": 0.7}
     with session_factory() as session:
         document = session.scalar(select(UploadedDocument))
@@ -72,7 +72,7 @@ def test_analyze_pdf_persists_supported_fields_and_returns_structured_result(
     assert (tmp_path / "private-uploads" / document.storage_key).is_file()
 
 
-def test_rejects_scanned_pdf_before_openai_call(client: TestClient, monkeypatch) -> None:
+def test_rejects_scanned_pdf_before_local_analysis(client: TestClient, monkeypatch) -> None:
     monkeypatch.setattr(
         "app.api.v1.documents.extract_pdf_text",
         lambda *_: (_ for _ in ()).throw(
@@ -87,7 +87,23 @@ def test_rejects_scanned_pdf_before_openai_call(client: TestClient, monkeypatch)
 
 
 def test_local_analysis_is_deterministic_without_api_key() -> None:
-    text = "B.S. Computer Science\nResearch project: Computer Vision with Python and PyTorch"
+    text = """Education
+B.S. Computer Science | Example University | 2022 - 2026
+Research Experience
+Vision Research Assistant | Example Lab | 2025 - Present
+- Trained a PyTorch object detection model on 10,000 images
+Projects
+Campus Vision Project | 2025
+- Built a Computer Vision prototype with Python and PyTorch
+Work Experience
+Software Engineering Intern | Example Company | 2024 - 2025
+- Implemented a FastAPI service with PostgreSQL
+Campus & Community Involvement
+Robotics Club Mentor | Example University | 2023 - Present
+- Mentored 20 students and organized weekly workshops
+Skills
+Python, PyTorch, FastAPI, PostgreSQL, Computer Vision
+"""
     first = service.analyze_document_text(text)
     second = service.analyze_document_text(text)
 
@@ -95,6 +111,75 @@ def test_local_analysis_is_deterministic_without_api_key() -> None:
     assert "Python" in first.skills
     assert "Computer Vision" in first.research_interests
     assert first.keywords
+    assert first.education[0].institution == "Example University"
+    assert first.research_experience[0].details
+    assert first.projects[0].name == "Campus Vision Project"
+    assert first.work_experience[0].title == "Software Engineering Intern"
+    assert first.campus_community_involvement[0].title == "Robotics Club Mentor"
+    assert "FastAPI" in first.skills
+
+
+def test_pdf_style_separate_lines_keep_work_and_projects_distinct() -> None:
+    text = """WORK
+Computer Vision Research Intern
+POSTECH(Pohang University of Science and Technology)
+•Designed and implemented an OpenCV-based computer vision pipeline for
+automated defect detection in printed structures.
+06/2026 – 08/2026
+Pohang, South Korea
+•Optimized defect detection and reduced false positives.
+Part-time employee
+OXPC
+•Diagnosed PC, software, and network issues.
+10/2024 – 08/2025
+Busan, South Korea
+•Performed system maintenance and troubleshooting.
+EDUCATION
+Bachelor of Science in Computer Science
+University of Massachusetts Amherst
+•GPA: 4/4
+05/2029
+Amherst, MA
+•Chancellor's Award Scholarship ($16,000/year)
+•Dean's List — Fall 2025, Spring 2026
+SKILLS
+Python | C++ | JavaScript | OpenCV | FastAPI | React
+PROJECTS
+AI Application Development
+OpenAI Build Week Hackathon
+•Developed an AI-powered email generation tool using Python and FastAPI.
+07/2026 – 07/2026
+•Built a CV analysis system with structured information extraction.
+Hackathon-Hack(Her)
+University of Massachusetts Amherst
+•Developed a real-time safety monitoring application using Python and JavaScript.
+02/2026
+•Implemented automated emergency email alerts.
+"""
+
+    analysis = service.analyze_document_text(text)
+
+    assert [item.title for item in analysis.work_experience] == [
+        "Computer Vision Research Intern",
+        "Part-time employee",
+    ]
+    assert [item.organization for item in analysis.work_experience] == [
+        "POSTECH(Pohang University of Science and Technology)",
+        "OXPC",
+    ]
+    assert [item.name for item in analysis.projects] == [
+        "AI Application Development",
+        "Hackathon-Hack(Her)",
+    ]
+    assert analysis.projects[1].organization == "University of Massachusetts Amherst"
+    assert analysis.education[0].institution == "University of Massachusetts Amherst"
+    assert analysis.education[0].location == "Amherst, MA"
+    assert analysis.education[0].end_date == "05/2029"
+    feedback = {item.category: item for item in analysis.category_feedback}
+    assert feedback["Work experience"].strengths
+    assert any("measurable impact" in item for item in feedback["Work experience"].improvements)
+    assert "2 distinct projects" in feedback["Projects and outcomes"].strengths[0]
+    assert any("4/4 GPA" in item for item in feedback["Education"].strengths)
 
 
 def test_latest_analysis_is_authenticated_and_user_isolated(
