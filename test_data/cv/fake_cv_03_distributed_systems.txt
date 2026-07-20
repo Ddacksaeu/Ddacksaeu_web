@@ -1,0 +1,49 @@
+FICTIONAL TEST CV - ALL DETAILS ARE FABRICATED
+
+HYUNWOO LEE
+Distributed Systems and Database Research Candidate
+hyunwoo.lee@example.com | Busan, Republic of Korea | github.com/example-hyunwoo
+
+SUMMARY
+Computer engineering undergraduate interested in distributed databases, cloud systems, operating systems, and performance engineering. Strong preference for systems research over computer vision or natural language processing.
+
+EDUCATION
+B.S. in Computer Engineering, Daehan Institute of Technology (fictional)
+March 2022 - February 2027 (expected)
+GPA: 3.88 / 4.50
+Relevant coursework: Operating Systems, Databases, Computer Networks, Computer Architecture, Algorithms, System Programming
+
+RESEARCH INTERESTS
+- Distributed transactions and replication
+- Database query optimization
+- Storage engines and indexing
+- Cloud-native systems and observability
+- Reliable backend infrastructure
+
+EXPERIENCE
+Backend Engineering Intern, CloudStack Labs (fictional), June 2025 - August 2025
+- Implemented a task queue service with retry, idempotency keys, and dead-letter handling.
+- Added PostgreSQL indexes after analyzing EXPLAIN plans, reducing median API latency from 420 ms to 135 ms in a synthetic benchmark.
+- Built Grafana dashboards for request latency, error rate, queue depth, and database connection usage.
+
+Undergraduate Systems Project, September 2025 - December 2025
+- Developed a small key-value storage engine in C++ with a write-ahead log and SSTable-like immutable files.
+- Implemented crash recovery tests and compared sequential-write throughput under different buffer sizes.
+- Wrote a report on consistency, durability, compaction tradeoffs, and benchmark limitations.
+
+SELECTED PROJECTS
+Mini Distributed Cache
+- Created a three-node cache prototype using consistent hashing and replicated writes.
+- Simulated node failure and measured recovery behavior and stale-read frequency.
+
+Course Registration Database
+- Designed a normalized relational schema and transaction logic for enrollment limits and waitlists.
+- Added concurrency tests for simultaneous registration attempts.
+
+TECHNICAL SKILLS
+Languages: C, C++, Python, Java, SQL, Bash
+Systems: Linux, Git, Docker, PostgreSQL, Redis, Nginx, Prometheus, Grafana
+Concepts: concurrency, synchronization, TCP/IP, transactions, indexing, caching, fault tolerance
+
+RESEARCH GOAL
+I want to study how data-intensive services remain fast and correct under failures, concurrent workloads, and changing traffic patterns.
