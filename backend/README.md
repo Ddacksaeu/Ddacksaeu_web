@@ -52,6 +52,7 @@ Compose may use an untracked local `.env` for its own variable interpolation.
 alembic upgrade head
 
 # Insert clearly fictional, idempotent fixture records after migration.
+# Use this only for isolated tests or UI development without crawler data.
 python -m scripts.seed
 
 # Inspect the POSTECH crawler output without changing the database.

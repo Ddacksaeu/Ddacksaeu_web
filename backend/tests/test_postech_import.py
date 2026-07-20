@@ -6,7 +6,12 @@ from pathlib import Path
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session, sessionmaker
 
-from app.importers.postech import import_postech, normalize_labs, validate_lab
+from app.importers.postech import (
+    import_postech,
+    normalize_labs,
+    research_outputs_path,
+    validate_lab,
+)
 from app.models import Lab, Paper, Professor
 from app.repositories.documents import create_completed_analysis, create_uploaded_document
 from app.schemas.documents import StructuredDocumentAnalysis
@@ -155,6 +160,26 @@ def test_dry_run_does_not_write(session_factory: sessionmaker[Session], tmp_path
         report = import_postech(session, _dataset(tmp_path), dry_run=True)
         assert report.created["labs"] == 2
         assert session.scalar(select(func.count()).select_from(Lab)) == 0
+
+
+def test_import_prefers_the_crawler_cleaned_research_output_export(
+    session_factory: sessionmaker[Session], tmp_path: Path
+) -> None:
+    data_dir = _dataset(tmp_path)
+    cleaned = data_dir / "research_outputs_clean.csv"
+    cleaned.write_text(
+        "output_id,lab_id,output_type,title,year,venue_or_organization,identifier,url,source_url,crawled_at\n"
+        "OUT_CLEAN,LAB_REAL,publication,Clean crawler publication,2026,Venue,doi-clean,https://doi.org/clean,https://postech.ac.kr/source,2026-07-20T12:00:00+09:00\n",
+        encoding="utf-8",
+    )
+    assert research_outputs_path(data_dir) == cleaned
+
+    with session_factory() as session:
+        import_postech(session, data_dir)
+        session.commit()
+        papers = session.scalars(select(Paper)).all()
+
+    assert [paper.title for paper in papers] == ["Clean crawler publication"]
 
 
 def test_imported_data_reaches_search_detail_similar_and_recommendation_apis(

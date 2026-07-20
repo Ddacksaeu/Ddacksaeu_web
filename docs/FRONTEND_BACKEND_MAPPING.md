@@ -177,7 +177,8 @@ records inserted by the development seed are explicitly fictional fixtures.
 `researcher_id -> professors.id`, `department_id -> departments.id`, and
 `lab_id -> labs.id`. `research_summary`, `primary_field`, and semicolon-delimited
 `keywords` populate the existing search/recommendation fields. The importer maps
-`research_outputs.csv` only to `papers` because the current recommendation service
+the validated `research_outputs_clean.csv` to `papers` when it is present (falling
+back to `research_outputs.csv` for older crawler exports), because the current recommendation service
 uses paper title, abstract/summary, and keyword text; source outputs are attached by
 `lab_id`. Every imported lab and paper carries `source_url`, checked/crawled time,
 `source_type=postech_csv`, an `import_batch_id`, and `validation_status=valid`.
@@ -203,11 +204,11 @@ Results accept `sort=score|recent`, `page`, and `page_size`, and return
 the same list fields plus provenance-backed facts and papers. This is a
 backend-only implementation; no frontend files are changed.
 
-## Search and detail frontend integration (in progress, 2026-07-18)
+## Historical search and detail integration (superseded, 2026-07-18)
 
-This integration replaces only the research-lab explorer and detail-page mock
-lookups. Profile, favorites, calendar, recommendations, and email state remain
-separate work items, so their local UI state is not treated as persisted data.
+This historical note describes the earlier frontend integration. It is not the
+current `frontend_v2` contract; the active Next.js BFF-based integration is
+documented in the dated sections below.
 
 | Frontend concern | API contract used in this task | Rendering rule |
 | --- | --- | --- |
@@ -217,22 +218,16 @@ separate work items, so their local UI state is not treated as persisted data.
 | Match score | Nullable `recommendationScore` on a lab response | The UI shows a score only when the API supplied a persisted value. It never derives a score from fixture data. |
 | Provenance | `sourceUrl`, `sourceCheckedAt`, fact and paper provenance | Fixture origins and verification timestamps remain visible to the user. |
 
-The frontend uses `VITE_API_BASE_URL` (default
-`http://127.0.0.1:8000/api/v1`) for this public API location. No server secret
-or OpenAI key is exposed to the browser.
+The `VITE_API_BASE_URL` note applied to the earlier frontend only. The active
+application uses same-origin `/api/backend/*` routes and keeps server-only
+configuration out of browser code.
 
-## Document-analysis API (2026-07-18)
+## Historical document-analysis API (superseded, 2026-07-18)
 
-The current frontend remains unchanged and has no live upload integration.
-The backend now exposes `POST /api/v1/documents/analyze` as
-`multipart/form-data` with required `user_id` and `file` fields. It accepts a
-PDF CV or portfolio up to 10 MiB, rejects non-PDF, empty, scanned/no-text, and
-text-insufficient files, keeps the original in a private server directory, and
-returns a Pydantic-validated structured analysis. `OPENAI_API_KEY` and the
-analysis prompt remain server-only. The existing schema stores the uploaded
-document plus keywords, skills, research interests (as methodologies), and
-projects; a later migration is required to persist every additional returned
-analysis field for retrieval.
+This historical API description predates the current local CV flow. It should
+not be used as the active contract: `frontend_v2` now uploads PDF, DOCX, or TXT
+through `/api/backend/documents/analyze`, and the server uses deterministic
+local analysis without an OpenAI API key.
 
 ## Local CV structure, lab matching, and email review (2026-07-20)
 
@@ -277,10 +272,11 @@ The response exposes the publication, homepage, and CV evidence used in
 `personalizationNotes`; it never infers personality or claims that are absent
 from sourced lab data.
 
-## CV analysis and recommendation frontend integration (in progress, 2026-07-18)
+## Historical CV and recommendation integration (superseded, 2026-07-18)
 
-The recommendation screen uses the MVP `demo-user` context until authentication
-is introduced. Its browser workflow is synchronous and has no mock fallback:
+This historical note describes the pre-authentication `demo-user` workflow.
+The active flow uses authenticated server-side ownership and the current BFF
+routes documented above:
 
 1. Upload one text-based PDF (maximum 10 MiB) to
    `POST /api/v1/documents/analyze` using `multipart/form-data` with

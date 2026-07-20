@@ -10,6 +10,30 @@ This repository was developed as a hackathon MVP, but the current version has bo
 
 ---
 
+## Main User Flow
+
+Users search for laboratories, review professors and publication evidence, and
+save promising labs. After signing in, they can upload a CV for local
+rule-based analysis, view explainable recommendations, prepare an outreach
+draft, and organize admission deadlines in a calendar.
+
+## How We Used Codex and GPT-5.6
+
+Codex supported repository analysis, implementation, frontend-backend
+integration, debugging, tests, and documentation. GPT-5.6 was used inside
+Codex for those development activities. The team reviewed and corrected
+AI-assisted changes, ran tests, and made the product and submission decisions.
+
+The shipped product has no direct OpenAI API or GPT-5.6 feature. CV analysis
+uses local document parsing and controlled rules; recommendations use keyword
+normalization, scikit-learn TF-IDF, fixed score weights, and rule-based
+explanations. No CV text is sent to an OpenAI service by these flows.
+
+For the detailed development workflow and representative examples, see
+[`docs/OPENAI_USAGE.md`](docs/OPENAI_USAGE.md).
+
+---
+
 ## Main Features
 
 ### Laboratory Search
