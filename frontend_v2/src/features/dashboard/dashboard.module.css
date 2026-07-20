@@ -55,15 +55,24 @@
 }
 
 .statusStrip {
+  margin-top: 28px;
+  border-radius: 12px;
+  background: var(--soft);
+}
+
+.statusLink {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(180px, 280px) auto;
   gap: 28px;
   align-items: center;
-  margin-top: 28px;
   padding: 18px 20px;
-  border-radius: 12px;
-  background: var(--soft);
+  border-radius: inherit;
+  color: inherit;
+  text-decoration: none;
 }
+
+.statusLink:hover { background: var(--blue-soft); }
+.statusLink:focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 3px; }
 
 .statusCopy {
   display: grid;
@@ -317,11 +326,15 @@
   line-height: 1.45;
 }
 
-.overviewHeading > strong {
+.overviewHeading > strong,
+.overviewHeading > a > strong {
   color: var(--blue-dark);
   font-size: 18px;
   font-variant-numeric: tabular-nums;
 }
+
+.overviewHeading > a { display: inline-flex; align-items: baseline; gap: 10px; min-height: 44px; color: inherit; text-decoration: none; }
+.overviewHeading > a:hover h2 { color: var(--blue-dark); }
 
 .overviewHeading a {
   min-height: 44px;
@@ -343,6 +356,11 @@
   color: var(--text-secondary);
   font-size: 13px;
 }
+
+.checklist li a { display: flex; width: 100%; min-height: 40px; align-items: center; justify-content: space-between; gap: 16px; color: inherit; text-decoration: none; }
+.checklist li a:hover span { color: var(--ink); }
+.checklist li a:focus-visible,
+.deadlineList a:focus-visible { border-radius: 6px; outline: 3px solid var(--focus-ring); outline-offset: 2px; }
 
 .checklist li:last-child {
   border-bottom: 0;
@@ -373,6 +391,9 @@
   gap: 12px;
   align-items: start;
 }
+
+.deadlineList a { display: grid; grid-template-columns: 48px minmax(0, 1fr); gap: 12px; align-items: start; color: inherit; text-decoration: none; }
+.deadlineList a:hover strong { color: var(--blue-dark); }
 
 .deadlineList time {
   color: var(--blue-dark);
@@ -498,9 +519,10 @@
 @media (max-width: 720px) {
 
   .statusStrip {
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: 14px 20px;
+    padding: 0;
   }
+
+  .statusLink { grid-template-columns: minmax(0, 1fr) auto; gap: 14px 20px; }
 
   .progressTrack {
     grid-column: 1;

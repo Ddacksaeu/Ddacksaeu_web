@@ -1431,6 +1431,59 @@ select:not([multiple]):not([size]) {
   border-top: 1px solid #f2f4f6;
   border-right: 1px solid #f2f4f6;
 }
+
+button.calendar-day {
+  width: 100%;
+  min-height: 118px;
+  padding: 12px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+button.calendar-day:hover,
+button.calendar-day:focus-visible,
+button.calendar-day.is-selected {
+  background: var(--blue-soft);
+}
+
+button.calendar-day:focus-visible,
+.calendar-month-actions button:focus-visible,
+.calendar-dialog button:focus-visible,
+.calendar-dialog input:focus-visible,
+.calendar-dialog select:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: -3px;
+}
+
+.calendar-day-outside { color: var(--text-secondary); opacity: .62; }
+.calendar-day.is-today .calendar-day-number { color: var(--blue-dark); text-decoration: underline; text-underline-offset: 4px; }
+.calendar-more-events { display: block; margin-top: 5px; color: var(--blue-dark); font-size: 11px; font-weight: 700; }
+
+.calendar-month-actions { display: flex; align-items: center; gap: 6px; }
+.calendar-month-actions button { min-height: 34px; padding: 0 9px; border: 1px solid var(--line); border-radius: 8px; background: var(--white); color: var(--ink); font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }
+.calendar-month-actions button:hover { border-color: var(--blue); color: var(--blue-dark); }
+.calendar-month-actions span { margin-left: 6px; white-space: nowrap; }
+
+.calendar-dialog-backdrop { position: fixed; z-index: 20; inset: 0; display: grid; place-items: center; padding: 20px; background: rgb(20 28 40 / .45); }
+.calendar-dialog { position: relative; width: min(520px, 100%); max-height: min(720px, calc(100vh - 40px)); overflow: auto; padding: 28px; border-radius: 16px; background: var(--white); box-shadow: 0 24px 72px rgb(20 28 40 / .25); }
+.calendar-dialog > p { margin: 0; color: var(--text-secondary); font-size: 13px; }
+.calendar-dialog h2 { margin: 5px 0 20px; font-size: 24px; }
+.calendar-dialog-close { position: absolute; top: 16px; right: 16px; width: 36px; height: 36px; border: 0; border-radius: 50%; background: var(--soft); color: var(--ink); font-size: 24px; cursor: pointer; }
+.calendar-dialog-events { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.calendar-dialog-events li { padding: 14px; border-radius: 10px; background: var(--soft); }
+.calendar-dialog-events strong, .calendar-dialog-events span { display: block; }
+.calendar-dialog-events span, .calendar-dialog-events p { margin: 4px 0 0; color: var(--text-secondary); font-size: 12px; line-height: 1.5; }
+.calendar-dialog-events li div { display: flex; gap: 8px; margin-top: 10px; }
+.calendar-dialog-events button { min-height: 32px; padding: 0 9px; border: 1px solid var(--line); border-radius: 7px; background: var(--white); color: var(--blue-dark); font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }
+.calendar-dialog-form { display: grid; gap: 10px; margin-top: 22px; padding-top: 20px; border-top: 1px solid var(--line); }
+.calendar-dialog-form h3 { margin: 0 0 2px; font-size: 16px; }
+.calendar-dialog-form label { display: grid; gap: 5px; color: var(--text-secondary); font-size: 12px; font-weight: 700; }
+.calendar-dialog-form input, .calendar-dialog-form select { width: 100%; min-height: 42px; box-sizing: border-box; padding: 0 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--white); color: var(--ink); font: inherit; }
+.calendar-dialog-form > button { min-height: 42px; border: 0; border-radius: 8px; background: var(--blue); color: var(--white); font: inherit; font-weight: 700; cursor: pointer; }
 .calendar-day:nth-child(7n) {
   border-right: 0;
 }
@@ -3272,6 +3325,14 @@ select:not([multiple]):not([size]) {
   .home-bottom-actions .primary-cta {
     width: 100%;
   }
+}
+
+@media (max-width: 620px) {
+  .calendar-month-heading { align-items: flex-start; gap: 12px; }
+  .calendar-month-actions { flex-wrap: wrap; justify-content: flex-end; }
+  .calendar-month-actions span { width: 100%; text-align: right; }
+  button.calendar-day { min-height: 86px; padding: 8px; }
+  .calendar-day-event { display: none; }
 }
 .profile-saved-list h3 {
   margin: 5px 0 0;
