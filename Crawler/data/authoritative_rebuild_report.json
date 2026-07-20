@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-07-19T23:56:41+09:00",
-  "enricher_version": "0.12.3-provenance-state-repair",
+  "generated_at": "2026-07-20T10:51:33+09:00",
+  "enricher_version": "0.12.4-preservation-first-repair",
   "committed": true,
   "failure_reasons": [],
   "successful_departments": 29,
@@ -9,6 +9,8 @@
   "affiliation_evidence_violations": 0,
   "affiliation_evidence_violation_details": [],
   "foreign_department_page_violations": 0,
+  "legacy_provenance_migrated": 183,
+  "link_regression_repairs": {},
   "departments": [
     {
       "department_id": "DEPT_15F9EAC6D592",
@@ -16,7 +18,7 @@
       "department_type": "department",
       "status": "success",
       "faculty_match_count": "20",
-      "message": "교수/랩 20명 권위 확인; affiliated_programs=14, department_page_url=6, enrichment_source_urls=7, lab_name_eng=3, lab_name_kor=1, lab_url=1, lab_url_status=1, research_summary=1",
+      "message": "교수/랩 20명 권위 확인; affiliated_programs=14, department_page_url=6, enrichment_source_urls=7",
       "faculty_page_urls": [
         "https://cite.postech.ac.kr/",
         "https://cite.postech.ac.kr/bbs/board.php?bo_table=sub2_1_a",
@@ -30,7 +32,7 @@
       "department_type": "department",
       "status": "success",
       "faculty_match_count": "10",
-      "message": "교수/랩 10명 권위 확인; affiliated_programs=4, department_page_url=6, enrichment_source_urls=6, keyword_source=1, keywords=1, research_summary=3",
+      "message": "교수/랩 10명 권위 확인; affiliated_programs=4, department_page_url=6, enrichment_source_urls=6, research_summary=3",
       "faculty_page_urls": [
         "https://me.postech.ac.kr/ko/",
         "https://me.postech.ac.kr/ko/page/member03",
@@ -45,7 +47,7 @@
       "department_type": "department",
       "status": "success",
       "faculty_match_count": "19",
-      "message": "교수/랩 19명 권위 확인; affiliated_programs=5, department_page_url=14, enrichment_source_urls=24, keyword_source=7, keywords=8, lab_name_eng=1, location=4, primary_field=9, research_summary=8",
+      "message": "교수/랩 19명 권위 확인; affiliated_programs=5, department_page_url=14, enrichment_source_urls=24, keyword_source=7, keywords=8, primary_field=9, research_summary=8",
       "faculty_page_urls": [
         "https://ph.postech.ac.kr/physics/index.do",
         "https://ph.postech.ac.kr/physics/member/professor.do",
@@ -71,7 +73,7 @@
       "department_type": "department",
       "status": "success",
       "faculty_match_count": "22",
-      "message": "교수/랩 22명 권위 확인; affiliated_programs=5, department_page_url=17, enrichment_source_urls=26, keyword_source=8, keywords=6, lab_name_eng=1, lab_name_kor=2, lab_url=2, lab_url_status=2, location=3, primary_field=8, recruiting_status=1, research_summary=9",
+      "message": "교수/랩 22명 권위 확인; affiliated_programs=5, department_page_url=17, enrichment_source_urls=26, keyword_source=6, keywords=6, primary_field=8, research_summary=6",
       "faculty_page_urls": [
         "https://ime.postech.ac.kr/ime/index.do",
         "https://ime.postech.ac.kr/ime/people/faculty.do",
@@ -99,7 +101,7 @@
       "department_type": "department",
       "status": "success",
       "faculty_match_count": "23",
-      "message": "교수/랩 23명 권위 확인; affiliated_programs=2, department_page_url=21, enrichment_source_urls=78, keyword_source=4, keywords=5, lab_url=4, lab_url_status=4, location=8, primary_field=4, profile_image_url=5, research_summary=4",
+      "message": "교수/랩 23명 권위 확인; affiliated_programs=2, department_page_url=21, enrichment_source_urls=78, keyword_source=4, keywords=4, lab_url=2, lab_url_status=2, location=6, primary_field=4, profile_image_url=5, research_summary=3",
       "faculty_page_urls": [
         "https://math.postech.ac.kr/bbs/board.php?bo_table=m02_01&page=1",
         "https://math.postech.ac.kr/bbs/board.php?bo_table=m02_01&page=2",
@@ -121,7 +123,7 @@
       "department_type": "department",
       "status": "success",
       "faculty_match_count": "27",
-      "message": "교수/랩 27명 권위 확인; affiliated_programs=6, department_page_url=21, enrichment_source_urls=22, keyword_source=6, keywords=6, lab_name_eng=2, lab_name_kor=1, location=5, research_summary=9",
+      "message": "교수/랩 27명 권위 확인; affiliated_programs=6, department_page_url=21, enrichment_source_urls=22, lab_name_kor=1, research_summary=4",
       "faculty_page_urls": [
         "https://mse.postech.ac.kr/",
         "https://mse.postech.ac.kr/bbs/board.php?bo_table=mse_gallery&wr_id=90",
@@ -135,7 +137,7 @@
       "department_type": "department",
       "status": "success",
       "faculty_match_count": "14",
-      "message": "교수/랩 14명 권위 확인; affiliated_programs=7, keyword_source=2, keywords=2, location=1, research_summary=2, central_profile_identity=7",
+      "message": "교수/랩 14명 권위 확인; affiliated_programs=7, research_summary=1, central_profile_identity=7",
       "faculty_page_urls": [
         "https://ee.postech.ac.kr/faculty-research/adjunct_professor-2/",
         "https://ee.postech.ac.kr/faculty-research/adjunct_professor-2/?professor_type=%EB%85%B8%EC%A4%80%EC%84%9D",
@@ -152,7 +154,7 @@
       "department_type": "department",
       "status": "success",
       "faculty_match_count": "33",
-      "message": "교수/랩 33명 권위 확인; affiliated_programs=15, department_page_url=18, enrichment_source_urls=19, keyword_source=2, keywords=3, lab_name_kor=6, lab_url=6, lab_url_status=6, location=7, primary_field=1, recruiting_status=1, research_summary=3",
+      "message": "교수/랩 33명 권위 확인; affiliated_programs=15, department_page_url=18, enrichment_source_urls=19, keyword_source=1, keywords=2, primary_field=1, research_summary=1",
       "faculty_page_urls": [
         "https://cse.postech.ac.kr/csepostech/index.do",
         "https://cse.postech.ac.kr/csepostech/people/faculty.do"
@@ -164,7 +166,7 @@
       "department_type": "department",
       "status": "success",
       "faculty_match_count": "24",
-      "message": "교수/랩 24명 권위 확인; affiliated_programs=3, department_page_url=21, enrichment_source_urls=29, keyword_source=4, keywords=4, lab_name_eng=1, location=3, primary_field=4, research_summary=5",
+      "message": "교수/랩 24명 권위 확인; affiliated_programs=3, department_page_url=21, enrichment_source_urls=29, keyword_source=3, keywords=4, location=2, primary_field=4, research_summary=3",
       "faculty_page_urls": [
         "https://ce.postech.ac.kr/",
         "https://ce.postech.ac.kr/bbs/board.php?bo_table=sub6_3_a&wr_id=1459",
@@ -184,7 +186,7 @@
       "department_type": "department",
       "status": "success",
       "faculty_match_count": "4",
-      "message": "교수/랩 4명 권위 확인; department_page_url=4, enrichment_source_urls=14, lab_name_eng=1, recruiting_status=1, research_summary=2",
+      "message": "교수/랩 4명 권위 확인; department_page_url=4, enrichment_source_urls=14, research_summary=2",
       "faculty_page_urls": [
         "https://chem.postech.ac.kr/",
         "https://chem.postech.ac.kr/bbs/board.php?bo_table=sub5_3&wr_id=127",
@@ -199,7 +201,7 @@
       "department_type": "division",
       "status": "success",
       "faculty_match_count": "41",
-      "message": "교수/랩 41명 권위 확인; affiliated_programs=39, keyword_source=1, keywords=1, location=4, recruiting_status=1, research_summary=1, scoped_unique_name_affiliation=2",
+      "message": "교수/랩 41명 권위 확인; affiliated_programs=39, scoped_unique_name_affiliation=2",
       "faculty_page_urls": [
         "https://ibio.postech.ac.kr:443/web/?depart=1&position=1&sub=professor&top=member",
         "https://ibio.postech.ac.kr:443/web/?depart=1&position=2&sub=professor&top=member",
@@ -213,7 +215,7 @@
       "department_type": "division",
       "status": "success",
       "faculty_match_count": "8",
-      "message": "교수/랩 8명 권위 확인; affiliated_programs=1, department_page_url=7, enrichment_source_urls=7, keyword_source=3, keywords=3, lab_name_kor=1, location=2, primary_field=7",
+      "message": "교수/랩 8명 권위 확인; affiliated_programs=1, department_page_url=7, enrichment_source_urls=7, keyword_source=3, keywords=3, lab_name_kor=1, primary_field=7",
       "faculty_page_urls": [
         "https://dane.postech.ac.kr/member/faculty.php"
       ]
@@ -247,7 +249,7 @@
       "department_type": "graduate_school",
       "status": "success",
       "faculty_match_count": "31",
-      "message": "교수/랩 31명 권위 확인; affiliated_programs=29, keyword_source=2, keywords=1, location=1, research_summary=1, scoped_unique_name_affiliation=6",
+      "message": "교수/랩 31명 권위 확인; affiliated_programs=29, keywords=1, scoped_unique_name_affiliation=6",
       "faculty_page_urls": [
         "https://gradsemi.postech.ac.kr/",
         "https://gradsemi.postech.ac.kr/members/professor/"
@@ -292,7 +294,7 @@
       "department_type": "graduate_school",
       "status": "success",
       "faculty_match_count": "6",
-      "message": "교수/랩 6명 권위 확인; affiliated_programs=2, department_page_url=4, enrichment_source_urls=4, keyword_source=1, keywords=1, research_summary=2",
+      "message": "교수/랩 6명 권위 확인; affiliated_programs=2, department_page_url=4, enrichment_source_urls=4",
       "faculty_page_urls": [
         "https://gift.postech.ac.kr/bbs/board.php?bo_table=sub2_8_N&sca=%EC%B9%9C%ED%99%98%EA%B2%BD%EC%86%8C%EC%9E%AC%ED%95%99%EA%B3%BC",
         "https://gift.postech.ac.kr/index.php"
@@ -328,7 +330,7 @@
       "department_type": "program",
       "status": "success",
       "faculty_match_count": "57",
-      "message": "교수/랩 57명 권위 확인; affiliated_programs=55, keyword_source=3, keywords=1, lab_name_eng=2, recruiting_status=1, research_summary=3, scoped_unique_name_affiliation=2",
+      "message": "교수/랩 57명 권위 확인; affiliated_programs=55, scoped_unique_name_affiliation=2",
       "faculty_page_urls": [
         "https://gscst.postech.ac.kr:443/web/?depart=14&position=1&sub=professor&top=member",
         "https://gscst.postech.ac.kr:443/web/?depart=14&position=2&sub=professor&top=member",
@@ -370,7 +372,7 @@
       "department_type": "program",
       "status": "success",
       "faculty_match_count": "17",
-      "message": "교수/랩 17명 권위 확인; affiliated_programs=17, keyword_source=1, keywords=1, location=2, research_summary=1",
+      "message": "교수/랩 17명 권위 확인; affiliated_programs=17",
       "faculty_page_urls": [
         "https://gscst.postech.ac.kr:443/web/?depart=17&position=1&sub=professor&top=member",
         "https://gscst.postech.ac.kr:443/web/?top=member&sub=professor&depart=17&position=1"
@@ -382,7 +384,7 @@
       "department_type": "program",
       "status": "success",
       "faculty_match_count": "40",
-      "message": "교수/랩 40명 권위 확인; affiliated_programs=39, keyword_source=1, keywords=1, research_summary=1, scoped_unique_name_affiliation=1",
+      "message": "교수/랩 40명 권위 확인; affiliated_programs=39, scoped_unique_name_affiliation=1",
       "faculty_page_urls": [
         "https://gscst.postech.ac.kr:443/web/?depart=11&position=1&sub=professor&top=member",
         "https://gscst.postech.ac.kr:443/web/?top=member&sub=professor&depart=11&position=1"
