@@ -1,8 +1,8 @@
 import { expect, test } from "@playwright/test";
 
-import { useSignedInDemo } from "./demo-session";
+import { useSignedInBeforeOnboarding, useSignedInDemo } from "./demo-session";
 
-test("Given a completed demo session, when Sign in is chosen, then the login form is still shown", async ({ page }) => {
+test("Given a completed account session, when Sign in is chosen, then the login form is still shown", async ({ page }) => {
   // Given
   await useSignedInDemo(page);
   await page.goto("/");
@@ -13,24 +13,17 @@ test("Given a completed demo session, when Sign in is chosen, then the login for
 
   // Then
   await expect(page).toHaveURL(/\/login$/);
-  await expect(page.getByLabel("Username")).toBeVisible();
+  await expect(page.getByLabel("Email")).toBeVisible();
   await expect(page.getByLabel("Password")).toBeVisible();
 });
 
-test("Given the explicit login form and a completed demo session, when arbitrary credentials are submitted, then the dashboard opens", async ({ page }) => {
-  // Given
-  await useSignedInDemo(page);
+test("Given invalid credentials, when sign in is submitted, then the login error remains visible", async ({ page }) => {
   await page.goto("/login");
-  await page.waitForLoadState("networkidle");
-  await page.getByLabel("Username").fill("anything");
-  await page.getByLabel("Password").fill("anything");
-
-  // When
+  await page.getByLabel("Email").fill("missing@example.test");
+  await page.getByLabel("Password").fill("invalid-password");
   await page.getByRole("button", { name: "Sign in" }).click();
-
-  // Then
-  await expect(page).toHaveURL(/\/dashboard$/);
-  await expect(page.getByRole("heading", { name: "Home", level: 1 })).toBeVisible();
+  await expect(page).toHaveURL(/\/login$/);
+  await expect(page.locator("p[aria-live='polite']")).toHaveText(/.+/);
 });
 
 test("Given a signed-out visitor, when a workspace URL is opened, then login is required", async ({ page }) => {
@@ -42,14 +35,17 @@ test("Given a signed-out visitor, when a workspace URL is opened, then login is 
   await expect(page.getByRole("heading", { name: "Graduate school planning, all in one place" })).toBeVisible();
 });
 
-test("Given arbitrary demo credentials, when login and setup finish, then the workspace and logout are available", async ({ page }) => {
+test("Given a new account, when signup and setup finish, then the workspace and logout are available", async ({ page }) => {
+  const email = `auth-flow-${Date.now()}@example.test`;
   // Given
   await page.goto("/login");
-  await page.getByLabel("Username").fill("demo");
-  await page.getByLabel("Password").fill("demo");
+  await page.getByRole("button", { name: "New here? Create an account" }).click();
+  await page.getByLabel("Name").fill("Auth Flow");
+  await page.getByLabel("Email").fill(email);
+  await page.getByLabel("Password").fill("auth-flow-password");
 
   // When
-  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.getByRole("button", { name: "Create account" }).click();
   await expect(page).toHaveURL(/\/onboarding$/);
   await page.getByLabel("Preferred university").selectOption("Seoul National University");
   await page.getByLabel("Target major and research interests").fill("Computer Vision");
@@ -66,12 +62,7 @@ test("Given arbitrary demo credentials, when login and setup finish, then the wo
 });
 
 test("Given sign-in without completed setup, workspace routes remain gated by onboarding", async ({ page }) => {
-  await page.goto("/login");
-  await page.getByLabel("Username").fill("demo");
-  await page.getByLabel("Password").fill("demo");
-  await page.getByRole("button", { name: "Sign in" }).click();
-  await expect(page).toHaveURL(/\/onboarding$/);
-
+  await useSignedInBeforeOnboarding(page);
   await page.goto("/dashboard");
   await expect(page).toHaveURL(/\/onboarding$/);
   await expect(page.getByRole("heading", { name: "Tell us what you are looking for" })).toBeVisible();
@@ -79,10 +70,8 @@ test("Given sign-in without completed setup, workspace routes remain gated by on
 
 test("Given a scrolled onboarding page, the sticky header covers the viewport", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 400 });
-  await page.goto("/login");
-  await page.getByLabel("Username").fill("demo");
-  await page.getByLabel("Password").fill("demo");
-  await page.getByRole("button", { name: "Sign in" }).click();
+  await useSignedInBeforeOnboarding(page);
+  await page.goto("/onboarding");
   await expect(page).toHaveURL(/\/onboarding$/);
 
   await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));

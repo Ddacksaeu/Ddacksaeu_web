@@ -504,6 +504,7 @@ select:not([multiple]):not([size]) {
   font: inherit;
   font-size: 14px;
   font-weight: 700;
+  white-space: nowrap;
   cursor: pointer;
 }
 .profile-recommendation-keywords button:hover {
@@ -820,6 +821,7 @@ select:not([multiple]):not([size]) {
   background: var(--white);
   font-size: 14px;
   font-weight: 700;
+  white-space: nowrap;
   cursor: pointer;
 }
 .catalog-clear-button:hover:not(:disabled) {
@@ -858,6 +860,30 @@ select:not([multiple]):not([size]) {
 .catalog-grid {
   display: grid;
   gap: 16px;
+}
+.catalog-load-more {
+  display: flex;
+  min-height: 48px;
+  align-items: center;
+  justify-content: center;
+  margin: 24px auto 0;
+  padding: 0 24px;
+  border: 1px solid var(--line-strong);
+  border-radius: 12px;
+  color: var(--blue-dark);
+  background: var(--white);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 750;
+  cursor: pointer;
+}
+.catalog-load-more:hover {
+  border-color: var(--blue);
+  background: var(--blue-soft);
+}
+.catalog-load-more:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 3px;
 }
 .catalog-card {
   padding: 28px;
@@ -3736,5 +3762,354 @@ select:not([multiple]):not([size]) {
     padding: 0 2px;
     font-size: 12px;
     white-space: nowrap;
+  }
+}
+
+/* Backend calendar controls preserve the legacy month-grid layout. */
+.calendar-quick-add {
+  display: grid;
+  gap: 12px;
+  margin-top: 20px;
+  padding: 18px;
+  border-radius: 14px;
+  background: var(--soft);
+}
+.calendar-quick-add > div {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.calendar-quick-add label {
+  display: grid;
+  gap: 6px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 700;
+}
+.calendar-quick-add input,
+.calendar-quick-add select {
+  width: 100%;
+  min-width: 0;
+  height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  outline: 0;
+  color: var(--ink);
+  background: var(--white);
+  font: inherit;
+  font-weight: 400;
+}
+.calendar-quick-add input:focus-visible,
+.calendar-quick-add select:focus-visible,
+.calendar-quick-add button:focus-visible,
+.calendar-delete-button:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+.calendar-quick-add button {
+  min-height: 44px;
+  border: 0;
+  border-radius: 10px;
+  color: var(--white);
+  background: var(--blue);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 750;
+  cursor: pointer;
+}
+.calendar-delete-button {
+  min-height: 44px;
+  margin-top: 6px;
+  padding: 0;
+  border: 0;
+  color: #d92d20;
+  background: transparent;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.calendar-empty-message,
+.calendar-status {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+.calendar-status {
+  min-height: 20px;
+  margin: 16px 0 0;
+}
+.calendar-status.is-error {
+  color: #d92d20;
+}
+@media (max-width: 640px) {
+  .calendar-quick-add > div {
+    grid-template-columns: 1fr;
+  }
+}
+
+.site-header {
+  height: auto;
+  min-height: 64px;
+}
+.site-header-inner {
+  min-height: 64px;
+}
+.brand {
+  flex: 0 0 auto;
+  min-width: max-content;
+  letter-spacing: -0.055em;
+  white-space: nowrap;
+}
+.main-nav {
+  min-width: 0;
+}
+.main-nav a,
+.main-nav button,
+.header-status {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+.catalog-card h2,
+.catalog-card p,
+.catalog-card li,
+.lab-detail-shell h1,
+.lab-detail-shell h2,
+.lab-detail-shell p,
+.lab-detail-shell li,
+.lab-detail-shell dd {
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+.professor-detail-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 48px;
+  margin-top: 40px;
+}
+.professor-research-profile {
+  min-width: 0;
+}
+.professor-detail-section {
+  padding: 32px 0 36px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+.professor-detail-section:first-child {
+  padding-top: 0;
+}
+.professor-detail-section + .professor-detail-section {
+  border-top: 1px solid var(--line);
+}
+.professor-detail-section h2,
+.application-context h2 {
+  margin: 0 0 18px;
+  font-size: 24px;
+  line-height: 1.4;
+  letter-spacing: -0.025em;
+}
+.professor-detail-section > p:not(.section-kicker) {
+  max-width: 65ch;
+  margin: 0;
+  color: var(--text-secondary);
+  line-height: 1.75;
+}
+.research-focus-list {
+  display: grid;
+}
+.research-focus-list > article {
+  display: grid;
+  gap: 4px;
+  padding: 16px 0;
+  border-top: 1px solid var(--line);
+  border-radius: 0;
+  background: transparent;
+}
+.research-focus-list > article p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+.professor-detail-section .paper-preview a,
+.detail-fact-list a,
+.similar-lab-list a {
+  color: var(--blue-dark);
+  font-weight: 700;
+  text-decoration: none;
+}
+.detail-fact-list {
+  margin: 0;
+}
+.detail-fact-list > div {
+  display: grid;
+  grid-template-columns: minmax(140px, 0.36fr) minmax(0, 1fr);
+  gap: 24px;
+  padding: 15px 0;
+  border-top: 1px solid var(--line);
+}
+.detail-fact-list dt {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+.detail-fact-list dd {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  color: var(--text-secondary);
+}
+.similar-lab-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.similar-lab-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 14px 0;
+  border-top: 1px solid var(--line);
+}
+.similar-lab-list span {
+  color: var(--muted);
+  font-size: 13px;
+  text-align: right;
+}
+.application-context {
+  align-self: start;
+  padding-left: 32px;
+  border-left: 1px solid var(--line);
+  position: sticky;
+  top: 96px;
+}
+.application-context > section {
+  padding: 24px 0;
+}
+.application-context > section:first-child {
+  padding-top: 0;
+}
+.application-context > section + section {
+  border-top: 1px solid var(--line);
+}
+.application-context > section > strong {
+  color: var(--ink);
+  font-size: 14px;
+}
+.application-context > section > p:not(.section-kicker) {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+.application-facts {
+  margin: 0;
+}
+.application-facts > div {
+  display: grid;
+  gap: 4px;
+  padding: 13px 0;
+  border-top: 1px solid var(--line);
+}
+.application-facts dt {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+.application-facts dd {
+  margin: 0;
+  color: var(--text-secondary);
+  line-height: 1.55;
+}
+.application-context .contact-draft-link {
+  display: inline-flex;
+  width: 100%;
+  min-height: 46px;
+  align-items: center;
+  justify-content: center;
+  margin-top: 12px;
+  text-decoration: none;
+}
+.application-note {
+  margin: 14px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.cv-upload-control {
+  overflow: hidden;
+}
+.cv-upload-control span {
+  pointer-events: none;
+}
+
+@media (max-width: 800px) {
+  .professor-detail-layout {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+  .application-context {
+    padding: 32px 0 0;
+    border-top: 1px solid var(--line);
+    border-left: 0;
+    position: static;
+  }
+}
+
+@media (max-width: 720px) {
+  .site-header-inner {
+    display: flex;
+    width: calc(100% - 32px);
+    height: 64px;
+    min-height: 64px;
+    align-items: center;
+    gap: 8px;
+    padding: 0;
+  }
+  .brand {
+    font-size: 20px;
+  }
+  .main-nav {
+    display: flex;
+    width: auto;
+    margin-left: auto;
+    gap: 1px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .main-nav::-webkit-scrollbar {
+    display: none;
+  }
+  .main-nav a,
+  .main-nav button,
+  .header-status {
+    min-width: max-content;
+    min-height: 44px;
+    padding: 0 3px;
+    font-size: 11px;
+  }
+}
+
+@media (max-width: 520px) {
+  .lab-detail-hero {
+    gap: 24px;
+  }
+  .professor-detail-layout {
+    margin-top: 28px;
+  }
+  .professor-detail-section {
+    padding: 26px 0 30px;
+  }
+  .detail-fact-list > div,
+  .similar-lab-list li {
+    grid-template-columns: 1fr;
+    display: grid;
+    gap: 6px;
+  }
+  .similar-lab-list span {
+    text-align: left;
   }
 }

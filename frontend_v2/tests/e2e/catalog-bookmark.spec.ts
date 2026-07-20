@@ -34,7 +34,7 @@ test("professor card keeps its bookmark icon as the final action", async ({ page
 
   await page.goto("/professors");
 
-  const card = page.getByRole("article").filter({ hasText: "Vision Intelligence Lab" });
+  const card = page.getByRole("region", { name: "Professor search results" }).getByRole("article").first();
   await expect(card).toBeVisible();
   const actions = card.locator(".catalog-card-actions");
   const bookmark = actions.getByRole("button", { name: "Save lab" });

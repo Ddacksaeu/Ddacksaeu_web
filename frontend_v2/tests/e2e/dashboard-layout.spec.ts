@@ -13,7 +13,7 @@ test("signed-in home uses a practical recommendation feed with an application ov
   const overview = page.getByRole("complementary", { name: "Application overview" });
   await expect(recommendations).toBeVisible();
   await expect(overview).toBeVisible();
-  await expect(recommendations.getByRole("link", { name: /View Professor/ })).toHaveCount(3);
+  await expect(recommendations.getByText("No recommendations yet. Analyze a CV to create personalized matches.")).toBeVisible();
 
   const recommendationBox = await recommendations.boundingBox();
   const overviewBox = await overview.boundingBox();
@@ -28,10 +28,11 @@ test("signed-in home uses a practical recommendation feed with an application ov
 test("personalized signed-in home remains readable at every product breakpoint", async ({ page }) => {
   await useSignedInDemo(page);
   await page.goto("/profile");
+  await page.getByRole("button", { name: "Edit profile" }).click();
   await page.getByLabel("Name").fill("Demo Researcher");
   await page.getByLabel("Research interests").fill("Computer Vision, Multimodal");
   await page.getByLabel("I consent to saving this profile data").check();
-  await page.getByRole("button", { name: "Save profile" }).click();
+  await page.getByRole("button", { name: "Save changes" }).click();
 
   await page.goto("/dashboard");
   await expect(page.getByRole("heading", { name: "Professors close to your interests" })).toBeVisible();
@@ -53,7 +54,7 @@ test("personalized signed-in home remains readable at every product breakpoint",
         .getByRole("heading", { name: "Professors close to your interests" })
         .boundingBox();
       const recruitmentBox = await page
-        .getByRole("heading", { name: "Labs with recruitment to verify" })
+        .getByRole("heading", { name: "Application tasks to verify" })
         .boundingBox();
       const datesBox = await page.getByRole("heading", { name: "Upcoming dates" }).boundingBox();
       expect(readinessBox).not.toBeNull();

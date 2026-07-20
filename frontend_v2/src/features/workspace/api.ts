@@ -1,6 +1,8 @@
 import ky, { HTTPError } from "ky";
 import { z } from "zod";
 
+import { endDemoSession } from "../auth/demo-session";
+
 const api = ky.create({ prefixUrl: "/api/backend", throwHttpErrors: true });
 export type ApiState = "loading" | "ready" | "empty" | "unauthorized" | "error";
 
@@ -11,7 +13,13 @@ export class WorkspaceApiError extends Error {
 export async function request<T>(path: string, schema: z.ZodType<T>, options?: Parameters<typeof api>[1]): Promise<T> {
   try { return schema.parse(await api(path, options).json()); }
   catch (error) {
-    if (error instanceof HTTPError) throw new WorkspaceApiError(error.response.status, `Request failed (${error.response.status}).`);
+    if (error instanceof HTTPError) {
+      if (error.response.status === 401 && typeof window !== "undefined") {
+        endDemoSession(window.localStorage);
+        window.location.replace("/login");
+      }
+      throw new WorkspaceApiError(error.response.status, `Request failed (${error.response.status}).`);
+    }
     throw error;
   }
 }
