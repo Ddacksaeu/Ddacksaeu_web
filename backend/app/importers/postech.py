@@ -198,6 +198,12 @@ def read_csv(path: Path) -> list[dict[str, str]]:
         return list(csv.DictReader(handle))
 
 
+def research_outputs_path(data_dir: Path) -> Path:
+    """Prefer the crawler's validated publication export when it is available."""
+    cleaned = data_dir / "research_outputs_clean.csv"
+    return cleaned if cleaned.is_file() else data_dir / "research_outputs.csv"
+
+
 def _keyword_id(term: str) -> str:
     return "postech-keyword-" + hashlib.sha1(normalize_term(term).encode()).hexdigest()[:20]
 
@@ -228,7 +234,7 @@ def import_postech(
     batch_id = str(uuid4())
     report = ImportReport(batch_id=batch_id, dry_run=dry_run)
     raw_labs = read_csv(data_dir / "labs.csv")
-    raw_papers = read_csv(data_dir / "research_outputs.csv")
+    raw_papers = read_csv(research_outputs_path(data_dir))
     labs = normalize_labs(raw_labs)
     papers = normalize_papers(raw_papers)
     normalized_lab_ids = {item.id for item in labs}
