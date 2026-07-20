@@ -2,13 +2,13 @@ import { expect, test } from "@playwright/test";
 
 import { useSignedInDemo } from "./demo-session";
 
-test("Regenerate draft is separated from and aligned with its textarea", async ({ page }) => {
+test("Generate draft is separated from and aligned with its textarea", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 });
   await useSignedInDemo(page);
-  await page.goto("/professors/kaist-demo-05");
+  await page.goto("/contact?professor=LAB_E10BFB94AFD8");
 
   const details = page.getByLabel("Details to include");
-  const regenerate = page.getByRole("button", { name: "Regenerate draft" });
+  const regenerate = page.getByRole("button", { name: "Generate draft" });
   const [detailsBox, regenerateBox] = await Promise.all([
     details.boundingBox(),
     regenerate.boundingBox(),

@@ -2,24 +2,59 @@ import { expect, test } from "@playwright/test";
 
 import { useSignedInDemo } from "./demo-session";
 
-test("University label sits above and aligns with the calendar filter", async ({ page }) => {
+test("calendar event form uses labelled designed controls", async ({ page }) => {
+  // Given
   await page.setViewportSize({ width: 1280, height: 900 });
   await useSignedInDemo(page);
+  await page.route("**/api/backend/me/calendar-events", async (route) => {
+    await route.fulfill({ json: { items: [] } });
+  });
+  await page.route("**/api/backend/admissions", async (route) => {
+    await route.fulfill({ json: { items: [] } });
+  });
+
+  // When
   await page.goto("/calendar");
 
-  const label = page.locator('label[for="calendar-institution"]');
-  const select = page.getByLabel("University");
-  const [labelBox, selectBox] = await Promise.all([label.boundingBox(), select.boundingBox()]);
+  // Then
+  const title = page.getByLabel("Reminder");
+  const date = page.getByLabel("Date", { exact: true });
+  const kind = page.getByLabel("Type");
+  const addButton = page.getByRole("button", { name: "Add reminder" });
+  const exportButton = page.getByRole("button", { name: "Export calendar" });
 
-  expect(labelBox).not.toBeNull();
-  expect(selectBox).not.toBeNull();
-  expect(labelBox!.x).toBe(selectBox!.x);
-  expect(selectBox!.y - (labelBox!.y + labelBox!.height)).toBe(8);
-  await expect(label).toHaveCSS("font-size", "16px");
+  await expect(title).toBeVisible();
+  await expect(date).toBeVisible();
+  await expect(kind).toBeVisible();
+  await expect(title).toHaveCSS("height", "44px");
+  await expect(title).toHaveCSS("border-radius", "10px");
+  await expect(date).toHaveCSS("height", "44px");
+  await expect(kind).toHaveCSS("height", "44px");
+  await expect(addButton).toHaveCSS("min-height", "44px");
+  await expect(addButton).toHaveCSS("border-radius", "10px");
+  await expect(exportButton).toHaveCSS("height", "46px");
+  await expect(exportButton).toHaveCSS("border-radius", "10px");
 
-  const group = page.locator(".calendar-filter > div");
-  const button = page.getByRole("button", { name: "View schedule" });
-  await expect(group).toHaveCSS("gap", "12px");
-  await expect(button).toHaveCSS("padding-left", "12px");
-  await expect(button).toHaveCSS("padding-right", "12px");
+  await page.setViewportSize({ width: 375, height: 812 });
+  const mobileGeometry = await page.evaluate(() => {
+    const personal = document.querySelector<HTMLElement>(".calendar-month-panel");
+    const official = document.querySelector<HTMLElement>(".calendar-upcoming");
+    const timeline = document.querySelector<HTMLElement>(".calendar-month-heading > div > span");
+    const heading = document.querySelector<HTMLElement>(".calendar-month-heading h2");
+    const count = document.querySelector<HTMLElement>(".calendar-month-heading > span");
+    if (!personal || !official || !timeline || !heading || !count) throw new Error("Calendar mobile elements are missing.");
+    return {
+      personalY: personal.getBoundingClientRect().y,
+      officialY: official.getBoundingClientRect().y,
+      timelineHeight: timeline.getBoundingClientRect().height,
+      headingHeight: heading.getBoundingClientRect().height,
+      countHeight: count.getBoundingClientRect().height,
+      overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth,
+    };
+  });
+  expect(mobileGeometry.personalY).toBeLessThan(mobileGeometry.officialY);
+  expect(mobileGeometry.timelineHeight).toBeLessThan(24);
+  expect(mobileGeometry.headingHeight).toBeLessThan(40);
+  expect(mobileGeometry.countHeight).toBeLessThan(24);
+  expect(mobileGeometry.overflow).toBeFalsy();
 });

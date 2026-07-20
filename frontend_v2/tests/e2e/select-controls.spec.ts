@@ -6,9 +6,8 @@ test("single-select controls share one centered chevron and content inset", asyn
   await useSignedInDemo(page);
 
   for (const target of [
-    { path: "/calendar", selector: "#calendar-institution" },
+    { path: "/calendar", selector: "#calendar-view" },
     { path: "/professors", selector: ".catalog-select-field select" },
-    { path: "/cv", selector: "select" },
   ]) {
     await page.goto(target.path);
     const select = page.locator(target.selector).first();

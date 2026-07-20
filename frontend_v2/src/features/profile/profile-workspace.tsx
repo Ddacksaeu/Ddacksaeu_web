@@ -1,151 +1,135 @@
 "use client";
 
 import ky from "ky";
+import Link from "next/link";
 import { useEffect, useState } from "react";
-
-import {
-  cvSummarySchema,
-  profileWorkspaceSchema,
-  type ProfileSubmission,
-  type ProfileWorkspaceData,
-} from "./profile-client-contract";
+import { analyzeDocument } from "./documents-api";
+import type { ProfileSubmission, ProfileWorkspaceData } from "./profile-client-contract";
 import { ProfileDashboard } from "./profile-dashboard";
 import { ProfileEditor } from "./profile-editor";
+import {
+  getEvents, getFavorites, getLab, getLatestAnalysis, getProfile,
+  saveProfile as saveBackendProfile,
+  type DocumentAnalysis, type Lab, type UserProfile, WorkspaceApiError,
+} from "../workspace/api";
 
-const EMPTY_WORKSPACE: ProfileWorkspaceData = {
-  profile: null,
-  cvAssets: [],
-  targetLabIds: [],
-  summary: { savedProfessors: 0, contactDrafts: 0, schedules: 0 },
-};
+type LoadState = "loading" | "ready" | "unauthorized" | "error";
+
+function toWorkspace(profile: UserProfile, favorites: readonly string[], eventCount: number, analysis: DocumentAnalysis | null): ProfileWorkspaceData {
+  return {
+    profile: {
+      displayName: profile.name,
+      researchInterests: profile.interests,
+      preferredUniversity: profile.affiliation,
+      applicationTerm: profile.status,
+      degreeProgram: profile.program,
+      consentedAt: profile.updatedAt,
+    },
+    cvAssets: analysis === null ? [] : [{
+      id: analysis.original_filename ?? "latest-analysis",
+      fileName: analysis.original_filename ?? "Analyzed CV",
+      contentType: "application/octet-stream",
+      byteLength: 0,
+    }],
+    targetLabIds: favorites,
+    summary: { savedProfessors: favorites.length, contactDrafts: 0, schedules: eventCount },
+  };
+}
 
 export function ProfileWorkspace() {
   const [data, setData] = useState<ProfileWorkspaceData | null>(null);
+  const [savedLabs, setSavedLabs] = useState<readonly Lab[]>([]);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [savingTargetId, setSavingTargetId] = useState<string | null>(null);
   const [status, setStatus] = useState("");
+  const [loadState, setLoadState] = useState<LoadState>("loading");
 
   async function loadWorkspace(): Promise<void> {
-    const value = await ky.get("/api/profile").json();
-    setData(profileWorkspaceSchema.parse(value));
+    try {
+      const [profile, favorites, events, analysis] = await Promise.all([
+        getProfile(), getFavorites(), getEvents(),
+        getLatestAnalysis().catch((error: unknown) => {
+          if (error instanceof WorkspaceApiError && error.status === 404) return null;
+          throw error;
+        }),
+      ]);
+      const labs = await Promise.all(favorites.map((id) => getLab(id).catch(() => null)));
+      setData(toWorkspace(profile, favorites, events.length, analysis));
+      setSavedLabs(labs.filter((lab): lab is Lab => lab !== null));
+      setLoadState("ready");
+    } catch (error) {
+      setLoadState(error instanceof WorkspaceApiError && error.status === 401 ? "unauthorized" : "error");
+    }
   }
 
-  useEffect(() => {
-    let active = true;
-    void ky.get("/api/profile").json().then((value) => {
-      if (active) setData(profileWorkspaceSchema.parse(value));
-    }).catch(() => {
-      if (active) {
-        setData(EMPTY_WORKSPACE);
-        setStatus("Could not load saved information. Try again shortly.");
-      }
-    });
-    return () => { active = false; };
-  }, []);
+  useEffect(() => { void Promise.resolve().then(loadWorkspace); }, []);
 
   async function saveProfile(submission: ProfileSubmission): Promise<void> {
-    setSaving(true);
-    setStatus("Saving your profile.");
+    setSaving(true); setStatus("Saving your profile.");
     try {
-      await ky.put("/api/profile", {
-        json: {
-          consentToStorage: submission.consentToStorage,
-          displayName: submission.displayName,
-          researchInterests: submission.researchInterests,
-          preferredUniversity: submission.preferredUniversity,
-          applicationTerm: submission.applicationTerm,
-          degreeProgram: submission.degreeProgram,
-        },
+      await saveBackendProfile({
+        name: submission.displayName,
+        affiliation: submission.preferredUniversity,
+        status: submission.applicationTerm,
+        program: submission.degreeProgram,
+        interests: [...submission.researchInterests],
       });
       if (submission.cvFile !== null) {
-        const body = new FormData();
-        body.set("cv", submission.cvFile);
-        const response = await ky.post("/api/profile", { body }).json<{ readonly cvAsset: unknown }>();
-        cvSummarySchema.parse(response.cvAsset);
+        try {
+          await analyzeDocument(submission.cvFile);
+        } catch {
+          await loadWorkspace();
+          setEditing(false);
+          setStatus("Profile saved, but the CV could not be analyzed. Try uploading it from CV Analysis.");
+          return;
+        }
       }
       await loadWorkspace();
-      setEditing(false);
-      setStatus("Changes saved.");
+      setEditing(false); setStatus("Changes saved.");
     } catch {
-      setStatus("Could not save. Check consent and file format.");
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  async function resetProfile(): Promise<void> {
-    setSaving(true);
-    try {
-      await ky.delete("/api/profile");
-      setData(EMPTY_WORKSPACE);
-      setEditing(false);
-      setStatus("Deleted the saved profile, CVs, and professors.");
-    } catch {
-      setStatus("Could not delete your data. Try again shortly.");
-    } finally {
-      setSaving(false);
-    }
+      setStatus("Could not save. Check your login and file format.");
+    } finally { setSaving(false); }
   }
 
   async function toggleTarget(labId: string, saved: boolean): Promise<void> {
     if (data === null) return;
     setSavingTargetId(labId);
     try {
-      await ky.patch("/api/profile", { json: { labId, saved } });
+      await (saved ? ky.put(`/api/backend/me/favorites/${labId}`) : ky.delete(`/api/backend/me/favorites/${labId}`));
+      let nextLabs = savedLabs.filter((lab) => lab.id !== labId);
+      if (saved) nextLabs = [...nextLabs, await getLab(labId)];
+      setSavedLabs(nextLabs);
       setData({
         ...data,
-        targetLabIds: saved
-          ? [...data.targetLabIds.filter((id) => id !== labId), labId]
-          : data.targetLabIds.filter((id) => id !== labId),
-        summary: {
-          ...data.summary,
-          savedProfessors: saved
-            ? data.targetLabIds.includes(labId) ? data.summary.savedProfessors : data.summary.savedProfessors + 1
-            : Math.max(0, data.summary.savedProfessors - 1),
-        },
+        targetLabIds: saved ? [...data.targetLabIds.filter((id) => id !== labId), labId] : data.targetLabIds.filter((id) => id !== labId),
+        summary: { ...data.summary, savedProfessors: saved ? data.summary.savedProfessors + 1 : Math.max(0, data.summary.savedProfessors - 1) },
       });
       setStatus(saved ? "Saved this professor." : "Removed this professor from saved items.");
-    } catch {
-      setStatus("Could not update saved professors.");
-    } finally {
-      setSavingTargetId(null);
-    }
+    } catch { setStatus("Could not update saved professors."); }
+    finally { setSavingTargetId(null); }
   }
 
-  if (data === null) {
+  if (loadState === "loading" || data === null && loadState === "ready") {
     return <div className="profile-loading" role="status"><strong>Loading Profile</strong><span>Checking your saved profile and professors.</span></div>;
   }
-
-  if (data.profile !== null && !editing) {
-    return (
-      <ProfileDashboard
-        data={{ ...data, profile: data.profile }}
-        onEdit={() => setEditing(true)}
-        onToggleTarget={toggleTarget}
-        savingTargetId={savingTargetId}
-        status={status}
-      />
-    );
+  if (loadState === "unauthorized") {
+    return <div className="profile-layout"><section className="profile-intro"><p className="kicker">MY RESEARCH PROFILE</p><h1>Log in to view your profile</h1><p>Your backend session has expired.</p><Link className="primary-button" href="/login">Log in</Link></section></div>;
   }
-
+  if (loadState === "error" || data === null) {
+    return <div className="profile-layout"><section className="profile-intro"><p className="kicker">MY RESEARCH PROFILE</p><h1>Profile unavailable</h1><p>Could not load profile data from the backend.</p><button className="secondary-button" onClick={() => void loadWorkspace()} type="button">Try again</button></section></div>;
+  }
+  if (data.profile !== null && !editing) {
+    return <ProfileDashboard data={{ ...data, profile: data.profile }} onEdit={() => setEditing(true)} onToggleTarget={toggleTarget} savedLabs={savedLabs} savingTargetId={savingTargetId} status={status} />;
+  }
   return (
     <div className="profile-layout">
       <section className="profile-intro" aria-labelledby="profile-title">
-        <p className="kicker">MY RESEARCH PROFILE</p>
-        <h1 id="profile-title">{data.profile === null ? "Create research profile" : "Edit research profile"}</h1>
-        <p>{data.profile === null ? "Save your name and interests to start personalized professor recommendations and a saved list." : "Update saved information, add a CV, or manage your data."}</p>
-        <div className="privacy-note"><span aria-hidden="true">✓</span><div><strong>Your data is private to this session</strong><p>Data is isolated in an anonymous session and can be deleted anytime.</p></div></div>
+        <p className="kicker">MY RESEARCH PROFILE</p><h1 id="profile-title">Edit research profile</h1>
+        <p>Update your backend profile, add a CV, or manage your saved application details.</p>
+        <div className="privacy-note"><span aria-hidden="true">OK</span><div><strong>Your data is connected to your account</strong><p>Profile, CV analysis, favorites, and calendar data come from the backend.</p></div></div>
       </section>
-      <ProfileEditor
-        assets={data.cvAssets}
-        initialProfile={data.profile}
-        onCancel={data.profile === null ? null : () => setEditing(false)}
-        onReset={resetProfile}
-        onSave={saveProfile}
-        saving={saving}
-        status={status}
-      />
+      <ProfileEditor assets={data.cvAssets} initialProfile={data.profile} onCancel={() => setEditing(false)} onReset={null} onSave={saveProfile} saving={saving} status={status} />
     </div>
   );
 }

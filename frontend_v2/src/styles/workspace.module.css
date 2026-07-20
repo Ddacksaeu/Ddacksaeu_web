@@ -9,6 +9,7 @@
 .field { display:grid; gap:8px; margin-top:18px; color:#191f28; font-size:14px; font-weight:700; }
 .field input,.field select,.field textarea { width:100%; min-height:50px; padding:0 14px; border:1px solid #d1d6db; border-radius:11px; outline:0; background:#fff; color:#191f28; font:inherit; font-weight:400; }
 .field textarea { min-height:290px; padding:16px; line-height:1.7; overflow-wrap:break-word; resize:vertical; word-break:keep-all; }
+.field input:read-only,.field textarea:read-only { color:#4e5968; background:#f7f9fc; }
 .field input:focus-visible,.field select:focus-visible,.field textarea:focus-visible { border-color:#3182f6; box-shadow:0 0 0 3px rgb(49 130 246 / 14%); }
 .file { padding:18px !important; border-style:dashed !important; background:#f7f9fc !important; }
 .filePicker { position:relative; display:flex; min-height:50px; align-items:center; gap:12px; overflow:hidden; padding:8px; border:1px dashed #b8c3d1; border-radius:11px; background:#f7f9fc; cursor:pointer; }

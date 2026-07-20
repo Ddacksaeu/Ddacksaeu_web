@@ -4,8 +4,10 @@ const CONTACT_DRAFT_KEY = "ddaksaewoo:contact-draft";
 const CONTACT_DRAFT_EVENT = "ddaksaewoo:contact-draft-change";
 
 const contactDraftSchema = z.object({
+  labId: z.string().trim().min(1),
   professor: z.string().trim().min(1),
-  draft: z.string().trim().min(1),
+  subject: z.string().trim(),
+  body: z.string().trim().min(1),
 });
 
 export type ContactDraft = z.infer<typeof contactDraftSchema>;

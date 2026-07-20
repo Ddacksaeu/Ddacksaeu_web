@@ -30,10 +30,10 @@ export function SavedContactDraft() {
       <div className="profile-contact-draft">
         <div>
           <strong>{contactDraft.professor} Outreach email</strong>
-          <p>{contactDraft.draft}</p>
+          <p>{contactDraft.subject ? `${contactDraft.subject}\n\n${contactDraft.body}` : contactDraft.body}</p>
         </div>
         <div>
-          <Link href={`/contact?professor=${encodeURIComponent(contactDraft.professor)}`}>Continue editing</Link>
+          <Link href={`/contact?professor=${encodeURIComponent(contactDraft.labId)}`}>Continue editing</Link>
           <button onClick={removeContactDraft} type="button">Delete</button>
         </div>
       </div>
