@@ -2,7 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { AppHeader } from "../src/components/app-header";
-import { LAB_CATALOG_FIXTURES } from "../src/fixtures/catalog";
+import { fetchBackendLabs, type LabSummary } from "../src/server/backend/labs";
 
 const UNIVERSITIES = [
   {
@@ -43,16 +43,13 @@ const TRENDING_TOPICS = [
   "Robotics",
   "Natural Language Processing",
 ] as const;
-const FEATURED_IDS = [
-  "snu-demo-02",
-  "kaist-demo-01",
-  "postech-demo-01",
-] as const;
-
-export default function HomePage() {
-  const featuredLabs = LAB_CATALOG_FIXTURES.filter((lab) =>
-    FEATURED_IDS.some((id) => id === lab.id),
-  );
+export default async function HomePage() {
+  let featuredLabs: readonly LabSummary[] = [];
+  try {
+    featuredLabs = (await fetchBackendLabs()).items.slice(0, 3);
+  } catch (error) {
+    if (!(error instanceof Error)) throw error;
+  }
 
   return (
     <main className="site-shell home-discovery">
@@ -120,9 +117,9 @@ export default function HomePage() {
                 <Link href={`/professors/${lab.id}`}>
                   <span className="home-rank">0{index + 1}</span>
                   <div>
-                    <strong>{lab.labName}</strong>
+                    <strong>{lab.name}</strong>
                     <small>
-                      {lab.institution} · {lab.professor}
+                      {lab.university} · {lab.professorName}
                     </small>
                   </div>
                   <span aria-hidden="true">→</span>

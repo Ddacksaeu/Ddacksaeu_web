@@ -1,14 +1,14 @@
 import Link from "next/link";
 
-import { LAB_CATALOG_FIXTURES } from "../../fixtures/catalog";
+import type { Lab } from "../workspace/api";
 import { SavedContactDraft } from "../contact/saved-contact-draft";
 import { CvAnalysisPanel } from "./cv-analysis-panel";
 import type { ProfileWorkspaceData } from "./profile-client-contract";
-import { ProfileRecommendations } from "./profile-recommendations";
 
 type ProfileDashboardProperties = Readonly<{
   data: ProfileWorkspaceData & { readonly profile: NonNullable<ProfileWorkspaceData["profile"]> };
   savingTargetId: string | null;
+  savedLabs: readonly Lab[];
   status: string;
   onEdit: () => void;
   onToggleTarget: (labId: string, saved: boolean) => Promise<void>;
@@ -22,12 +22,11 @@ const PROFILE_DATE_FORMATTER = new Intl.DateTimeFormat("en-US", {
 export function ProfileDashboard({
   data,
   savingTargetId,
+  savedLabs,
   status,
   onEdit,
   onToggleTarget,
 }: ProfileDashboardProperties) {
-  const savedLabIds = new Set(data.targetLabIds);
-  const savedLabs = LAB_CATALOG_FIXTURES.filter((lab) => savedLabIds.has(lab.id));
   const profile = data.profile;
   const savedDate = PROFILE_DATE_FORMATTER.format(new Date(profile.consentedAt));
 
@@ -59,9 +58,9 @@ export function ProfileDashboard({
             : <p>No research keywords yet. Edit your profile to add them.</p>}
         </div>
         <dl className="profile-preference-row" aria-label="Saved application preferences">
-          <div><dt>University</dt><dd>{profile.preferredUniversity || "Not set"}</dd></div>
-          <div><dt>Application term</dt><dd>{profile.applicationTerm || "Not set"}</dd></div>
-          <div><dt>Degree program</dt><dd>{profile.degreeProgram || "Not set"}</dd></div>
+          <div><dt>Affiliation</dt><dd>{profile.preferredUniversity || "Not set"}</dd></div>
+          <div><dt>Status</dt><dd>{profile.applicationTerm || "Not set"}</dd></div>
+          <div><dt>Program</dt><dd>{profile.degreeProgram || "Not set"}</dd></div>
         </dl>
         <nav className="profile-quick-actions" aria-label="Profile shortcuts">
           <button onClick={onEdit} type="button">Manage CV and profile</button>
@@ -82,7 +81,7 @@ export function ProfileDashboard({
             <ul className="profile-saved-list">
               {savedLabs.map((lab) => (
                 <li key={lab.id}>
-                  <div><span>{lab.institution}</span><h3>{lab.professor}</h3><p>{lab.labName}</p><small>{lab.topics.join(" · ")}</small></div>
+                  <div><span>{lab.department}</span><h3>{lab.professorName}</h3><p>{lab.name}</p><small>{lab.keywords.join(" · ")}</small></div>
                   <div><Link href={"/professors/" + lab.id}>View details</Link><button disabled={savingTargetId === lab.id} onClick={() => void onToggleTarget(lab.id, false)} type="button">{savingTargetId === lab.id ? "Processing" : "Remove"}</button></div>
                 </li>
               ))}
@@ -101,7 +100,6 @@ export function ProfileDashboard({
       <CvAnalysisPanel />
       <SavedContactDraft />
       <p className="profile-dashboard-status" aria-live="polite">{status}</p>
-      <ProfileRecommendations keywords={profile.researchInterests} />
     </div>
   );
 }

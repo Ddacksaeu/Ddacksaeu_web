@@ -17,7 +17,9 @@
 .divider::before,.divider::after { height:1px; flex:1; background:#e5e8eb; content:""; }
 .social { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
 .social button { min-height:48px; border:1px solid #e5e8eb; border-radius:11px; background:#fff; color:#4e5968; font-weight:700; cursor:pointer; }
-.legal { margin:22px 0 0; color:#8b95a1; font-size:12px; line-height:1.6; text-align:center; }
+.legal { display:flex; width:100%; min-height:44px; align-items:center; justify-content:center; margin:10px 0 0; padding:0; border:0; color:#4e5968; background:transparent; font:inherit; font-size:12px; line-height:1.6; text-align:center; cursor:pointer; }
+.legal:hover { color:#1b64da; }
+.legal:focus-visible { outline:3px solid #1b64da; outline-offset:2px; border-radius:8px; }
 .keep { white-space:nowrap; }
 .grid { display:grid; grid-template-columns:1fr 1fr; gap:0 16px; }
 .full { grid-column:1 / -1; }
@@ -25,6 +27,8 @@
 .course label { display:flex; min-height:48px; align-items:center; justify-content:center; gap:7px; border:1px solid #d1d6db; border-radius:11px; color:#4e5968; font-size:13px; cursor:pointer; }
 .course label:has(input:checked) { border-color:#3182f6; color:#1b64da; background:#eff6ff; }
 .course input { accent-color:#3182f6; }
+.card fieldset.field { min-width:0; padding:0; border:0; }
+.card fieldset.field legend { padding:0; }
 .file { padding:18px !important; border-style:dashed !important; background:#f7f9fc !important; }
 .filePicker { position:relative; display:flex; min-height:50px; align-items:center; gap:12px; overflow:hidden; padding:8px; border:1px dashed #b8c3d1; border-radius:11px; background:#f7f9fc; cursor:pointer; }
 .filePicker:focus-within { border-color:#3182f6; box-shadow:0 0 0 3px rgb(49 130 246 / 14%); }

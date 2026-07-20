@@ -55,7 +55,7 @@ export function CvAnalysisPanel() {
 
   return <section className="cv-analysis-panel" aria-labelledby="cv-upload-title">
     <div className="profile-section-heading"><div><p>Application materials</p><h2 id="cv-upload-title">CV analysis</h2></div><span>PDF, DOCX, TXT · up to 10 MB</span></div>
-    <label className="cv-upload-control">Select CV file<input ref={input} type="file" accept=".pdf,.docx,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain" disabled={state === "uploading"} onChange={(event) => select(event.target.files?.item(0) ?? null)} /><span>{file === null ? "Choose a file" : "Replace file"}</span></label>
+    <label className="cv-upload-control"><input aria-label="Select CV file" ref={input} type="file" accept=".pdf,.docx,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain" disabled={state === "uploading"} onChange={(event) => select(event.target.files?.item(0) ?? null)} /><span>{file === null ? "Choose a CV file" : "Replace CV file"}</span></label>
     {file !== null && <div className="cv-selected-file"><strong>{file.name}</strong><small>{formatSize(file.size)}</small><button type="button" onClick={() => select(null)} disabled={state === "uploading"}>Remove</button></div>}
     <button className="primary-button" type="button" disabled={file === null || state === "uploading" || message.length > 0 && validateDocumentFile(file ?? new File([], "")) !== null} onClick={() => void upload()}>{state === "uploading" ? "Analyzing…" : "Upload and analyze"}</button>
     {state === "loading" && <p className="form-status" role="status">Loading your latest CV analysis…</p>}

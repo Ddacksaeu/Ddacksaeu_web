@@ -1,16 +1,203 @@
-"use client";
-
-import ky, { HTTPError } from "ky";
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import type { LabDetail, LabSummary } from "../../server/backend/labs";
 
-type Props = Readonly<{ lab: LabDetail }>;
-const dateFormatter = new Intl.DateTimeFormat("en-US", { dateStyle: "long", timeZone: "Asia/Seoul" });
-function value(fact: LabDetail["facts"][number]): string { return fact.valueText ?? (fact.valueNumber === null ? "Unavailable" : String(fact.valueNumber)); }
-export function RealLabDetail({ lab }: Props) {
-  const [similar, setSimilar] = useState<readonly LabSummary[] | null>(null); const [similarError, setSimilarError] = useState(false);
-  useEffect(() => { void ky.get(`/api/backend/labs/${lab.id}/similar`).json<{ items: LabSummary[] }>().then((result) => setSimilar(result.items)).catch(() => setSimilarError(true)); }, [lab.id]);
-  return <main className="catalog-page"><Link className="catalog-detail-link" href="/professors">Back to lab search</Link><header className="catalog-hero"><p className="catalog-kicker">POSTECH LAB</p><h1>{lab.name}</h1><p>{lab.professorName} · {lab.department} · {lab.field}</p><ul className="catalog-topic-list">{lab.keywords.map((keyword) => <li key={keyword}>{keyword}</li>)}</ul></header><div className="catalog-workspace"><section className="profile-recommendation"><h2>Lab overview</h2><p>{lab.summary ?? "A summary was not provided by the source."}</p><dl><div><dt>University</dt><dd>{lab.university}</dd></div><div><dt>Location</dt><dd>{lab.location ?? "Unavailable"}</dd></div><div><dt>Contact</dt><dd>{lab.contactEmail ?? "Unavailable"}</dd></div></dl>{lab.contactEmail && <Link href={`/contact?professor=${encodeURIComponent(lab.id)}`}>Create contact email draft</Link>}</section><section className="profile-recommendation"><h2>Lab facts</h2>{lab.facts.length ? <ul>{lab.facts.map((fact, index) => <li key={`${fact.factType}-${index}`}><strong>{fact.factType}:</strong> {value(fact)} {fact.sourceUrl && <a href={fact.sourceUrl} rel="noreferrer" target="_blank">Source</a>}</li>)}</ul> : <p>No additional facts are available.</p>}</section><section className="profile-recommendation"><h2>Recent papers</h2>{lab.papers.length ? <ol>{lab.papers.map((paper) => <li key={paper.id}><strong>{paper.title}</strong> ({paper.publishedYear}){paper.venue && ` · ${paper.venue}`}<p>{paper.summary ?? paper.abstract ?? "No abstract or summary is available."}</p>{paper.paperUrl && <a href={paper.paperUrl} rel="noreferrer" target="_blank">Paper link</a>}</li>)}</ol> : <p>No paper records are available for this lab.</p>}</section><section className="profile-recommendation"><h2>Sources and freshness</h2>{lab.sourceUrl ? <p><a href={lab.sourceUrl} rel="noreferrer" target="_blank">Original source</a></p> : <p>Source URL unavailable.</p>}<p>Last checked: {lab.sourceCheckedAt ? dateFormatter.format(new Date(lab.sourceCheckedAt)) : dateFormatter.format(new Date(lab.updatedAt))}</p>{lab.homepageUrl && <a href={lab.homepageUrl} rel="noreferrer" target="_blank">Lab homepage</a>}</section><section className="profile-recommendation"><h2>Similar labs</h2>{similarError ? <p>Similar labs could not be loaded right now.</p> : similar === null ? <p>Loading similar labs…</p> : similar.length ? <ul>{similar.map((item) => <li key={item.id}><Link href={`/professors/${item.id}`}>{item.name}</Link> · {item.professorName}</li>)}</ul> : <p>No similar labs were returned.</p>}</section><FavoriteControl labId={lab.id} /></div></main>;
+import type { LabDetail, LabSummary } from "../../server/backend/labs";
+import { ProfessorProfileAlignment } from "../professors/professor-profile-alignment";
+import { SaveProfessorButton } from "../professors/save-professor-button";
+import contextStyles from "./real-lab-detail-context.module.css";
+import styles from "./real-lab-detail.module.css";
+
+type Props = Readonly<{ lab: LabDetail; similar: readonly LabSummary[] | null }>;
+
+const dateFormatter = new Intl.DateTimeFormat("en-US", {
+  dateStyle: "medium",
+  timeZone: "Asia/Seoul",
+});
+const SHORT_KEYWORD_MAX_LENGTH = 32;
+
+function factValue(fact: LabDetail["facts"][number]): string {
+  return fact.valueText ?? (fact.valueNumber === null ? "Unavailable" : String(fact.valueNumber));
 }
-function FavoriteControl({ labId }: Readonly<{ labId: string }>) { const [saved, setSaved] = useState(false); const [busy, setBusy] = useState(false); const [message, setMessage] = useState(""); useEffect(() => { void ky.get("/api/backend/me/favorites").json<{ labIds: string[] }>().then((value) => setSaved(value.labIds.includes(labId))).catch(() => setMessage("Log in to manage saved labs.")); }, [labId]); async function toggle() { setBusy(true); try { await (saved ? ky.delete(`/api/backend/me/favorites/${labId}`) : ky.put(`/api/backend/me/favorites/${labId}`)); setSaved((value) => !value); setMessage(saved ? "Removed from saved labs." : "Saved lab."); } catch (error) { if (error instanceof HTTPError && error.response.status === 401) window.location.assign("/login"); else setMessage("Could not update saved labs. Your previous state was kept."); } finally { setBusy(false); } } return <section className="profile-recommendation"><button className="catalog-save-button" disabled={busy} onClick={() => void toggle()} type="button">{busy ? "Saving" : saved ? "Remove saved lab" : "Save lab"}</button><p aria-live="polite">{message}</p></section>; }
+
+export function RealLabDetail({ lab, similar }: Props) {
+  const sourceStatusDate = lab.sourceCheckedAt ?? lab.updatedAt;
+  const sourceStatusLabel = lab.sourceCheckedAt ? "Official source checked" : "Profile updated";
+  const contextLine = lab.field === "Unclassified"
+    ? `${lab.professorName} · ${lab.department}`
+    : `${lab.professorName} · ${lab.department} · ${lab.field}`;
+  const hasResearchContent = lab.summary !== null || lab.papers.length > 0 || lab.facts.length > 0;
+  const publicationHeading = lab.papers.length === 1 ? "Recent publication" : "Recent publications";
+  const compactKeywords = lab.keywords.filter((keyword) => keyword.length <= SHORT_KEYWORD_MAX_LENGTH);
+  const researchStatements = lab.keywords.filter((keyword) => keyword.length > SHORT_KEYWORD_MAX_LENGTH);
+
+  return (
+    <main className={styles["shell"]}>
+      <Link className={styles["backLink"]} href="/professors">Back to professor search</Link>
+
+      <header className={styles["hero"]}>
+        <p className={styles["eyebrow"]}>POSTECH research lab</p>
+        <h1>{lab.name}</h1>
+        <p className={styles["contextLine"]}>{contextLine}</p>
+        {compactKeywords.length > 0 ? (
+          <ul aria-label="Indexed research keywords" className={styles["keywordList"]}>
+            {compactKeywords.map((keyword) => <li key={keyword}>{keyword}</li>)}
+          </ul>
+        ) : null}
+        {researchStatements.length > 0 ? (
+          <p aria-label="Research focus from source" className={styles["dataNote"]} role="note">
+            <strong>Research focus:</strong> {researchStatements.join(" ")}
+          </p>
+        ) : null}
+        {lab.keywords.length === 0 ? (
+          <p className={styles["dataNote"]}>Research keywords have not been indexed for this lab yet.</p>
+        ) : null}
+        <div className={styles["sourceStatus"]}>
+          <span>{sourceStatusLabel} {dateFormatter.format(new Date(sourceStatusDate))}</span>
+          {lab.sourceUrl
+            ? <a href={lab.sourceUrl} rel="noreferrer" target="_blank">View source</a>
+            : null}
+        </div>
+      </header>
+
+      <div className={styles["layout"]}>
+        <article aria-label="Professor research profile" className={styles["profile"]}>
+          {lab.summary !== null ? (
+            <section className={styles["section"]}>
+              <p className={styles["sectionLabel"]}>Research profile</p>
+              <h2>Lab overview</h2>
+              <p className={styles["summary"]}>{lab.summary}</p>
+            </section>
+          ) : null}
+
+          {lab.papers.length > 0 ? (
+            <section className={styles["section"]}>
+              <p className={styles["sectionLabel"]}>Published work</p>
+              <h2>{publicationHeading}</h2>
+              <div className={styles["paperList"]}>
+                {lab.papers.map((paper) => (
+                  <article className={styles["paperItem"]} data-testid="paper-preview" key={paper.id}>
+                    <div className={styles["paperMeta"]}>
+                      <span>{paper.publishedYear}</span>
+                      <span>{paper.venue}</span>
+                    </div>
+                    <h3>{paper.title}</h3>
+                    {paper.summary ?? paper.abstract
+                      ? <p>{paper.summary ?? paper.abstract}</p>
+                      : null}
+                    {paper.paperUrl
+                      ? <a href={paper.paperUrl} rel="noreferrer" target="_blank">Read publication</a>
+                      : null}
+                  </article>
+                ))}
+              </div>
+            </section>
+          ) : null}
+
+          {!hasResearchContent ? (
+            <section className={`${styles["section"]} ${styles["availability"]}`}>
+              <p className={styles["sectionLabel"]}>Research profile</p>
+              <h2>Research details are still being indexed</h2>
+              <p>Use the official source and contact information while this profile is completed.</p>
+            </section>
+          ) : null}
+
+          {lab.facts.length > 0 ? (
+            <section className={styles["section"]}>
+              <p className={styles["sectionLabel"]}>Verified details</p>
+              <h2>Lab facts</h2>
+              <dl className={styles["factList"]}>
+                {lab.facts.map((fact) => (
+                  <div key={`${fact.factType}-${fact.valueText ?? fact.valueNumber ?? "unavailable"}-${fact.sourceUrl ?? "no-source"}`}>
+                    <dt>{fact.factType}</dt>
+                    <dd>
+                      <span>{factValue(fact)}</span>
+                      {fact.sourceUrl
+                        ? <a href={fact.sourceUrl} rel="noreferrer" target="_blank">Source</a>
+                        : null}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+            </section>
+          ) : null}
+
+          <section className={styles["section"]}>
+            <p className={styles["sectionLabel"]}>Continue exploring</p>
+            <h2>Similar labs</h2>
+            {similar === null ? (
+              <p className={styles["secondaryText"]}>Similar labs could not be loaded right now.</p>
+            ) : similar.length > 0 ? (
+              <ul className={styles["similarList"]}>
+                {similar.map((item) => (
+                  <li key={item.id}>
+                    <Link href={`/professors/${item.id}`}>{item.name}</Link>
+                    <span>{item.professorName} · {item.department}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className={styles["secondaryText"]}>No closely related labs were found.</p>
+            )}
+          </section>
+        </article>
+
+        <aside aria-label="Application context" className={contextStyles["context"]}>
+          <section className={contextStyles["contextSection"]}>
+            <p className={contextStyles["sectionLabel"]}>Profile fit</p>
+            <h2>Compare your research</h2>
+            <div className={contextStyles["alignment"]}>
+              <ProfessorProfileAlignment topics={lab.keywords} variant="summary" />
+            </div>
+          </section>
+
+          {lab.contactEmail || lab.location ? (
+            <section className={contextStyles["contextSection"]}>
+              <p className={contextStyles["sectionLabel"]}>Contact</p>
+              <h2>Reach the lab</h2>
+              <dl className={contextStyles["contactList"]}>
+                {lab.contactEmail ? (
+                  <div><dt>Email</dt><dd><a href={`mailto:${lab.contactEmail}`}>{lab.contactEmail}</a></dd></div>
+                ) : null}
+                {lab.location ? <div><dt>Location</dt><dd>{lab.location}</dd></div> : null}
+              </dl>
+            </section>
+          ) : null}
+
+          <section className={contextStyles["contextSection"]}>
+            <p className={contextStyles["sectionLabel"]}>Application check</p>
+            <h2>Recruitment status</h2>
+            <p className={contextStyles["guidance"]}>
+              <strong>Not verified</strong>
+              <span>Check the official lab source and graduate admissions notice for current openings.</span>
+            </p>
+          </section>
+
+          {lab.homepageUrl || lab.sourceUrl ? (
+            <section className={contextStyles["contextSection"]}>
+              <p className={contextStyles["sectionLabel"]}>Official links</p>
+              <h2>Check the source</h2>
+              <div className={contextStyles["sourceLinks"]}>
+                {lab.homepageUrl
+                  ? <a href={lab.homepageUrl} rel="noreferrer" target="_blank">Visit lab homepage</a>
+                  : null}
+                {lab.sourceUrl
+                  ? <a href={lab.sourceUrl} rel="noreferrer" target="_blank">Open POSTECH profile</a>
+                  : null}
+              </div>
+            </section>
+          ) : null}
+
+          <div className={contextStyles["actions"]}>
+            <div className={contextStyles["saveRow"]}>
+              <span>Save professor</span>
+              <SaveProfessorButton labId={lab.id} />
+            </div>
+            <Link className={`primary-button contact-draft-link ${contextStyles["draftLink"]}`} href={`/contact?professor=${encodeURIComponent(lab.id)}`}>
+              Create outreach email draft
+            </Link>
+            <p>Review the official source before contacting the lab.</p>
+          </div>
+        </aside>
+      </div>
+    </main>
+  );
+}
