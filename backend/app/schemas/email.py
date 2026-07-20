@@ -30,5 +30,28 @@ class EmailDraftResponse(ApiSchema):
     subject: str
     body: str
     personalization_notes: list[str]
-    generation_mode: Literal["ai", "demo"]
+    generation_mode: Literal["ai", "demo", "local_rule_based"]
     model: str | None
+
+
+class EmailReviewRequest(ApiSchema):
+    lab_id: str = Field(min_length=1, max_length=120)
+    subject: str = Field(min_length=1, max_length=300)
+    body: str = Field(min_length=1, max_length=10_000)
+    language: Literal["en", "ko"] = "en"
+
+
+class EmailReviewIssue(ApiSchema):
+    category: Literal["spelling", "flow", "professor_fit"]
+    severity: Literal["info", "warning"]
+    message: str
+    suggestion: str
+
+
+class EmailReviewResponse(ApiSchema):
+    score: int = Field(ge=0, le=100)
+    summary: str
+    issues: list[EmailReviewIssue]
+    reviewed_subject: str
+    reviewed_body: str
+    review_mode: Literal["local_rule_based"] = "local_rule_based"
