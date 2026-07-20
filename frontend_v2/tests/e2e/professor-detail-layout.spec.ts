@@ -93,11 +93,24 @@ test("professor detail adapts its sections to the available backend data", async
   const labId = await getFirstBackendLabId(request);
   await page.goto(`${appOrigin}/professors/${labId}`);
 
+  const backLink = page.getByRole("link", { name: "Back to professor search" });
+  const backIcon = backLink.locator("svg");
+  const backLabel = backLink.locator("span");
+  await expect(backIcon).toBeVisible();
+  const [backIconBox, backLabelBox] = await Promise.all([backIcon.boundingBox(), backLabel.boundingBox()]);
+  if (backIconBox === null || backLabelBox === null) {
+    throw new RangeError("Back link icon and label must both have layout boxes.");
+  }
+  const iconCenter = backIconBox.y + backIconBox.height / 2;
+  const labelCenter = backLabelBox.y + backLabelBox.height / 2;
+  expect(Math.abs(iconCenter - labelCenter)).toBeLessThanOrEqual(1);
+
   const researchProfile = page.getByRole("article", { name: "Professor research profile" });
   const applicationContext = page.getByRole("complementary", { name: "Application context" });
   const researchSections = researchProfile.locator(":scope > section");
+  const similarSection = page.getByRole("heading", { name: "Similar labs" }).locator("..");
 
-  await expect(researchSections).toHaveCount(3);
+  await expect(researchSections).toHaveCount(2);
   await expect(researchProfile.getByRole("heading", { name: "Lab overview" })).toBeVisible();
   await expect(researchProfile.getByRole("heading", { name: "Recent publication" })).toBeVisible();
   await expect(researchProfile.getByRole("heading", { name: "Research focus" })).toHaveCount(0);
@@ -107,24 +120,28 @@ test("professor detail adapts its sections to the available backend data", async
   await expect(applicationContext.getByRole("heading", { name: "Recruitment status" })).toBeVisible();
   await expect(applicationContext.getByText("Not verified", { exact: true })).toBeVisible();
   await expect(applicationContext).toContainText("graduate admissions notice");
-  await expect(applicationContext).toHaveCSS("border-radius", "16px");
-  await expect(applicationContext).toHaveCSS("border-left-width", "1px");
+  await expect(applicationContext).toHaveCSS("border-radius", "0px");
+  await expect(applicationContext).toHaveCSS("border-top-width", "1px");
   await expect(page.getByRole("link", { name: "Create outreach email draft" })).toHaveCSS(
     "background-color",
     "rgb(49, 130, 246)",
   );
 
-  const [researchBox, contextBox] = await Promise.all([
+  const [researchBox, contextBox, similarBox] = await Promise.all([
     researchProfile.boundingBox(),
     applicationContext.boundingBox(),
+    similarSection.boundingBox(),
   ]);
-  expect(researchBox).not.toBeNull();
-  expect(contextBox).not.toBeNull();
-  expect(contextBox!.x).toBeGreaterThan(researchBox!.x + researchBox!.width);
-  expect(researchBox!.width).toBeGreaterThan(contextBox!.width);
+  if (researchBox === null || contextBox === null || similarBox === null) {
+    throw new RangeError("Every professor detail section must have a layout box.");
+  }
+  expect(Math.abs(contextBox.x - researchBox.x)).toBeLessThanOrEqual(1);
+  expect(Math.abs(contextBox.width - researchBox.width)).toBeLessThanOrEqual(1);
+  expect(contextBox.y).toBeGreaterThanOrEqual(researchBox.y + researchBox.height + 31);
+  expect(similarBox.y).toBeGreaterThanOrEqual(contextBox.y + contextBox.height + 31);
 
   await captureBreakpoints(page);
-  await expect(applicationContext).toHaveCSS("border-left-width", "1px");
+  await expect(applicationContext).toHaveCSS("border-top-width", "1px");
 
   const hasHorizontalOverflow = await page.evaluate(
     () => document.documentElement.scrollWidth > document.documentElement.clientWidth,

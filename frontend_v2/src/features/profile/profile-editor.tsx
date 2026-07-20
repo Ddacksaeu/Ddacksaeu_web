@@ -78,7 +78,7 @@ export function ProfileEditor({
       return;
     }
     if (file.type === "application/pdf") {
-      setAnalysis({ status: "ready", keywords: [], note: "PDF format verified. Text extraction will be available after crawler integration." });
+      setAnalysis({ status: "ready", keywords: [], note: "PDF format verified. Text extraction will run when you save; image-only PDFs may not be readable." });
       return;
     }
     setAnalysis({ status: "invalid", message: "Unsupported file type." });

@@ -75,7 +75,16 @@ export function ProfileWorkspace() {
         program: submission.degreeProgram,
         interests: [...submission.researchInterests],
       });
-      if (submission.cvFile !== null) await analyzeDocument(submission.cvFile);
+      if (submission.cvFile !== null) {
+        try {
+          await analyzeDocument(submission.cvFile);
+        } catch {
+          await loadWorkspace();
+          setEditing(false);
+          setStatus("Profile saved, but the CV could not be analyzed. Try uploading it from CV Analysis.");
+          return;
+        }
+      }
       await loadWorkspace();
       setEditing(false); setStatus("Changes saved.");
     } catch {

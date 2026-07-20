@@ -3,13 +3,16 @@ import { expect, test } from "@playwright/test";
 import { useSignedInDemo } from "./demo-session";
 
 test("Given a new applicant, when onboarding is completed, then the personalized dashboard is shown", async ({ page }) => {
+  const email = `product-flow-${Date.now()}@example.test`;
   // Given
   await page.goto("/login");
-  await page.getByLabel("Username").fill("researcher");
-  await page.getByLabel("Password").fill("demo");
+  await page.getByRole("button", { name: "New here? Create an account" }).click();
+  await page.getByLabel("Name").fill("Product Flow");
+  await page.getByLabel("Email").fill(email);
+  await page.getByLabel("Password").fill("product-flow-password");
 
   // When
-  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.getByRole("button", { name: "Create account" }).click();
   await expect(page).toHaveURL(/onboarding/);
   expect(new URL(page.url()).search).toBe("");
   await page.getByLabel("Preferred university").selectOption("Seoul National University");
@@ -22,13 +25,13 @@ test("Given a new applicant, when onboarding is completed, then the personalized
   expect(new URL(page.url()).search).toBe("");
   await expect(page.getByRole("heading", { name: "Home", level: 1 })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Professors close to your interests" })).toBeVisible();
-  await expect(page.getByText("Profile ready · Next: add a CV")).toBeVisible();
+  await expect(page.getByText("Profile ready - Next: add a CV")).toBeVisible();
   const savedProfile = await page.evaluate(async () => {
     const response = await fetch("/api/profile");
     return response.json() as Promise<{ readonly profile: { readonly preferredUniversity: string; readonly applicationTerm: string; readonly degreeProgram: string } }>;
   });
   expect(savedProfile.profile).toMatchObject({ preferredUniversity: "Seoul National University", applicationTerm: "Spring 2027", degreeProgram: "Master's" });
-  await expect(page.getByRole("heading", { name: "Labs with recruitment to verify" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Application tasks to verify" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Upcoming dates" })).toBeVisible();
 });
 
@@ -41,12 +44,12 @@ test("Given the dashboard, when a professor is explored, then detail and contact
   await page.getByLabel("Search professors, labs, or keywords").fill("Vision");
 
   // Then
-  await expect(page.getByText(/2 professors found/)).toBeVisible();
-  await page.getByRole("link", { name: "View details" }).first().click();
-  await expect(page).toHaveURL(/professors\/snu-demo-02$/, { timeout: 30000 });
-  await expect(page.getByRole("heading", { name: /Intelligent Vision Lab/ })).toBeVisible();
-  await expect(page.getByText("Create a profile to compare", { exact: true })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Recent research and paper preview" })).toBeVisible();
+  const results = page.getByRole("region", { name: "Professor search results" });
+  await expect(results.getByRole("article").first()).toBeVisible();
+  await results.getByRole("link", { name: "View details" }).first().click();
+  await expect(page).toHaveURL(/professors\/LAB_[A-Z0-9]+$/, { timeout: 30_000 });
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+  await expect(page.getByRole("complementary", { name: "Application context" })).toBeVisible();
   await page.getByRole("link", { name: "Create outreach email draft" }).click();
   await expect(page.getByRole("heading", { name: "Outreach email draft" })).toBeVisible();
 });
@@ -99,15 +102,14 @@ test("professor results keep compact spacing below the result count", async ({ p
   expect(gap).toBeLessThanOrEqual(16);
 });
 
-test("professor detail keeps project and paper titles intact on mobile", async ({ page }) => {
+test("professor detail keeps publication titles intact on mobile", async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 812 });
   await useSignedInDemo(page);
-  await page.goto("/professors/snu-demo-02");
+  await page.goto("/professors/LAB_E10BFB94AFD8");
 
-  const project = page.getByText("Reproducible benchmark for student researchers", { exact: true });
-  const paper = page.getByText(/Adaptive framework for representation learning$/, { exact: true });
-  await expect(project).toHaveCSS("word-break", "keep-all");
-  await expect(paper).toHaveCSS("word-break", "keep-all");
+  const publication = page.getByRole("article", { name: "Professor research profile" }).getByRole("heading", { level: 3 }).first();
+  await expect(publication).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 });
 
 test("Given the signed-in workspace, when core tools are opened, then every IA destination has a usable screen", async ({ page }) => {
@@ -115,24 +117,26 @@ test("Given the signed-in workspace, when core tools are opened, then every IA d
   await useSignedInDemo(page);
   for (const target of [
     { path: "/calendar", heading: "See admissions deadlines" },
-    { path: "/profile", heading: "research profile" },
+    { path: "/profile", heading: "Profile$" },
   ]) {
     await page.goto(target.path);
     await expect(page.getByRole("heading", { name: new RegExp(target.heading), level: 1 })).toBeVisible();
   }
 });
 
-test("Given no profile, when a demo profile is saved, then My Page reveals the saved profile and recommendations", async ({ page }) => {
+test("Given an account profile, when it is updated, then My Page reveals the saved changes", async ({ page }) => {
   await useSignedInDemo(page);
   await page.goto("/profile");
-  await expect(page.getByRole("heading", { name: "Create research profile", level: 1 })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Playwright Researcher’s Profile", level: 1 })).toBeVisible();
+  await page.getByRole("button", { name: "Edit profile" }).click();
+  await expect(page.getByRole("heading", { name: "Edit research profile", level: 1 })).toBeVisible();
   await page.getByLabel("Name").fill("Test Researcher");
   await page.getByLabel("Research interests").fill("computer vision, HCI");
   await page.getByLabel("I consent to saving this profile data").check();
-  await page.getByRole("button", { name: "Save profile" }).click();
+  await page.getByRole("button", { name: "Save changes" }).click();
 
   await expect(page.getByRole("heading", { name: "Test Researcher’s Profile", level: 1 })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Professors close to your interests" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Saved professors" })).toBeVisible();
 });
 
 test("Given the signed-in navigation, then My Page is always the final destination", async ({ page }) => {

@@ -31,7 +31,12 @@ export function RealLabDetail({ lab, similar }: Props) {
 
   return (
     <main className={styles["shell"]}>
-      <Link className={styles["backLink"]} href="/professors">Back to professor search</Link>
+      <Link className={styles["backLink"]} href="/professors">
+        <svg aria-hidden="true" focusable="false" height="20" viewBox="0 0 20 20" width="20">
+          <path d="M16 10H4m0 0 5-5m-5 5 5 5" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" />
+        </svg>
+        <span>Back to professor search</span>
+      </Link>
 
       <header className={styles["hero"]}>
         <p className={styles["eyebrow"]}>POSTECH research lab</p>
@@ -120,24 +125,6 @@ export function RealLabDetail({ lab, similar }: Props) {
             </section>
           ) : null}
 
-          <section className={styles["section"]}>
-            <p className={styles["sectionLabel"]}>Continue exploring</p>
-            <h2>Similar labs</h2>
-            {similar === null ? (
-              <p className={styles["secondaryText"]}>Similar labs could not be loaded right now.</p>
-            ) : similar.length > 0 ? (
-              <ul className={styles["similarList"]}>
-                {similar.map((item) => (
-                  <li key={item.id}>
-                    <Link href={`/professors/${item.id}`}>{item.name}</Link>
-                    <span>{item.professorName} · {item.department}</span>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className={styles["secondaryText"]}>No closely related labs were found.</p>
-            )}
-          </section>
         </article>
 
         <aside aria-label="Application context" className={contextStyles["context"]}>
@@ -197,6 +184,25 @@ export function RealLabDetail({ lab, similar }: Props) {
             <p>Review the official source before contacting the lab.</p>
           </div>
         </aside>
+
+        <section className={`${styles["section"]} ${styles["similarSection"]}`}>
+          <p className={styles["sectionLabel"]}>Continue exploring</p>
+          <h2>Similar labs</h2>
+          {similar === null ? (
+            <p className={styles["secondaryText"]}>Similar labs could not be loaded right now.</p>
+          ) : similar.length > 0 ? (
+            <ul className={styles["similarList"]}>
+              {similar.map((item) => (
+                <li key={item.id}>
+                  <Link href={`/professors/${item.id}`}>{item.name}</Link>
+                  <span>{item.professorName} · {item.department}</span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className={styles["secondaryText"]}>No closely related labs were found.</p>
+          )}
+        </section>
       </div>
     </main>
   );

@@ -25,6 +25,8 @@ test("real profile fields use the product form layout instead of browser default
   });
 
   await page.goto("/profile");
+  await expect(page.getByRole("heading", { name: "1234’s Profile" })).toBeVisible();
+  await page.getByRole("button", { name: "Edit profile" }).click();
 
   const form = page.locator("form.profile-card");
   const nameField = page.getByLabel("Name");

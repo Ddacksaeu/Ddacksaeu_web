@@ -6,12 +6,17 @@
 
 .backLink {
   display: inline-flex;
+  gap: 8px;
   min-height: 44px;
   align-items: center;
   color: var(--text-secondary);
   font-size: 14px;
   font-weight: 600;
   text-decoration: none;
+}
+
+.backLink svg {
+  flex: none;
 }
 
 .backLink:hover,
@@ -121,13 +126,9 @@
 
 .layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 320px;
   gap: 32px;
-  align-items: start;
   margin-top: 32px;
 }
-
-.profile { min-width: 0; }
 
 .section {
   padding: 32px 0 36px;
@@ -135,9 +136,11 @@
 
 .section:first-child { padding-top: 0; }
 
-.section + .section {
+.section + .section,
+.similarSection {
   border-top: 1px solid var(--line);
 }
+
 
 .section h2 {
   margin: 0;
@@ -256,11 +259,6 @@
   line-height: 1.5;
 }
 
-@media (max-width: 800px) {
-  .layout {
-    grid-template-columns: 1fr;
-  }
-}
 
 @media (max-width: 600px) {
   .shell {

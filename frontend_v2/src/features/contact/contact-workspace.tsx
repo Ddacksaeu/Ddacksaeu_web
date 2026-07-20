@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 
 import styles from "../../styles/workspace.module.css";
-import { saveContactDraft } from "./contact-draft-store";
+import { getContactDraftSnapshot, parseContactDraft, saveContactDraft } from "./contact-draft-store";
 import { createEmailDraft, getLab, type Lab, WorkspaceApiError } from "../workspace/api";
 
 type ContactWorkspaceProperties = Readonly<{ initialProfessor: string }>;
@@ -23,7 +23,14 @@ export function ContactWorkspace({ initialProfessor }: ContactWorkspacePropertie
       if (!active) return;
       setLab(value);
       setProfessor(value.professorName);
-      setStatus("Ready to create a draft using this professor and your analyzed CV.");
+      const saved = parseContactDraft(getContactDraftSnapshot());
+      if (saved?.labId === value.id) {
+        setSubject(saved.subject);
+        setDraft(saved.body);
+        setStatus("Restored your saved draft. Review it before copying or saving again.");
+      } else {
+        setStatus("Ready to create a draft using this professor and your analyzed CV.");
+      }
     }).catch(() => {
       if (active) setStatus("Could not load the selected professor. Return to Professor search and try again.");
     });
@@ -57,7 +64,8 @@ export function ContactWorkspace({ initialProfessor }: ContactWorkspacePropertie
   }
 
   function saveDraft(): void {
-    saveContactDraft({ professor, draft: subject ? `${subject}\n\n${draft}` : draft });
+    if (lab === null) return;
+    saveContactDraft({ labId: lab.id, professor, subject, body: draft });
     setStatus("Saved the draft to this browser for your Profile.");
   }
 

@@ -50,7 +50,7 @@ describe("parseRecommendationResponse", () => {
       matchedKeywords: ["Computer Vision", "PyTorch"],
       shortReason: "Your vision experience closely matches this lab.",
     });
-    expect(recommendations[0]?.scoreBreakdown.keyword_overlap).toEqual({
+    expect(recommendations[0]?.scoreBreakdown["keyword_overlap"]).toEqual({
       score: 38,
       maxScore: 40,
       rawScore: 0.95,

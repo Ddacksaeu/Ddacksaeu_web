@@ -176,7 +176,7 @@ export function RealCalendar() {
           <div className="calendar-upcoming-heading"><p>UPCOMING AGENDA</p><h2 id="upcoming-title">Upcoming dates</h2></div>
           <form action={(data) => void add(data)} className="calendar-quick-add">
             <label>Reminder<input name="title" placeholder="Event title" required /></label>
-            <div><label>Date<input autoComplete="off" inputMode="numeric" name="date" pattern="\\d{4}-\\d{2}-\\d{2}" placeholder="YYYY-MM-DD" required type="text" /></label><label>Type<select name="kind" defaultValue="apply"><option value="apply">Application</option><option value="contact">Contact</option><option value="docs">Documents</option><option value="interview">Interview</option></select></label></div>
+            <div><label>Date<input autoComplete="off" inputMode="numeric" name="date" pattern="[0-9]{4}-[0-9]{2}-[0-9]{2}" placeholder="YYYY-MM-DD" required type="text" /></label><label>Type<select name="kind" defaultValue="apply"><option value="apply">Application</option><option value="contact">Contact</option><option value="docs">Documents</option><option value="interview">Interview</option></select></label></div>
             <button type="submit">Add reminder</button>
           </form>
           {state === "loading" ? <p className="calendar-empty-message" role="status">Loading calendar...</p> : displayEvents.length ? (

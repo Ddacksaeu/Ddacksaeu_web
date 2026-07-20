@@ -1,10 +1,5 @@
 .context {
-  position: sticky;
-  top: 88px;
-  overflow: hidden;
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  background: var(--white);
+  border-top: 1px solid var(--line);
 }
 
 .context a:focus-visible {
@@ -14,7 +9,7 @@
 }
 
 .contextSection {
-  padding: 24px;
+  padding: 32px 0 36px;
 }
 
 .contextSection + .contextSection {
@@ -32,10 +27,14 @@
 .context h2 {
   margin: 0;
   color: var(--ink);
-  font-size: 18px;
+  font-size: 24px;
   line-height: 1.4;
   letter-spacing: -0.025em;
   text-wrap: balance;
+}
+
+.alignment, .contactList, .sourceLinks, .guidance, .actions {
+  max-width: 65ch;
 }
 
 .alignment {
@@ -129,7 +128,8 @@
   display: grid;
   gap: 12px;
   padding: 24px;
-  border-top: 1px solid var(--line);
+  border: 1px solid var(--line);
+  border-radius: 16px;
   background: var(--soft);
 }
 
@@ -182,14 +182,12 @@
   line-height: 1.6;
 }
 
-@media (max-width: 800px) {
-  .context {
-    position: static;
-  }
-}
 
 @media (max-width: 600px) {
-  .contextSection,
+  .contextSection {
+    padding: 28px 0 32px;
+  }
+
   .actions {
     padding: 20px;
   }
