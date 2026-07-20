@@ -86,10 +86,8 @@ OpenAPI docs at `http://127.0.0.1:8000/api/v1/docs`.
 | `DATABASE_URL` | `sqlite+pysqlite:///./ddacksaeu.db` | SQLite locally or `postgresql+psycopg://...` in production |
 | `CORS_ORIGINS` | `http://localhost:5173` in development | Comma-separated allowed origins |
 | `LOG_LEVEL` | `INFO` | Structured logger level |
-| `OPENAI_API_KEY` | unset | Required only for document analysis; read on the server |
-| `OPENAI_MODEL` | `gpt-4o-mini` | Model used for structured document analysis |
 | `DOCUMENT_UPLOAD_DIR` | `.document_uploads` | Private filesystem directory for uploads |
-| `DOCUMENT_MAX_UPLOAD_BYTES` | `10485760` | Maximum PDF size (10 MiB) |
+| `DOCUMENT_MAX_UPLOAD_BYTES` | `10485760` | Maximum PDF, DOCX, or TXT size (10 MiB) |
 
 Production and test environments have no default CORS origins, and reject `*`.
 
@@ -156,8 +154,6 @@ no external web, OCR, or email-service calls.
 ## Recommendations
 
 Read persisted items with `GET /api/v1/recommendations` and explicitly refresh
-them with `POST /api/v1/recommendations/recompute`. The default semantic
-provider is deterministic and requires no network/API key. Set
-`RECOMMENDATION_SEMANTIC_PROVIDER=openai` and `OPENAI_API_KEY` only to use the
-embedding provider; provider failures safely fall back to deterministic lexical
-similarity.
+them with `POST /api/v1/recommendations/recompute`. Keyword normalization,
+TF-IDF similarity, and lexical overlap are deterministic and require no network,
+external AI service, or API key.

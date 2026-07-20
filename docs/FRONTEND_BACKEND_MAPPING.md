@@ -219,6 +219,39 @@ document plus keywords, skills, research interests (as methodologies), and
 projects; a later migration is required to persist every additional returned
 analysis field for retrieval.
 
+## Local CV structure, lab matching, and email review (2026-07-20)
+
+The active `frontend_v2` flow uses deterministic server-side analysis and does
+not require or call OpenAI. Uploaded PDF, DOCX, or TXT content is separated into
+education, work experience, research experience, projects, skills, and research
+interests. Only those structured fields and concise evidence snippets are shown;
+the extracted full CV text is never returned to the browser.
+
+| Frontend_v2 surface | BFF route | Backend API | Behavior |
+| --- | --- | --- | --- |
+| `/cv` | `/api/backend/documents/analyze` | `POST /documents/analyze` | Local section parsing, controlled-vocabulary keyword extraction, and category feedback. |
+| `/cv` recommendations | `/api/backend/recommendations` | `GET /recommendations` | Ranks labs with normalized CV keywords, research interests, lab keywords, and available paper text. |
+| `/contact` | `/api/backend/email/review` | `POST /email/review` | Reviews the user's current subject/body for mechanics, flow, and professor/lab fit; returns suggestions and a locally corrected draft but never sends it. |
+
+The email draft endpoint remains available for a starter template. Both draft
+and review work without a server API key; no secret is exposed to the frontend.
+
+CV analysis additionally separates `work_experience` and
+`campus_community_involvement` from research and project entries. Section
+headings such as internships, leadership, volunteering, awards/activities,
+publications, profile, and additional information are routed independently so
+their text does not leak into the preceding section. Skills and research terms
+are prioritized when they appear in explicit Skills, Interests, Research, or
+Projects sections.
+
+The local email draft service reads the authenticated user's latest structured
+CV analysis and the selected lab's stored public data. It selects a recent
+publication with the strongest lexical overlap, references the lab homepage
+when one is available, and connects those facts to a real CV project or skill.
+The response exposes the publication, homepage, and CV evidence used in
+`personalizationNotes`; it never infers personality or claims that are absent
+from sourced lab data.
+
 ## CV analysis and recommendation frontend integration (in progress, 2026-07-18)
 
 The recommendation screen uses the MVP `demo-user` context until authentication

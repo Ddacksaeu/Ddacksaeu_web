@@ -60,7 +60,7 @@ def test_analyze_pdf_persists_supported_fields_and_returns_structured_result(
 
     assert response.status_code == 201
     payload = response.json()
-    assert payload["education"] == ["B.S. in Computer Science"]
+    assert payload["education"][0]["degree"] == "B.S. in Computer Science"
     assert payload["keyword_weights"] == {"computer vision": 0.9, "pytorch": 0.7}
     with session_factory() as session:
         document = session.scalar(select(UploadedDocument))
@@ -72,7 +72,7 @@ def test_analyze_pdf_persists_supported_fields_and_returns_structured_result(
     assert (tmp_path / "private-uploads" / document.storage_key).is_file()
 
 
-def test_rejects_scanned_pdf_before_openai_call(client: TestClient, monkeypatch) -> None:
+def test_rejects_scanned_pdf_before_local_analysis(client: TestClient, monkeypatch) -> None:
     monkeypatch.setattr(
         "app.api.v1.documents.extract_pdf_text",
         lambda *_: (_ for _ in ()).throw(
@@ -87,7 +87,23 @@ def test_rejects_scanned_pdf_before_openai_call(client: TestClient, monkeypatch)
 
 
 def test_local_analysis_is_deterministic_without_api_key() -> None:
-    text = "B.S. Computer Science\nResearch project: Computer Vision with Python and PyTorch"
+    text = """Education
+B.S. Computer Science | Example University | 2022 - 2026
+Research Experience
+Vision Research Assistant | Example Lab | 2025 - Present
+- Trained a PyTorch object detection model on 10,000 images
+Projects
+Campus Vision Project | 2025
+- Built a Computer Vision prototype with Python and PyTorch
+Work Experience
+Software Engineering Intern | Example Company | 2024 - 2025
+- Implemented a FastAPI service with PostgreSQL
+Campus & Community Involvement
+Robotics Club Mentor | Example University | 2023 - Present
+- Mentored 20 students and organized weekly workshops
+Skills
+Python, PyTorch, FastAPI, PostgreSQL, Computer Vision
+"""
     first = service.analyze_document_text(text)
     second = service.analyze_document_text(text)
 
@@ -95,6 +111,12 @@ def test_local_analysis_is_deterministic_without_api_key() -> None:
     assert "Python" in first.skills
     assert "Computer Vision" in first.research_interests
     assert first.keywords
+    assert first.education[0].institution == "Example University"
+    assert first.research_experience[0].details
+    assert first.projects[0].name == "Campus Vision Project"
+    assert first.work_experience[0].title == "Software Engineering Intern"
+    assert first.campus_community_involvement[0].title == "Robotics Club Mentor"
+    assert "FastAPI" in first.skills
 
 
 def test_latest_analysis_is_authenticated_and_user_isolated(
