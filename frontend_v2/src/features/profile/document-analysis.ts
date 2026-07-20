@@ -40,6 +40,7 @@ const experienceSchema = z.union([experienceObjectSchema, z.string().transform((
 const categoryFeedbackSchema = z.object({
   category: z.string(),
   current_state: z.string(),
+  strengths: z.array(z.string()).readonly().default([]),
   improvements: z.array(z.string()).readonly(),
   suggestions: z.array(z.string()).readonly(),
 }).readonly();

@@ -90,6 +90,7 @@ def extract_txt_text(content: bytes, minimum_characters: int) -> str:
 SECTION_ALIASES = {
     "education": ("education", "academic background", "학력", "교육"),
     "work": (
+        "work",
         "experience",
         "work experience",
         "professional experience",
@@ -236,11 +237,14 @@ DOMAIN_TERMS = {
     "Depth Sensing",
 }
 SKILL_TERMS = set(TERM_ALIASES) - DOMAIN_TERMS
+DATE_TOKEN = r"(?:(?:19|20)\d{2}(?:[./-]\d{1,2})?|(?:0?[1-9]|1[0-2])/(?:19|20)\d{2})"
 DATE_PATTERN = re.compile(
-    r"(?P<start>(?:19|20)\d{2}(?:[./-]\d{1,2})?)\s*(?:[-–—~]|to)\s*"
-    r"(?P<end>(?:(?:19|20)\d{2}(?:[./-]\d{1,2})?|present|current|현재))",
+    rf"(?P<start>{DATE_TOKEN})\s*(?:[-–—~]|to)\s*"
+    rf"(?P<end>(?:{DATE_TOKEN}|present|current|현재))",
     re.IGNORECASE,
 )
+DATE_ONLY_PATTERN = re.compile(rf"^(?:{DATE_TOKEN}|present|current|현재)$", re.IGNORECASE)
+BULLET_PATTERN = re.compile(r"^(?:[•●▪◦\uf0b7*]|[-–—]\s+)")
 
 
 def _heading_key(line: str) -> str | None:
@@ -275,29 +279,97 @@ def _date_range(text: str) -> tuple[str, str]:
     match = DATE_PATTERN.search(text)
     if match:
         return match.group("start"), match.group("end")
-    years = re.findall(r"(?:19|20)\d{2}(?:[./-]\d{1,2})?", text)
-    return (years[0], years[-1] if len(years) > 1 else "") if years else ("", "")
+    dates = re.findall(DATE_TOKEN, text)
+    return (dates[0], dates[-1] if len(dates) > 1 else "") if dates else ("", "")
 
 
 def _is_detail(line: str) -> bool:
-    return bool(re.match(r"^(?:[•●▪◦\uf0b7*]|[-–—]\s+)", line)) or len(line) > 115
+    return bool(BULLET_PATTERN.match(line)) or len(line) > 115
+
+
+def _is_location_line(line: str) -> bool:
+    return bool(
+        re.search(
+            r",\s*[A-Z]{2}$|\b(?:south\s+)?korea$|"
+            r"\b(?:seoul|pohang|busan)(?:,\s*(?:south\s+)?korea)?$|"
+            r"대한민국$|서울$|포항$|부산$",
+            line,
+            re.IGNORECASE,
+        )
+    )
+
+
+def _looks_like_organization(line: str) -> bool:
+    words = line.split()
+    return bool(
+        re.search(
+            r"\b(?:university|college|institute|laboratory|lab|company|hackathon|"
+            r"inc\.?|corp\.?|postech)\b|대학교|대학원|연구소",
+            line,
+            re.IGNORECASE,
+        )
+        or (line.isupper() and 1 <= len(words) <= 6)
+    )
+
+
+def _looks_like_entry_title(line: str) -> bool:
+    words = line.split()
+    return bool(
+        line
+        and len(line) <= 100
+        and 1 <= len(words) <= 12
+        and line[0].isupper()
+        and not line.endswith((".", ",", ";", ":"))
+        and not DATE_ONLY_PATTERN.fullmatch(line)
+        and not DATE_PATTERN.fullmatch(line)
+        and not _is_location_line(line)
+    )
 
 
 def _group_entries(lines: list[str]) -> list[tuple[str, list[str]]]:
     entries: list[tuple[str, list[str]]] = []
     title = ""
     details: list[str] = []
-    for raw in lines:
+    seen_bullet = False
+    for index, raw in enumerate(lines):
         line = _clean_bullet(raw)
         if not line:
             continue
-        starts_entry = "|" in raw and not _is_detail(raw)
-        if title and not starts_entry:
+        is_bullet = bool(BULLET_PATTERN.match(raw))
+        next_raw = lines[index + 1] if index + 1 < len(lines) else ""
+        next_line = _clean_bullet(next_raw)
+        starts_entry = bool(
+            title
+            and seen_bullet
+            and not is_bullet
+            and _looks_like_entry_title(line)
+            and (bool(BULLET_PATTERN.match(next_raw)) or _looks_like_organization(next_line))
+        )
+        if starts_entry:
+            entries.append((title, details))
+            title, details, seen_bullet = line, [], False
+            continue
+        if not title:
+            title = line
+            continue
+        if is_bullet:
+            details.append(line)
+            seen_bullet = True
+            continue
+        if not seen_bullet and _looks_like_organization(line) and "|" not in title:
+            title = f"{title} | {line}"
+            continue
+        if (
+            DATE_ONLY_PATTERN.fullmatch(line)
+            or DATE_PATTERN.fullmatch(line)
+            or _is_location_line(line)
+        ):
             details.append(line)
             continue
-        if title:
-            entries.append((title, details))
-        title, details = line, []
+        if seen_bullet and details:
+            details[-1] = f"{details[-1]} {line}".strip()
+        else:
+            details.append(line)
     if title:
         entries.append((title, details))
     return entries
@@ -323,13 +395,7 @@ def _experience(lines: list[str]) -> list[ExperienceAnalysis]:
             start, end = _date_range(combined)
         if not location:
             location = next(
-                (
-                    detail
-                    for detail in details
-                    if re.search(
-                        r"korea|seoul|pohang|city|province|대한민국|서울|포항", detail, re.I
-                    )
-                ),
+                (detail for detail in details if _is_location_line(detail)),
                 "",
             )[:200]
         visible_details = [
@@ -338,7 +404,7 @@ def _experience(lines: list[str]) -> list[ExperienceAnalysis]:
             if detail
             and detail != location
             and not DATE_PATTERN.fullmatch(detail)
-            and not re.fullmatch(r"(?:19|20)\d{2}(?:[./-]\d{1,2})?", detail)
+            and not DATE_ONLY_PATTERN.fullmatch(detail)
         ]
         items.append(
             ExperienceAnalysis(
@@ -381,8 +447,6 @@ def _education(lines: list[str], unsectioned: list[str]) -> list[EducationAnalys
 
     items: list[EducationAnalysis] = []
     for header, details in grouped[:6]:
-        combined = " ".join([header, *details])
-        start, end = _date_range(combined)
         parts = [part.strip() for part in re.split(r"\s*[|·]\s*", header) if part.strip()]
         degree_index = next(
             (index for index, part in enumerate(parts) if degree_pattern.search(part)),
@@ -396,26 +460,42 @@ def _education(lines: list[str], unsectioned: list[str]) -> list[EducationAnalys
             ),
             None,
         )
+        institution = (
+            parts[institution_index]
+            if institution_index is not None
+            else next(
+                (
+                    detail
+                    for detail in details
+                    if re.search(r"university|college|institute|대학교|대학원", detail, re.I)
+                ),
+                "",
+            )
+        )
+        location = next((detail for detail in details if _is_location_line(detail)), "")[:200]
+        expected_date = next(
+            (detail for detail in details if DATE_ONLY_PATTERN.fullmatch(detail)),
+            "",
+        )
+        start, end = _date_range(header)
+        if not start and expected_date:
+            end = expected_date
+        elif not start:
+            start, end = _date_range(" ".join([header, *details]))
         items.append(
             EducationAnalysis(
                 degree=parts[degree_index] if degree_index is not None else header[:300],
-                institution=parts[institution_index] if institution_index is not None else "",
-                location=next(
-                    (
-                        detail
-                        for detail in details
-                        if re.search(
-                            r"korea|seoul|pohang|city|province|대한민국|서울|포항", detail, re.I
-                        )
-                    ),
-                    "",
-                )[:200],
+                institution=institution[:300],
+                location=location,
                 start_date=start,
                 end_date=end,
                 details=[
                     detail
                     for detail in details
-                    if detail and detail not in {start, end} and not DATE_PATTERN.fullmatch(detail)
+                    if detail
+                    and detail not in {institution, location, start, end}
+                    and not DATE_PATTERN.fullmatch(detail)
+                    and not DATE_ONLY_PATTERN.fullmatch(detail)
                 ][:6],
             )
         )
@@ -499,7 +579,8 @@ class LocalRuleBasedCvAnalyzer:
                 for detail in details
                 if detail
                 and not DATE_PATTERN.fullmatch(detail)
-                and not re.fullmatch(r"(?:19|20)\d{2}(?:[./-]\d{1,2})?", detail)
+                and not DATE_ONLY_PATTERN.fullmatch(detail)
+                and detail != location
             ]
             technologies = [
                 term
@@ -540,7 +621,7 @@ class LocalRuleBasedCvAnalyzer:
             text,
             education=education,
             skills=skills,
-            projects_count=len(projects),
+            projects=projects,
             research_experience=research,
             work_experience=work,
             campus_community_involvement=campus,

@@ -44,6 +44,7 @@ class EvidenceItem(BaseModel):
 class CategoryFeedback(BaseModel):
     category: str = Field(min_length=1, max_length=100)
     current_state: str = Field(min_length=1, max_length=1_000)
+    strengths: list[str] = Field(default_factory=list)
     improvements: list[str] = Field(default_factory=list)
     suggestions: list[str] = Field(default_factory=list)
 
