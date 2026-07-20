@@ -3,11 +3,32 @@ import { z } from "zod";
 
 import { endDemoSession } from "../auth/demo-session";
 
-const api = ky.create({ prefixUrl: "/api/backend", throwHttpErrors: true });
+const api = ky.create({ credentials: "same-origin", prefixUrl: "/api/backend", throwHttpErrors: true });
 export type ApiState = "loading" | "ready" | "empty" | "unauthorized" | "error";
 
 export class WorkspaceApiError extends Error {
-  constructor(readonly status: number, message: string) { super(message); }
+  constructor(readonly status: number, message: string) { super(message); this.name = "WorkspaceApiError"; }
+}
+
+function messageForStatus(status: number, code?: string): string {
+  if (status === 0 || code === "backend_unavailable") return "Could not connect to the server. Check that the backend is running.";
+  if (status === 401) return "Your session has expired. Please sign in again.";
+  if (status === 403) return "You do not have permission to access this resource.";
+  if (status === 404) return "The requested resource could not be found.";
+  if (status === 409) return "This action requires additional profile or CV information.";
+  if (status === 413) return "The selected file exceeds the 10 MB limit.";
+  if (status === 422) return "Please check the information and try again.";
+  if (status >= 500) return "The server could not process this request.";
+  return "The request could not be completed.";
+}
+
+async function errorCode(response: Response): Promise<string | undefined> {
+  try {
+    const body: unknown = await response.clone().json();
+    if (typeof body !== "object" || body === null || !("error" in body)) return undefined;
+    const error = body.error;
+    return typeof error === "object" && error !== null && "code" in error && typeof error.code === "string" ? error.code : undefined;
+  } catch { return undefined; }
 }
 
 export async function request<T>(path: string, schema: z.ZodType<T>, options?: Parameters<typeof api>[1]): Promise<T> {
@@ -18,9 +39,24 @@ export async function request<T>(path: string, schema: z.ZodType<T>, options?: P
         endDemoSession(window.localStorage);
         window.location.replace("/login");
       }
-      throw new WorkspaceApiError(error.response.status, `Request failed (${error.response.status}).`);
+      throw new WorkspaceApiError(error.response.status, messageForStatus(error.response.status, await errorCode(error.response)));
     }
-    throw error;
+    if (error instanceof WorkspaceApiError) throw error;
+    throw new WorkspaceApiError(0, messageForStatus(0));
+  }
+}
+
+async function requestEmpty(path: string, options?: Parameters<typeof api>[1]): Promise<void> {
+  try { await api(path, options); }
+  catch (error) {
+    if (error instanceof HTTPError) {
+      if (error.response.status === 401 && typeof window !== "undefined") {
+        endDemoSession(window.localStorage);
+        window.location.replace("/login");
+      }
+      throw new WorkspaceApiError(error.response.status, messageForStatus(error.response.status, await errorCode(error.response)));
+    }
+    throw new WorkspaceApiError(0, messageForStatus(0));
   }
 }
 
@@ -39,7 +75,7 @@ export const saveProfile = (value: Partial<UserProfile>) => request("me/profile"
 export const getEvents = () => request("me/calendar-events", z.object({ items: z.array(eventSchema) })).then((value) => value.items);
 export const createEvent = (value: Pick<CalendarEvent, "title" | "kind" | "date" | "labId" | "memo">) => request("me/calendar-events", eventSchema, { method: "POST", json: value });
 export const updateEvent = (id: string, value: Partial<Pick<CalendarEvent, "title" | "kind" | "date" | "labId" | "memo">>) => request(`me/calendar-events/${id}`, eventSchema, { method: "PATCH", json: value });
-export const deleteEvent = (id: string) => api.delete(`me/calendar-events/${id}`);
+export const deleteEvent = (id: string) => requestEmpty(`me/calendar-events/${id}`, { method: "DELETE" });
 export const getAdmissions = () => request("admissions", z.object({ items: z.array(admissionSchema) })).then((value) => value.items);
 export const getLatestAnalysis = () => request("documents/latest", documentSchema);
 export const getRecommendations = () => request("recommendations", z.object({ items: z.array(recommendationSchema) })).then((value) => value.items);

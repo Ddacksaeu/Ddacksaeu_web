@@ -77,6 +77,33 @@ test("CV analysis shows the highest-fit professor and its matching basis", async
   await expect(page.getByLabel("Application goal")).toHaveCount(0);
 });
 
+test("a prior CV analysis can be selected from its history", async ({ page }) => {
+  const olderAnalysis = {
+    ...analysis,
+    analysis_id: "analysis-older",
+    original_filename: "older-cv.txt",
+    short_summary: "Earlier systems research experience.",
+  };
+  await useSignedInDemo(page);
+  await page.route("**/api/backend/documents/latest", async (route) => {
+    await route.fulfill({ json: analysis });
+  });
+  await page.route("**/api/backend/documents", async (route) => {
+    await route.fulfill({ json: [analysis, olderAnalysis] });
+  });
+  await page.route("**/api/backend/recommendations", async (route) => {
+    await route.fulfill({ json: recommendations });
+  });
+
+  await page.goto("/cv");
+  const olderEntry = page.locator(".cv-history button").filter({ hasText: "older-cv.txt" });
+  await expect(olderEntry).toHaveCount(1);
+  await olderEntry.click();
+
+  await expect(page.getByRole("heading", { name: "older-cv.txt" })).toBeVisible();
+  await expect(olderEntry).toHaveAttribute("aria-pressed", "true");
+});
+
 test("CV professor matches remain readable across product breakpoints", async ({ page }) => {
   await useSignedInDemo(page);
   await mockCvResults(page);

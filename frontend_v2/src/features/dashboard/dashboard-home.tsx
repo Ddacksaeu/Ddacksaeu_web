@@ -10,6 +10,7 @@ import styles from "./dashboard.module.css";
 
 type DashboardState = "loading" | "ready" | "unauthorized" | "error";
 type TimelineItem = Readonly<{ title: string; date: string; type: string }>;
+type ReadinessItem = Readonly<{ label: string; complete: boolean; href: string; action: string }>;
 const DATE_FORMATTER = new Intl.DateTimeFormat("en", { day: "2-digit", month: "short", timeZone: "Asia/Seoul" });
 
 function formatDate(value: string): string {
@@ -61,8 +62,16 @@ export function DashboardHome() {
   if (state === "unauthorized") return <main className={styles["page"]}><p>Your session has expired.</p><Link href="/login">Log in</Link></main>;
   if (state === "error" || profile === null) return <main className={styles["page"]}><p role="alert">Could not load dashboard data.</p><Link href="/profile">Open Profile</Link></main>;
 
-  const readiness = 35 + (profile.interests.length ? 15 : 0) + (hasCv ? 25 : 0) + (savedCount ? 25 : 0);
-  const readinessMessage = !hasCv ? "Profile ready - Next: add a CV" : !savedCount ? "Profile and CV ready - Next: save professors" : "Profile, CV, and saved professors ready";
+  const readinessItems: readonly ReadinessItem[] = [
+    { label: "Basic profile", complete: Boolean(profile.name.trim() && profile.affiliation.trim()), href: "/profile", action: "Complete profile" },
+    { label: "Research interests", complete: profile.interests.length > 0, href: "/profile", action: "Add research interests" },
+    { label: "CV or portfolio", complete: hasCv, href: "/cv", action: "Upload CV" },
+    { label: "Saved professors", complete: savedCount > 0, href: "/professors", action: "Save a professor" },
+    { label: "Application dates", complete: events.length + admissions.filter((item) => !item.isEnded).length > 0, href: "/calendar", action: "Add an application date" },
+  ];
+  const readiness = readinessItems.filter((item) => item.complete).length * 20;
+  const nextReadinessItem = readinessItems.find((item) => !item.complete);
+  const readinessMessage = nextReadinessItem ? `Next: ${nextReadinessItem.action.toLowerCase()}` : "Your application setup is complete";
   const admissionTimeline: TimelineItem[] = [];
   for (const event of admissions) {
     if (!event.isEnded) admissionTimeline.push({ title: event.title, date: event.startAt, type: "Admissions" });
@@ -81,9 +90,11 @@ export function DashboardHome() {
         </nav>
       </header>
       <section aria-label="Application setup" className={styles["statusStrip"]}>
-        <div className={styles["statusCopy"]}><span>Application setup</span><strong>{readinessMessage}</strong></div>
-        <div aria-label={`Application readiness: ${readiness}%`} aria-valuemax={100} aria-valuemin={0} aria-valuenow={readiness} className={styles["progressTrack"]} role="progressbar"><i style={{ width: `${readiness}%` }} /></div>
-        <span className={styles["readinessValue"]}>{readiness}% ready</span>
+        <Link aria-label={`Application setup: ${readiness}% ready. ${readinessMessage}`} className={styles["statusLink"]} href={nextReadinessItem?.href ?? "/profile"}>
+          <div className={styles["statusCopy"]}><span>Application setup</span><strong>{readinessMessage}</strong></div>
+          <div aria-label={`Application readiness: ${readiness}%`} aria-valuemax={100} aria-valuemin={0} aria-valuenow={readiness} className={styles["progressTrack"]} role="progressbar"><i style={{ width: `${readiness}%` }} /></div>
+          <span className={styles["readinessValue"]}>{readiness}% ready</span>
+        </Link>
       </section>
       {notice && <p aria-live="polite">{notice}</p>}
 
@@ -119,7 +130,7 @@ export function DashboardHome() {
             </div>
             {upcoming.length ? (
               <ul className={styles["recruitmentList"]}>{upcoming.slice(0, 3).map((item) => (
-                <li key={`${item.type}-${item.title}-${item.date}`}><Link href="/calendar"><div><strong>{item.title}</strong><span>{formatDate(item.date)} - {item.type}</span></div><small>Source check needed</small></Link></li>
+                <li key={`${item.type}-${item.title}-${item.date}`}><Link href={`/calendar?date=${item.date.slice(0, 10)}`}><div><strong>{item.title}</strong><span>{formatDate(item.date)} - {item.type}</span></div><small>View date →</small></Link></li>
               ))}</ul>
             ) : <p>No upcoming tasks yet.</p>}
           </section>
@@ -127,18 +138,16 @@ export function DashboardHome() {
 
         <aside aria-label="Application overview" className={styles["overview"]}>
           <section className={`${styles["overviewSection"]} ${styles["profileOverview"]}`}>
-            <div className={styles["overviewHeading"]}><h2>Profile readiness</h2><strong>{readiness}%</strong></div>
+            <div className={styles["overviewHeading"]}><Link aria-label="Manage profile readiness" href="/profile"><h2>Profile readiness</h2><strong>{readiness}%</strong></Link></div>
             <ul className={styles["checklist"]}>
-              <li data-complete="true"><span>Research profile</span><strong>Done</strong></li>
-              <li data-complete={hasCv}><span>CV or portfolio</span><strong>{hasCv ? "Done" : "Add"}</strong></li>
-              <li data-complete={savedCount > 0}><span>Saved professors</span><strong>{savedCount ? "Done" : "Save"}</strong></li>
+              {readinessItems.map((item) => <li data-complete={item.complete} key={item.label}><Link href={item.href}><span>{item.label}</span><strong>{item.complete ? "Done" : item.action}</strong></Link></li>)}
             </ul>
-            <Link className={styles["railAction"]} href="/profile">Manage profile</Link>
+            <Link className={styles["railAction"]} href={nextReadinessItem?.href ?? "/profile"}>{nextReadinessItem?.action ?? "Review profile"}</Link>
           </section>
           <section className={`${styles["overviewSection"]} ${styles["datesOverview"]}`}>
             <div className={styles["overviewHeading"]}><h2>Upcoming dates</h2><Link href="/calendar">View all</Link></div>
             {upcoming.length ? <ol className={styles["deadlineList"]}>{upcoming.slice(0, 3).map((item) => (
-              <li key={`rail-${item.type}-${item.title}-${item.date}`}><time dateTime={item.date}>{formatDate(item.date)}</time><div><strong>{item.title}</strong><span>{item.type}</span></div></li>
+              <li key={`rail-${item.type}-${item.title}-${item.date}`}><Link href={`/calendar?date=${item.date.slice(0, 10)}`}><time dateTime={item.date}>{formatDate(item.date)}</time><div><strong>{item.title}</strong><span>{item.type}</span></div></Link></li>
             ))}</ol> : <p>No upcoming dates.</p>}
             <p className={styles["demoNote"]}>Verify official dates on the source site.</p>
           </section>
