@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import atexit
 import csv
 import hashlib
 import heapq
@@ -29,7 +30,7 @@ from urllib3.util.retry import Retry
 # ============================================================
 # 0. Version and defaults
 # ============================================================
-ENRICHER_VERSION = "0.10.4-evidence-contract"
+ENRICHER_VERSION = "0.12.3-provenance-state-repair"
 
 DEFAULT_DATA_DIR = Path("./data")
 DEFAULT_REQUEST_DELAY_SECONDS = 0.55
@@ -38,6 +39,20 @@ DEFAULT_MAX_DEPARTMENT_PAGES = 12
 DEFAULT_MAX_DEPTH = 2
 DEFAULT_CHECKPOINT_EVERY = 1
 DEFAULT_RESPECT_ROBOTS = True
+DEFAULT_CONNECT_TIMEOUT_SECONDS = 4
+DEFAULT_HTTP_RETRIES = 1
+DEFAULT_MAX_HOST_FAILURES = 3
+DEFAULT_LAB_LINK_MAX_PAGES = 120
+DEFAULT_LAB_LINK_MAX_DEPTH = 2
+DEFAULT_LAB_LINK_CANDIDATES_PER_LAB = 3
+DEFAULT_LAB_LINK_IDENTITY_SOURCES_PER_LAB = 2
+DEFAULT_LAB_LINK_HOST_PAGE_CAP = 20
+DEFAULT_LAB_LINK_PROGRESS_EVERY = 10
+DEFAULT_LAB_LINK_TIME_BUDGET_MINUTES = 20
+DEFAULT_LAB_LINK_HOMEPAGE_PROBE_PAGES = 2
+AIF_RESEARCHER_LIST_URL = "https://aif.postech.ac.kr/kor/research/researcher-search.do"
+AIF_RESEARCHER_PAGE_SIZE = 10
+AIF_RESEARCHER_MAX_RECORDS = 340
 MIN_AUTHORITATIVE_SUCCESS_RATIO = 1.0
 DEFAULT_MIN_PRIMARY_ROSTER_COVERAGE = 0.20
 CENTRAL_RESEARCHER_HOSTS = {"postech.ac.kr", "www.postech.ac.kr"}
@@ -778,6 +793,88 @@ SHARED_PORTAL_MAX_MATCHES = {
 
 
 
+# High-yield official pages that expose professor e-mail, lab name and/or a
+# direct research-group homepage. They are mined by exact professor e-mail;
+# their navigation text is never used as professor data.
+LAB_LINK_DIRECTORY_URLS = (
+    "https://www.postech.ac.kr/kor/research-industry-academia/researcher-search.do",
+    "https://postech.ac.kr/eng/research/researcher_search_list.do",
+    "https://emed.postech.ac.kr/web/?sub=lab&top=study",
+    "https://med.postech.ac.kr/web/?sub=lab&top=study",
+    "https://emed.postech.ac.kr/web/?depart=1&position=1&sub=professor&top=member",
+    "https://ax.postech.ac.kr/ax/res/research_area.do",
+    "https://cite.postech.ac.kr/bbs/board.php?bo_table=sub2_1_a",
+    "https://cite.postech.ac.kr/bbs/board.php?bo_table=sub2_1_b",
+    "https://me.postech.ac.kr/ko/page/member01",
+    "https://ph.postech.ac.kr/physics/member/professor.do?mode=list",
+    "https://mse.postech.ac.kr/theme/mse/html/proff.php",
+    "https://mse.postech.ac.kr/en/theme/mse_en/html/proff.php",
+    "https://chem.postech.ac.kr/bbs/board.php?bo_table=en2_1",
+    "https://ce.postech.ac.kr/bbs/board.php?bo_table=eng4_1",
+    "https://ime.postech.ac.kr/ime/people/faculty.do",
+    "https://cse.postech.ac.kr/csepostech/people/faculty.do",
+    "https://dane.postech.ac.kr/member/faculty.php",
+    "https://eecs.postech.ac.kr/teaching-and-research/professor/?dept=ALL",
+    "https://gift.postech.ac.kr/bbs/board.php?bo_table=sub2_8_N",
+)
+
+LAB_LINK_STRONG_LABELS = (
+    "연구실 홈페이지", "랩 홈페이지", "공식 홈페이지", "공식 웹사이트",
+    "lab homepage", "laboratory homepage", "research group homepage",
+    "official website", "official homepage",
+)
+LAB_LINK_WEAK_LABELS = (
+    "homepage", "home page", "website", "web site", "웹사이트", "홈페이지",
+    "lab", "laboratory", "research group", "연구실",
+)
+LAB_NAME_LABELS = (
+    "연구실명", "연구실", "랩", "lab name", "laboratory", "lab",
+    "research office", "research laboratory", "research group",
+)
+LAB_LINK_SOURCE_PATH_HINTS = (
+    "faculty", "professor", "people", "member", "researcher", "staff",
+    "lab", "laboratory", "research_area", "research-area", "연구실",
+)
+LAB_LINK_RENDER_HOSTS = {
+    "life.postech.ac.kr", "synbio.postech.ac.kr", "ax.postech.ac.kr",
+    "gradsemi.postech.ac.kr",
+}
+GENERIC_HOMEPAGE_TITLES = {
+    "home", "homepage", "welcome", "website", "postech",
+    "pohang university of science and technology", "연구실", "홈",
+}
+
+GENERIC_LAB_NAME_EXACT = {
+    "lab", "laboratory", "research group", "research center",
+    "our lab", "the lab", "this lab", "our laboratory",
+    "연구실", "본 연구실", "건강한 연구실",
+}
+LAB_NAME_NOISE_PATTERNS = (
+    re.compile(r"(?i)^(?:head|director|principal investigator|professor|contact|about us)\b"),
+    re.compile(r"(?i)\b(?:is funded by|funded by|supported by|welcome to our|click here|homepage|website)\b"),
+    re.compile(r"(?i)^(?:www\.|https?://)"),
+)
+BROAD_PAGE_MAX_KNOWN_EMAILS = 3
+BROAD_PAGE_MAX_KNOWN_NAMES = 4
+DEAD_HOMEPAGE_PATTERNS = (
+    re.compile(r"\b(?:404|403|500)\b.{0,30}(?:not found|error|forbidden)", re.I),
+    re.compile(r"(?:domain for sale|buy this domain|parked domain|expired domain)", re.I),
+    re.compile(r"(?:페이지를 찾을 수 없|존재하지 않는 페이지|접근이 거부)", re.I),
+)
+
+LOCATION_PROSE_NOISE_RE = re.compile(
+    r"(?:박사과정\s*시절|연락바랍니다|연락\s*바랍니다|성적증명서|"
+    r"학부연구|대학원\s*입학|모집|Track\s*Chair|학회|국회|특별법|"
+    r"처분장\s*정책|전망입니다|기사|보도|수상|게재|개최|선정)",
+    re.I,
+)
+POSTECH_POSTAL_ADDRESS_RE = re.compile(
+    r"(?:\b37673\b|경상북도\s*포항시|경북\s*포항시|포항시\s*남구|"
+    r"청암로\s*77|효자동\s*산?\d+|(?:TEL|전화)\.?\s*0?54[- .]279)",
+    re.I,
+)
+
+
 # ============================================================
 # 2. CSV schemas
 # ============================================================
@@ -872,6 +969,38 @@ TRUSTED_LAB_URL_STATUSES = {
     "manual",
 }
 
+# Explicit source precedence for conflicting research-group links.  A current
+# departmental professor page is preferred to the central researcher index,
+# while an actually verified homepage still outranks an unverified guess.
+LAB_LINK_SOURCE_PRIORITY = {
+    "department_profile": 700,
+    "department_faculty_page": 650,
+    "department_source": 600,
+    "professor_profile": 500,
+    "enrichment_source": 450,
+    "official_directory": 400,
+    "aif_researcher_detail": 350,
+    "aif_researcher_index": 300,
+    "existing_trusted_revalidation": 200,
+    "existing_candidate": 150,
+    "homepage_title_guess": 100,
+}
+
+QUARANTINED_DATA_STATES = {
+    "clean_only_quarantined",
+    "authoritative_rebuild_pending",
+}
+
+AUTHORITATIVE_DATA_STATES = {
+    "authoritative_rebuilt",
+    "authoritative_no_match",
+    "authoritative_identity_only",
+    "authoritative_central_identity_fallback",
+    "manual_verified",
+    "incremental_verified",
+    "legacy_unverified",
+}
+
 
 # ============================================================
 # 3. Runtime paths and data classes
@@ -886,6 +1015,7 @@ class RuntimePaths:
     raw: Path
     log: Path
     rebuild_report: Path
+    lab_link_diagnostics: Path
 
     @classmethod
     def from_args(cls, data_dir: Path, overrides: Optional[Path]) -> "RuntimePaths":
@@ -900,6 +1030,7 @@ class RuntimePaths:
             raw=data_dir / "raw_stage2",
             log=data_dir / "stage2_crawl_log.jsonl",
             rebuild_report=data_dir / "authoritative_rebuild_report.json",
+            lab_link_diagnostics=data_dir / "lab_link_diagnostics.csv",
         )
 
 
@@ -923,6 +1054,20 @@ class MatchResult:
     page_url: str
 
 
+@dataclass(frozen=True)
+class LabLinkCandidate:
+    lab_id: str
+    url: str
+    source_url: str
+    source_kind: str
+    evidence_method: str
+    score: int
+    label_text: str = ""
+    exact_email: bool = False
+    exact_name: bool = False
+    lab_name: str = ""
+
+
 @dataclass
 class CleanReport:
     changed_rows: int = 0
@@ -936,23 +1081,31 @@ class CleanReport:
 class RespectfulClient:
     delay_seconds: float = DEFAULT_REQUEST_DELAY_SECONDS
     timeout_seconds: int = DEFAULT_TIMEOUT_SECONDS
+    connect_timeout_seconds: int = DEFAULT_CONNECT_TIMEOUT_SECONDS
     browser_fallback: bool = False
     allow_insecure: bool = False
     respect_robots: bool = DEFAULT_RESPECT_ROBOTS
+    retry_total: int = DEFAULT_HTTP_RETRIES
+    max_host_failures: int = DEFAULT_MAX_HOST_FAILURES
     _robots: dict[str, RobotFileParser] = field(default_factory=dict)
     _cache: dict[str, PageResult] = field(default_factory=dict)
+    _host_failures: Counter[str] = field(default_factory=Counter)
+    _blocked_hosts: set[str] = field(default_factory=set)
+    _playwright: object = field(default=None, init=False, repr=False)
+    _browser: object = field(default=None, init=False, repr=False)
 
     def __post_init__(self) -> None:
+        retry_count = max(0, int(self.retry_total))
         retry = Retry(
-            total=3,
-            connect=3,
-            read=3,
-            backoff_factor=0.8,
+            total=retry_count,
+            connect=retry_count,
+            read=retry_count,
+            backoff_factor=0.35,
             status_forcelist=(429, 500, 502, 503, 504),
             allowed_methods=("GET",),
             respect_retry_after_header=True,
         )
-        adapter = HTTPAdapter(max_retries=retry, pool_connections=10, pool_maxsize=10)
+        adapter = HTTPAdapter(max_retries=retry, pool_connections=20, pool_maxsize=20)
         self.session = requests.Session()
         self.session.headers.update(
             {
@@ -964,15 +1117,42 @@ class RespectfulClient:
         self.session.mount("https://", adapter)
         self.session.mount("http://", adapter)
         self._last_request_at = 0.0
+        atexit.register(self.close)
 
     def _sleep_if_needed(self) -> None:
         elapsed = time.monotonic() - self._last_request_at
         if elapsed < self.delay_seconds:
             time.sleep(self.delay_seconds - elapsed)
 
+    def _request_timeout(self, read_cap: Optional[int] = None) -> tuple[int, int]:
+        connect = max(1, int(self.connect_timeout_seconds))
+        read = max(1, int(self.timeout_seconds))
+        if read_cap is not None:
+            read = min(read, max(1, int(read_cap)))
+        return connect, read
+
+    def _ensure_host_available(self, url: str) -> None:
+        host = hostname(url)
+        if host and host in self._blocked_hosts:
+            raise RuntimeError(f"호스트 연속 실패로 이번 실행에서 차단됨: {host}")
+
+    def _mark_success(self, url: str) -> None:
+        host = hostname(url)
+        if host:
+            self._host_failures[host] = 0
+
+    def _mark_failure(self, url: str) -> None:
+        host = hostname(url)
+        if not host:
+            return
+        self._host_failures[host] += 1
+        if self.max_host_failures > 0 and self._host_failures[host] >= self.max_host_failures:
+            self._blocked_hosts.add(host)
+
     def _robots_allowed(self, url: str) -> bool:
         if not self.respect_robots:
             return True
+        self._ensure_host_available(url)
         parsed = urlparse(url)
         base = f"{parsed.scheme}://{parsed.netloc}"
         if base not in self._robots:
@@ -982,7 +1162,7 @@ class RespectfulClient:
                 self._sleep_if_needed()
                 response = self.session.get(
                     f"{base}/robots.txt",
-                    timeout=min(self.timeout_seconds, 12),
+                    timeout=self._request_timeout(read_cap=5),
                     verify=not self.allow_insecure,
                 )
                 self._last_request_at = time.monotonic()
@@ -993,12 +1173,13 @@ class RespectfulClient:
         return self._robots[base].can_fetch(USER_AGENT, url)
 
     def _static_fetch(self, url: str) -> PageResult:
+        self._ensure_host_available(url)
         if not self._robots_allowed(url):
             raise PermissionError(f"robots.txt가 접근을 허용하지 않습니다: {url}")
         self._sleep_if_needed()
         response = self.session.get(
             url,
-            timeout=self.timeout_seconds,
+            timeout=self._request_timeout(),
             verify=not self.allow_insecure,
             allow_redirects=True,
         )
@@ -1011,7 +1192,9 @@ class RespectfulClient:
             response.encoding = response.apparent_encoding or "utf-8"
         return PageResult(response.url, response.text, "requests", response.status_code)
 
-    def _browser_fetch(self, url: str) -> PageResult:
+    def _ensure_browser(self) -> None:
+        if self._browser is not None:
+            return
         try:
             from playwright.sync_api import sync_playwright
         except ImportError as exc:
@@ -1019,20 +1202,24 @@ class RespectfulClient:
                 "Playwright가 설치되지 않았습니다. "
                 "pip install playwright 후 playwright install chromium을 실행하세요."
             ) from exc
+        self._playwright = sync_playwright().start()
+        self._browser = self._playwright.chromium.launch(headless=True)
 
-        with sync_playwright() as playwright:
-            browser = playwright.chromium.launch(headless=True)
-            try:
-                page = browser.new_page(user_agent=USER_AGENT, locale="ko-KR")
-                # networkidle is unreliable on university sites that keep
-                # analytics/websocket connections open. DOMContentLoaded plus
-                # a short settle period is more deterministic.
-                page.goto(url, wait_until="domcontentloaded", timeout=self.timeout_seconds * 1000)
-                page.wait_for_timeout(1200)
-                html = page.content()
-                final_url = page.url
-            finally:
-                browser.close()
+    def _browser_fetch(self, url: str) -> PageResult:
+        self._ensure_host_available(url)
+        self._ensure_browser()
+        page = self._browser.new_page(user_agent=USER_AGENT, locale="ko-KR")
+        try:
+            page.goto(
+                url,
+                wait_until="domcontentloaded",
+                timeout=max(5, int(self.timeout_seconds)) * 1000,
+            )
+            page.wait_for_timeout(500)
+            html = page.content()
+            final_url = page.url
+        finally:
+            page.close()
         return PageResult(final_url, html, "playwright", 200)
 
     @staticmethod
@@ -1045,6 +1232,7 @@ class RespectfulClient:
         url = normalize_url(url)
         if not url:
             raise ValueError("유효하지 않은 URL")
+        self._ensure_host_available(url)
         cache_key = f"browser:{url}" if force_browser else f"auto:{url}"
         if cache_key in self._cache:
             return self._cache[cache_key]
@@ -1053,33 +1241,56 @@ class RespectfulClient:
         try:
             static_result = self._static_fetch(url)
             result = static_result
-            should_render = force_browser or (
-                self._needs_browser(static_result.html) and self.browser_fallback
+            should_render = self.browser_fallback and (
+                force_browser or self._needs_browser(static_result.html)
             )
             if should_render:
                 try:
                     rendered = self._browser_fetch(static_result.url)
-                    # Never replace a usable static page with an empty rendered
-                    # shell. This is important for life.postech.ac.kr, which can
-                    # intermittently fail under headless Chromium.
                     if not self._needs_browser(rendered.html) or self._needs_browser(static_result.html):
                         result = rendered
                 except Exception:
                     if self._needs_browser(static_result.html):
                         raise
                     result = static_result
+            self._mark_success(result.url)
         except PermissionError:
             raise
         except Exception:
-            if static_result is not None and not self._needs_browser(static_result.html):
-                result = static_result
-            elif not (force_browser or self.browser_fallback):
-                raise
+            # A generic timeout/HTTP error should not launch Chromium. Browser
+            # fallback is reserved for hosts explicitly marked as render-only.
+            if force_browser and self.browser_fallback:
+                try:
+                    result = self._browser_fetch(url)
+                    self._mark_success(result.url)
+                except Exception:
+                    self._mark_failure(url)
+                    raise
             else:
-                result = self._browser_fetch(url)
+                self._mark_failure(url)
+                raise
 
         self._cache[cache_key] = result
         return result
+
+    def close(self) -> None:
+        browser, playwright = self._browser, self._playwright
+        self._browser = None
+        self._playwright = None
+        if browser is not None:
+            try:
+                browser.close()
+            except Exception:
+                pass
+        if playwright is not None:
+            try:
+                playwright.stop()
+            except Exception:
+                pass
+        try:
+            self.session.close()
+        except Exception:
+            pass
 
 
 # ============================================================
@@ -1151,6 +1362,11 @@ def absolute_url(base_url: str, href: str) -> str:
     href = clean_text(href)
     if not href or href.startswith(("mailto:", "tel:", "#")):
         return ""
+    if re.fullmatch(
+        r"(?i)(?:www\.)?(?:[A-Za-z0-9-]+\.)+(?:ac\.kr|co\.kr|go\.kr|or\.kr|com|org|net|edu|io|ai|kr)(?:/[^\s]*)?",
+        href,
+    ):
+        href = "https://" + href
     if href.startswith("javascript:"):
         quoted = re.search(r"['\"]([^'\"]+)['\"]", href)
         href = quoted.group(1) if quoted else ""
@@ -1286,6 +1502,66 @@ def backup_file(path: Path, backup_dir: Path, run_slug: str) -> Optional[Path]:
     destination = backup_dir / f"{path.stem}_before_stage2_{run_slug}{path.suffix}"
     shutil.copy2(path, destination)
     return destination
+
+
+def infer_data_state(row: dict[str, str]) -> str:
+    current = clean_text(row.get("data_state", ""))
+    if current and current not in QUARANTINED_DATA_STATES:
+        return current
+    status = clean_text(row.get("enrichment_status", ""))
+    link_status = clean_text(row.get("lab_url_status", ""))
+    if link_status == "manual":
+        return "manual_verified"
+    if status == "success_identity_fallback":
+        return "authoritative_central_identity_fallback"
+    if status == "matched_identity_only":
+        return "authoritative_identity_only"
+    if status == "no_match":
+        return "authoritative_no_match"
+    if status == "success":
+        return "authoritative_rebuilt"
+    if lab_url_provenance_complete(row) or parse_json_dict(row.get("field_provenance", "")):
+        return "incremental_verified"
+    return "legacy_unverified"
+
+
+def recover_data_states_from_backups(
+    labs_by_id: dict[str, dict[str, str]], backup_dir: Path,
+) -> dict[str, int]:
+    recovered: dict[str, str] = {}
+    if backup_dir.exists():
+        backup_files = sorted(
+            (path for path in backup_dir.glob("labs_before_stage2_*.csv") if path.is_file()),
+            key=lambda path: path.stat().st_mtime,
+            reverse=True,
+        )
+        for path in backup_files:
+            try:
+                rows, _ = read_csv_rows(path)
+            except Exception:
+                continue
+            for row in rows:
+                lab_id = clean_text(row.get("lab_id", ""))
+                state = clean_text(row.get("data_state", ""))
+                if lab_id and lab_id not in recovered and state and state not in QUARANTINED_DATA_STATES:
+                    recovered[lab_id] = state
+            if len(recovered) >= len(labs_by_id):
+                break
+
+    metrics = {"preserved": 0, "restored_from_backup": 0, "reconstructed": 0}
+    for lab_id, row in labs_by_id.items():
+        current = clean_text(row.get("data_state", ""))
+        if current and current not in QUARANTINED_DATA_STATES:
+            metrics["preserved"] += 1
+            continue
+        backup_state = recovered.get(lab_id, "")
+        if backup_state:
+            row["data_state"] = backup_state
+            metrics["restored_from_backup"] += 1
+        else:
+            row["data_state"] = infer_data_state(row)
+            metrics["reconstructed"] += 1
+    return metrics
 
 
 def append_jsonl(path: Path, payload: dict) -> None:
@@ -1437,20 +1713,32 @@ def is_probable_lab_name(value: str) -> bool:
     text = clean_text(value)
     if not (3 <= len(text) <= 140) or is_noise_exact(text) or contains_noise_phrase(text):
         return False
+    text = re.sub(r"(?i)^welcome\s+to\s+", "", text).strip(" .,:;-|")
     low = text.casefold()
-    if low in GENERIC_LINK_TEXTS:
+    if low in GENERIC_LAB_NAME_EXACT or low in GENERIC_LINK_TEXTS:
+        return False
+    if any(pattern.search(text) for pattern in LAB_NAME_NOISE_PATTERNS):
+        return False
+    if EMAIL_RE.search(text) or looks_urlish_text(text):
+        return False
+    if text.count("(") != text.count(")") or text.count("[") != text.count("]"):
         return False
     if re.match(r"^\s*\d+[.)]\s*", text):
         return False
-    if low.startswith(("welcome to ", "recent publication", "selected publication")):
-        text = re.sub(r"(?i)^welcome\s+to\s+", "", text).strip(" .:-")
-        low = text.casefold()
-    if "department of" in low and not any(token in low for token in (" lab", "laboratory", "research group")):
+    if re.search(r"(?i)\b(?:funded|supported|located|recruiting|positions?|news|publication)\b", text):
         return False
     if len(text.split()) > 16:
         return False
-    return bool(LAB_NAME_RE.fullmatch(text) or LAB_NAME_RE.search(text))
-
+    explicit = bool(re.search(
+        r"(?i)(?:\blab(?:oratory)?\b|research\s+(?:group|center)|\bgroup\b$|연구실$|연구그룹$|연구센터$)",
+        text,
+    ))
+    compact = bool(re.fullmatch(r"(?i)[a-z0-9][a-z0-9._&+\-]{1,30}lab", text.replace(" ", "")))
+    if not (explicit or compact):
+        return False
+    if "department of" in low and not re.search(r"(?i)(?:lab|laboratory|research group)", text):
+        return False
+    return True
 
 def strip_site_suffix(value: str) -> str:
     text = clean_text(value)
@@ -1566,16 +1854,23 @@ def clean_lab_name(value: str, professor_name: str) -> str:
         return text if expected and text == expected else ""
     if is_noise_exact(text) or contains_noise_phrase(text):
         return ""
-    text = re.sub(r"(?i)^welcome\s+to\s+", "", text).strip(" .:-")
+    text = re.sub(r"(?i)^welcome\s+to\s+", "", text).strip(" .,:;-|")
+    if text.count("(") != text.count(")"):
+        inner = clean_text(text.rsplit("(", 1)[-1]).strip(" )")
+        if inner and re.search(r"(?:연구실|연구그룹|연구센터)$", inner):
+            text = inner
+        else:
+            return ""
+    if re.match(r"(?i)^www\.[a-z0-9._-]+$", text):
+        text = text[4:]
     if len(text) > 140:
         text = strip_site_suffix(text)
-    match = LAB_NAME_RE.search(text)
-    if match and match.group(0) != text:
-        candidate = clean_text(match.group(0)).strip(" .:-")
-        if is_probable_lab_name(candidate):
-            text = candidate
+    matches = [clean_text(match.group(0)).strip(" .,:;-") for match in LAB_NAME_RE.finditer(text)]
+    valid_matches = [item for item in matches if item != text and is_probable_lab_name(item)]
+    if not is_probable_lab_name(text) and valid_matches:
+        valid_matches.sort(key=lambda item: (-len(item.split()), len(item)))
+        text = valid_matches[0]
     return text if is_probable_lab_name(text) else ""
-
 
 def clean_location_value(value: str) -> str:
     text = clean_text(value)
@@ -1586,7 +1881,7 @@ def clean_location_value(value: str) -> str:
         return ""
     if any(token in low for token in ("accepted to", "publication", "conference", "work on", "award", "news", "display 20")):
         return ""
-    if text.startswith("[") or re.search(
+    if text.startswith("[") or LOCATION_PROSE_NOISE_RE.search(text) or re.search(
         r"(?:교수\s*(?:연구팀|POSTECH)|연구팀|최종\s*선정|기사\s*중\s*발췌|"
         r"국제공동연구|기술\s*개발|공동\s*연구를\s*통해|수상|게재|보도자료)",
         text,
@@ -1623,6 +1918,12 @@ def clean_location_value(value: str) -> str:
             re.I,
         ):
             return candidate
+    # A full postal/contact address is not a lab-room value. It is rejected
+    # after attempting to recover an explicit building-room pair above.
+    if POSTECH_POSTAL_ADDRESS_RE.search(text) or ADDRESS_NOISE_RE.search(text):
+        return ""
+    if len(text) > 80:
+        return ""
     # Keep a labeled building/room phrase only if the location token is explicit.
     if re.search(r"(?:관|동|센터|연구소)[^;]{0,35}\d", text):
         return text
@@ -1704,6 +2005,38 @@ def clean_summary_value(value: str) -> str:
         return ""
 
     text = strip_urls(text)
+    # Strip recruitment wrappers while retaining a substantive research core.
+    text = re.sub(
+        r"(?is)^(?:무한한\s*기회의\s*장[^.。]{0,220}?(?:모집합니다|모집)|"
+        r"대학원생\s*및\s*Post-?Doc\s*모집[^.。]*[.。]?|"
+        r"(?:대학원생|학부연구생|박사후\s*연구원|Post-?Doc)[^.。]{0,450}?(?:모집|연락)[^.。]*[.。]?)\s*",
+        "", text,
+    )
+    text = re.sub(
+        r"(?is)\s*(?:졸업연구|학기\s*중\s*연구참여|동하계\s*인턴|"
+        r"석박사과정|대학원생|Post-?Doc)[^.。]{0,500}(?:모집|지원|연락|참여|연계)?[^.。]*$",
+        "", text,
+    )
+    text = clean_text(text).strip(" .,:;-|")
+    if not text:
+        return ""
+    # A residual contact/hiring sentence is not a research summary.
+    if re.search(
+        r"(?:we are hiring|graduate students?|postdoctoral|visiting scholars?|"
+        r"모집|지원|연락\s*(?:주세요|바랍니다)|관심\s*있는\s*(?:학생|연구원))",
+        text, re.I,
+    ) and not SUBSTANTIVE_RESEARCH_RE.search(text):
+        return ""
+    # Bilingual lab-name labels belong in lab_name fields, not summary.
+    bilingual_lab_label = re.fullmatch(
+        r"[^/]{2,80}(?:연구실|Lab)\s*/\s*[^/]{2,100}(?:Lab|Laboratory)",
+        text, re.I,
+    )
+    if len(text) <= 140 and (
+        bilingual_lab_label
+        or (is_probable_lab_name(text) and not SUBSTANTIVE_RESEARCH_RE.search(text))
+    ):
+        return ""
     citation_markers = sum(
         bool(pattern.search(text))
         for pattern in (
@@ -1788,6 +2121,12 @@ def clean_summary_value(value: str) -> str:
     if summary_has_news_noise(text) and not research_context:
         return ""
     if ADDRESS_NOISE_RE.search(text) and not research_context:
+        return ""
+    if re.search(
+        r"(?:특별법.{0,120}(?:통과|국회)|처분장\s*정책|법적.?제도적\s*기반|"
+        r"학회.{0,80}Track\s*Chair|수상\s*소식|보도자료)",
+        text, re.I,
+    ):
         return ""
 
     minimum_length = 10 if text.startswith("주요 연구 분야:") else 25
@@ -2299,17 +2638,50 @@ def remove_repeated_generic_values(rows: list[dict[str, str]], report: CleanRepo
             and len(distinct_urls) >= 3
             and len(distinct_fields) >= 3
         )
+        trusted_group_rows = [
+            row for row in group
+            if normalize_url(row.get("lab_url", ""))
+            and clean_text(row.get("lab_url_status", "")) in TRUSTED_LAB_URL_STATUSES
+        ]
+        shared_single_trusted_url = (
+            len(distinct_urls) == 1
+            and len(trusted_group_rows) == len(group)
+            and shared_lab_group_is_verified(trusted_group_rows)
+        )
         repeated_generic = (
-            (len(professor_ids) >= 4 and len(departments) >= 2 and compact_generic)
-            or (len(professor_ids) >= 3 and (compact_generic or english_generic))
-            or repeated_wrapper_title
+            not shared_single_trusted_url
+            and (
+                (len(professor_ids) >= 4 and len(departments) >= 2 and compact_generic)
+                or (len(professor_ids) >= 3 and (compact_generic or english_generic))
+                or repeated_wrapper_title
+            )
         )
         if repeated_generic:
             for row in group:
+                provenance = parse_json_dict(row.get("field_provenance", ""))
+                name_evidence = provenance.get("lab_name_kor", {})
+                name_evidence = name_evidence if isinstance(name_evidence, dict) else {}
+                source_url = normalize_url(name_evidence.get("source_url", ""))
+                method = clean_text(name_evidence.get("method", ""))
+                strong_distinct_evidence = bool(
+                    len(distinct_urls) >= len(group)
+                    and source_url
+                    and is_official_postech_source(source_url)
+                    and "exact_email" in method
+                )
+                if shared_single_trusted_url or strong_distinct_evidence:
+                    continue
                 professor = clean_text(row.get("professor_name", ""))
+                previous_kor = clean_text(row.get("lab_name_kor", ""))
+                previous_eng = clean_text(row.get("lab_name_eng", ""))
                 row["lab_name_kor"] = f"{professor} 교수 연구실" if professor else ""
-                report.duplicate_noise["generic_lab_name"] += 1
-                report.changed_fields["lab_name_kor"] += 1
+                if previous_eng.casefold() == previous_kor.casefold() or previous_eng.casefold().startswith(previous_kor.casefold() + " @"):
+                    row["lab_name_eng"] = ""
+                if clean_text(row.get("lab_name_kor", "")) != previous_kor:
+                    report.duplicate_noise["generic_lab_name"] += 1
+                    report.changed_fields["lab_name_kor"] += 1
+                if clean_text(row.get("lab_name_eng", "")) != previous_eng:
+                    report.changed_fields["lab_name_eng"] += 1
 
     for group in summary_groups.values():
         professor_ids = {normalize_email(row.get("email", "")) or row.get("researcher_id", "") for row in group}
@@ -2977,7 +3349,7 @@ def find_person_container(
         text_len = len(text)
         if text_len > 4500:
             break
-        emails = node_emails(current)
+        emails = set(node_emails(current)) | extract_identity_emails(text)
         identity_count = visible_identity_count(text, normalized_known_names)
         has_identity = (
             (normalized_email and normalized_email in emails)
@@ -3441,20 +3813,34 @@ def meta_content(soup: BeautifulSoup, names: tuple[str, ...]) -> str:
 
 
 def extract_homepage_lab_name(soup: BeautifulSoup) -> str:
-    candidates: list[str] = []
-    for selector in ("h1", "header h2", ".site-title", ".site_name", ".logo", "title"):
+    scored: list[tuple[int, int, str]] = []
+    selectors = (
+        ("h1", 40), ("header h2", 34), (".site-title", 32),
+        (".site_name", 32), (".logo", 24), ("title", 20),
+    )
+    for raw in [meta_content(soup, ("og:title", "twitter:title", "application-name"))]:
+        cleaned = clean_lab_name(strip_site_suffix(raw), "")
+        if cleaned:
+            scored.append((24, len(cleaned), cleaned))
+    for selector, base_score in selectors:
         try:
             nodes = soup.select(selector)
         except Exception:
             continue
         for node in nodes:
-            text = strip_site_suffix(node.get_text(" ", strip=True))
-            if is_probable_lab_name(text):
-                candidates.append(text)
-    candidates = unique_preserve_order(candidates)
-    candidates.sort(key=len)
-    return candidates[0] if candidates else ""
-
+            cleaned = clean_lab_name(strip_site_suffix(node.get_text(" ", strip=True)), "")
+            if not cleaned:
+                continue
+            score = base_score
+            if re.search(r"(?i)(?:laboratory|\blab\b|research group|연구실|연구그룹)", cleaned):
+                score += 12
+            if len(cleaned.split()) >= 2:
+                score += 4
+            scored.append((score, len(cleaned), cleaned))
+    if not scored:
+        return ""
+    scored.sort(key=lambda item: (item[0], item[1]), reverse=True)
+    return scored[0][2]
 
 def extract_homepage_summary(soup: BeautifulSoup) -> str:
     description = clean_summary_value(meta_content(soup, ("description", "og:description", "twitter:description")))
@@ -3684,6 +4070,1851 @@ def enrich_from_lab_homepage(client: RespectfulClient, lab: dict[str, str]) -> d
 
 
 # ============================================================
+# 9B. Lab-link-first discovery and verification
+# ============================================================
+def deobfuscate_email_text(value: str) -> str:
+    """Normalize conservative e-mail obfuscations used on official pages."""
+    text = str(value or "")
+    text = re.sub(r"(?i)(?<=\w)\s*(?:_AT_|\[at\]|\(at\)|\s+at\s+)\s*(?=\w)", "@", text)
+    text = re.sub(r"(?i)(?<=\w)\s*(?:_DOT_|\[dot\]|\(dot\)|\s+dot\s+)\s*(?=\w)", ".", text)
+    return text
+
+
+def extract_identity_emails(value: str) -> set[str]:
+    normalized = deobfuscate_email_text(value)
+    return {
+        normalize_email(match.group(0))
+        for match in EMAIL_RE.finditer(normalized)
+        if normalize_email(match.group(0))
+    }
+
+
+def is_official_postech_source(url: str) -> bool:
+    host = hostname(url).removeprefix("www.")
+    return bool(host == "postech.ac.kr" or host.endswith(".postech.ac.kr"))
+
+
+def canonical_url_key(url: str) -> str:
+    normalized = normalize_url(url)
+    if not normalized:
+        return ""
+    parsed = urlparse(normalized)
+    host = parsed.hostname.lower().removeprefix("www.") if parsed.hostname else ""
+    port = parsed.port
+    netloc = host if not port or port in {80, 443} else f"{host}:{port}"
+    query = parse_qs(parsed.query, keep_blank_values=True)
+    tracking_prefixes = ("utm_", "fbclid", "gclid", "ref", "source")
+    kept_pairs: list[tuple[str, str]] = []
+    for key in sorted(query):
+        if key.casefold().startswith(tracking_prefixes):
+            continue
+        for item in sorted(query[key]):
+            kept_pairs.append((key, item))
+    query_text = "&".join(
+        f"{requests.utils.quote(key, safe='')}={requests.utils.quote(item, safe='')}"
+        for key, item in kept_pairs
+    )
+    path = parsed.path.rstrip("/") or "/"
+    return urlunparse((parsed.scheme.lower(), netloc, path, "", query_text, ""))
+
+
+def department_reference_url_keys(departments: Sequence[dict[str, str]]) -> set[str]:
+    keys: set[str] = set()
+    for department in departments:
+        for field_name in ("homepage_url", "detail_url", "source_url", "faculty_page_urls"):
+            for raw in split_multi(department.get(field_name, "")):
+                key = canonical_url_key(raw)
+                if key:
+                    keys.add(key)
+    return keys
+
+
+def lab_name_is_actual(row: dict[str, str]) -> bool:
+    professor = clean_text(row.get("professor_name", ""))
+    kor = clean_lab_name(row.get("lab_name_kor", ""), professor)
+    eng = clean_lab_name(row.get("lab_name_eng", ""), professor)
+    return bool((kor and not looks_placeholder_lab_name(kor)) or eng)
+
+
+def lab_url_provenance(row: dict[str, str]) -> dict:
+    provenance = parse_json_dict(row.get("field_provenance", ""))
+    value = provenance.get("lab_url", {})
+    return value if isinstance(value, dict) else {}
+
+
+def lab_url_provenance_complete(row: dict[str, str]) -> bool:
+    """Return True only when a trusted URL has reproducible source evidence."""
+    evidence = lab_url_provenance(row)
+    return all(clean_text(evidence.get(key, "")) for key in (
+        "source_url", "verified_url", "method", "verified_at",
+    ))
+
+
+def lab_link_source_priority(candidate: LabLinkCandidate) -> int:
+    kind = clean_text(candidate.source_kind)
+    source_url = normalize_url(candidate.source_url)
+    if kind == "professor_profile" and is_aif_researcher_listing(source_url):
+        kind = "aif_researcher_index"
+    elif kind == "professor_profile" and CENTRAL_RESEARCHER_PATH_TOKEN in urlparse(source_url).path:
+        kind = "aif_researcher_detail"
+    return LAB_LINK_SOURCE_PRIORITY.get(kind, 250)
+
+
+def candidate_preference_key(candidate: LabLinkCandidate) -> tuple[int, int, int, int, int]:
+    return (
+        lab_link_source_priority(candidate),
+        int(candidate.exact_email),
+        int(candidate.exact_name),
+        int(candidate.score),
+        -len(candidate.url),
+    )
+
+
+def verified_candidate_preference_key(
+    update: dict[str, str], candidate: LabLinkCandidate, method: str,
+) -> tuple[int, int, int, int, int, int]:
+    status = clean_text(update.get("lab_url_status", ""))
+    trusted = int(status in TRUSTED_LAB_URL_STATUSES)
+    method_strength = 3 if "exact_email" in method else 2 if "email" in method else 1 if "name" in method else 0
+    return (
+        trusted,
+        lab_link_source_priority(candidate),
+        lab_url_status_rank(status),
+        method_strength,
+        int(candidate.exact_email),
+        int(candidate.score),
+    )
+
+
+def shared_lab_evidence(row: dict[str, str]) -> dict:
+    evidence = lab_url_provenance(row).get("shared_lab_verified", {})
+    return evidence if isinstance(evidence, dict) else {}
+
+
+def shared_lab_group_is_verified(rows: Sequence[dict[str, str]]) -> bool:
+    if len(rows) < 2:
+        return True
+    urls = {canonical_url_key(row.get("lab_url", "")) for row in rows}
+    emails = sorted({normalize_email(row.get("email", "")) for row in rows if normalize_email(row.get("email", ""))})
+    if len(urls) != 1 or not emails:
+        return False
+    expected_url = next(iter(urls))
+    for row in rows:
+        evidence = shared_lab_evidence(row)
+        evidence_emails = sorted({normalize_email(item) for item in evidence.get("professor_emails", []) if normalize_email(item)})
+        if canonical_url_key(evidence.get("verified_url", "")) != expected_url or evidence_emails != emails:
+            return False
+        if clean_text(evidence.get("method", "")) not in {
+            "shared_homepage_multiple_exact_emails",
+            "shared_official_cards_multiple_exact_emails",
+        }:
+            return False
+    return True
+
+
+def mark_shared_lab_verified(rows: Sequence[dict[str, str]]) -> int:
+    """Attach explicit shared-group evidence when every professor has exact-email proof."""
+    if len(rows) < 2:
+        return 0
+    urls = {canonical_url_key(row.get("lab_url", "")) for row in rows}
+    departments = {clean_text(row.get("primary_department_id", "") or row.get("department_id", "")) for row in rows}
+    if len(urls) != 1 or len(departments) != 1:
+        return 0
+    verified_url = normalize_url(rows[0].get("lab_url", ""))
+    emails = sorted({normalize_email(row.get("email", "")) for row in rows if normalize_email(row.get("email", ""))})
+    names = sorted({clean_text(row.get("professor_name", "")) for row in rows if clean_text(row.get("professor_name", ""))})
+    if len(emails) != len(rows):
+        return 0
+    methods = [clean_text(lab_url_provenance(row).get("method", "")) for row in rows]
+    exact_homepage = all("homepage_exact_email" in method for method in methods)
+    exact_cards = all("exact_email" in method for method in methods)
+    if not (exact_homepage or exact_cards):
+        return 0
+    method = "shared_homepage_multiple_exact_emails" if exact_homepage else "shared_official_cards_multiple_exact_emails"
+    stamp = max((clean_text(lab_url_provenance(row).get("verified_at", "")) for row in rows), default="") or now_iso()
+    changed = 0
+    for row in rows:
+        provenance = parse_json_dict(row.get("field_provenance", ""))
+        link = provenance.get("lab_url", {}) if isinstance(provenance.get("lab_url", {}), dict) else {}
+        shared = {
+            "verified_url": verified_url,
+            "professor_emails": emails,
+            "professor_names": names,
+            "method": method,
+            "verified_at": stamp,
+        }
+        if link.get("shared_lab_verified") != shared:
+            link["shared_lab_verified"] = shared
+            provenance["lab_url"] = link
+            row["field_provenance"] = compact_json(provenance)
+            changed += 1
+    return changed
+
+
+def mark_all_verified_shared_lab_groups(labs_by_id: dict[str, dict[str, str]]) -> int:
+    groups: defaultdict[str, list[dict[str, str]]] = defaultdict(list)
+    for row in labs_by_id.values():
+        if normalize_url(row.get("lab_url", "")) and clean_text(row.get("lab_url_status", "")) in TRUSTED_LAB_URL_STATUSES:
+            groups[canonical_url_key(row.get("lab_url", ""))].append(row)
+    return sum(mark_shared_lab_verified(group) for group in groups.values() if len(group) >= 2)
+
+
+def lab_link_revalidation_required(row: dict[str, str], refresh_all: bool = False) -> bool:
+    url = normalize_url(row.get("lab_url", ""))
+    status = clean_text(row.get("lab_url_status", ""))
+    return bool(
+        url
+        and status != "invalid"
+        and (
+            refresh_all
+            or status not in TRUSTED_LAB_URL_STATUSES
+            or not lab_url_provenance_complete(row)
+        )
+    )
+
+
+def lab_link_target_required(row: dict[str, str], refresh_all: bool = False) -> bool:
+    url = normalize_url(row.get("lab_url", ""))
+    status = clean_text(row.get("lab_url_status", ""))
+    return bool(
+        refresh_all
+        or not url
+        or status not in TRUSTED_LAB_URL_STATUSES
+        or not lab_name_is_actual(row)
+        or (url and not lab_url_provenance_complete(row))
+    )
+
+
+def known_professor_identity_counts(text: str, known_emails: set[str], known_names: set[str]) -> tuple[int, int]:
+    emails = extract_identity_emails(text) & known_emails
+    normalized_text = normalize_name(text)
+    names = {name for name in known_names if len(name) >= 2 and name in normalized_text}
+    return len(emails), len(names)
+
+
+def sanitize_existing_lab_link_records(
+    departments: Sequence[dict[str, str]],
+    labs_by_id: dict[str, dict[str, str]],
+) -> dict[str, object]:
+    department_keys = department_reference_url_keys(departments)
+    invalidated: list[dict[str, str]] = []
+    names_cleaned = 0
+    names_promoted = 0
+    provenance_missing = 0
+    provenance_incomplete = 0
+    manual_provenance_backfilled = 0
+    for lab in labs_by_id.values():
+        professor = clean_text(lab.get("professor_name", ""))
+        url = normalize_url(lab.get("lab_url", ""))
+        status = clean_text(lab.get("lab_url_status", ""))
+        if url and canonical_url_key(url) in department_keys and status != "manual":
+            invalidated.append({
+                "lab_id": clean_text(lab.get("lab_id", "")),
+                "professor_name": professor,
+                "url": url,
+                "reason": "known_department_page",
+            })
+            lab["lab_url"] = ""
+            lab["lab_url_status"] = "unverified"
+            # Keep the URL as discovery provenance only when it is also this
+            # professor's department_page_url. Otherwise remove the false lab
+            # homepage candidate immediately so a second clean pass is stable.
+            invalid_key = canonical_url_key(url)
+            department_page_key = canonical_url_key(lab.get("department_page_url", ""))
+            if invalid_key != department_page_key:
+                retained_sources = [
+                    source for source in split_multi(lab.get("enrichment_source_urls", ""))
+                    if canonical_url_key(source) != invalid_key
+                ]
+                lab["enrichment_source_urls"] = merge_multi(*retained_sources)
+            provenance = parse_json_dict(lab.get("field_provenance", ""))
+            provenance.pop("lab_url", None)
+            provenance.pop("lab_url_status", None)
+            lab["field_provenance"] = compact_json(provenance)
+        elif url and status == "manual" and not lab_url_provenance(lab):
+            provenance = parse_json_dict(lab.get("field_provenance", ""))
+            stamp = clean_text(lab.get("enriched_at", "")) or now_iso()
+            evidence = {
+                "scope": "manual", "source_url": url, "verified_url": url,
+                "method": "manual_existing", "verified_at": stamp,
+            }
+            provenance["lab_url"] = dict(evidence)
+            provenance["lab_url_status"] = dict(evidence)
+            lab["field_provenance"] = compact_json(provenance)
+            manual_provenance_backfilled += 1
+        elif url and status in TRUSTED_LAB_URL_STATUSES:
+            if not lab_url_provenance(lab):
+                provenance_missing += 1
+            if not lab_url_provenance_complete(lab):
+                provenance_incomplete += 1
+
+        original_kor = clean_text(lab.get("lab_name_kor", ""))
+        original_eng = clean_text(lab.get("lab_name_eng", ""))
+        kor = clean_lab_name(original_kor, professor)
+        eng = clean_lab_name(original_eng, professor)
+        if (not kor or looks_placeholder_lab_name(kor)) and eng:
+            kor = eng
+            names_promoted += int(kor != original_kor)
+        if not kor and professor:
+            kor = f"{professor} 교수 연구실"
+        if kor != original_kor or eng != original_eng:
+            lab["lab_name_kor"] = kor
+            lab["lab_name_eng"] = eng
+            names_cleaned += 1
+        lab["data_quality_status"] = data_quality_status(lab)
+    shared_rows_marked = mark_all_verified_shared_lab_groups(labs_by_id)
+    return {
+        "department_url_keys": department_keys,
+        "invalidated_rows": invalidated,
+        "invalidated_count": len(invalidated),
+        "names_cleaned": names_cleaned,
+        "names_promoted": names_promoted,
+        "trusted_without_provenance": provenance_missing,
+        "trusted_incomplete_provenance": provenance_incomplete,
+        "manual_provenance_backfilled": manual_provenance_backfilled,
+        "shared_lab_rows_marked": shared_rows_marked,
+    }
+
+
+def record_lab_link_provenance(
+    row: dict[str, str], fields: Iterable[str], candidate: LabLinkCandidate,
+    update: dict[str, str], method: str,
+) -> None:
+    provenance = parse_json_dict(row.get("field_provenance", ""))
+    verified_url = normalize_url(update.get("lab_url", candidate.url))
+    source_url = normalize_url(candidate.source_url) or verified_url
+    stamp = now_iso()
+    for field_name in fields:
+        if field_name in {
+            "enrichment_source_urls", "enrichment_status", "enrichment_message",
+            "enriched_at", "enricher_version", "data_quality_status", "field_provenance",
+        }:
+            continue
+        previous = provenance.get(field_name, {})
+        previous = dict(previous) if isinstance(previous, dict) else {}
+        history = previous.get("history", [])
+        history = list(history) if isinstance(history, list) else []
+        previous_core = {
+            key: previous.get(key, "")
+            for key in ("source_url", "verified_url", "method", "verified_at", "source_kind")
+            if previous.get(key)
+        }
+        next_core = {
+            "scope": "lab_homepage" if update.get("lab_url_status") == "verified_homepage" else "department_page",
+            "source_url": source_url,
+            "verified_url": verified_url,
+            "method": clean_text(method),
+            "source_kind": clean_text(candidate.source_kind),
+            "verified_at": stamp,
+        }
+        if previous_core and any(clean_text(previous_core.get(key, "")) != clean_text(next_core.get(key, "")) for key in ("source_url", "verified_url", "method", "source_kind")):
+            history.append(previous_core)
+            history = history[-5:]
+        shared = previous.get("shared_lab_verified")
+        if history:
+            next_core["history"] = history
+        if isinstance(shared, dict) and shared:
+            next_core["shared_lab_verified"] = shared
+        provenance[field_name] = next_core
+    row["field_provenance"] = compact_json(provenance)
+
+
+def candidate_url_variants(url: str) -> list[str]:
+    normalized = normalize_url(url)
+    if not normalized:
+        return []
+    parsed = urlparse(normalized)
+    variants: list[str] = [normalized]
+    if parsed.scheme == "http":
+        variants.insert(0, urlunparse(parsed._replace(scheme="https")))
+    elif parsed.scheme == "https":
+        variants.append(urlunparse(parsed._replace(scheme="http")))
+    return unique_preserve_order(variants)
+
+
+def lab_link_context_text(anchor: Tag) -> str:
+    parts = [
+        clean_text(anchor.get_text(" ", strip=True)),
+        clean_text(anchor.get("title", "")),
+        clean_text(anchor.get("aria-label", "")),
+        clean_text(anchor.get("data-label", "")),
+    ]
+    parent = anchor.parent if isinstance(anchor.parent, Tag) else None
+    if parent is not None:
+        parent_text = clean_text(parent.get_text(" ", strip=True))
+        if len(parent_text) <= 240:
+            parts.append(parent_text)
+    previous = anchor.find_previous_sibling()
+    if isinstance(previous, Tag):
+        parts.append(clean_text(previous.get_text(" ", strip=True)))
+    elif isinstance(previous, NavigableString):
+        parts.append(clean_text(previous))
+    return clean_text(" ".join(parts))[:500]
+
+
+def lab_link_label_strength(text: str) -> int:
+    low = clean_text(text).casefold()
+    if any(label.casefold() in low for label in LAB_LINK_STRONG_LABELS):
+        return 2
+    if any(label.casefold() in low for label in LAB_LINK_WEAK_LABELS):
+        return 1
+    return 0
+
+
+def clean_discovered_lab_name(value: str, professor_name: str = "") -> str:
+    text = clean_text(value)
+    if not text:
+        return ""
+    text = re.sub(
+        r"(?i)^(?:lab(?:oratory)?\s*(?:name)?|research\s+(?:office|laboratory|group)|"
+        r"연구실(?:명)?|랩)\s*[:：.\-]?\s*",
+        "", text,
+    )
+    text = re.sub(
+        r"\s*[\[(](?:[^\])]{0,50}(?:호|room|rm\.?|office|building|bldg\.?|[A-Z]\d{1,2}[ -]\d{2,4})[^\])]{0,30})[\])]\s*$",
+        "", text, flags=re.I,
+    )
+    return clean_lab_name(text.strip(" .,:;|-/"), professor_name)
+
+def extract_labeled_lab_name_from_block(block: Tag, professor_name: str) -> str:
+    lines = [clean_text(item) for item in block.stripped_strings if clean_text(item)]
+    for index, line in enumerate(lines):
+        for label in sorted(LAB_NAME_LABELS, key=len, reverse=True):
+            if line.casefold() == label.casefold() and index + 1 < len(lines):
+                candidate = clean_discovered_lab_name(lines[index + 1], professor_name)
+                if candidate:
+                    return candidate
+            match = re.match(
+                rf"^\s*{re.escape(label)}\s*[:：.\-]?\s*(?P<value>.+?)\s*$",
+                line,
+                re.I,
+            )
+            if match:
+                candidate = clean_discovered_lab_name(match.group("value"), professor_name)
+                if candidate:
+                    return candidate
+    return clean_discovered_lab_name(candidate_lab_name_from_lines(lines, professor_name), professor_name)
+
+
+def split_discovered_lab_name(name: str) -> tuple[str, str]:
+    text = clean_text(name)
+    if not text:
+        return "", ""
+    korean = bool(re.search(r"[가-힣]", text))
+    english = bool(re.search(r"[A-Za-z]", text))
+    if korean and english:
+        chunks = [clean_text(x) for x in re.split(r"\s*[|/·]\s*|\s*[()]\s*", text) if clean_text(x)]
+        kor_chunks = [x for x in chunks if re.search(r"[가-힣]", x)]
+        eng_chunks = [x for x in chunks if re.search(r"[A-Za-z]", x) and not re.search(r"[가-힣]", x)]
+        return text, eng_chunks[0] if eng_chunks else ""
+    if english:
+        return text, text
+    return text, ""
+
+
+def score_lab_link_candidate(
+    href: str,
+    source_url: str,
+    context: str,
+    exact_email: bool,
+    exact_name: bool,
+    source_kind: str,
+    professor_profile_url: str,
+) -> int:
+    href = normalize_url(href)
+    if not href or href == normalize_url(source_url):
+        return -999
+    if is_forbidden_lab_url(href, professor_profile_url):
+        return -999
+    parsed_href = urlparse(href)
+    href_host = hostname(href).removeprefix("www.")
+    source_host = hostname(source_url).removeprefix("www.")
+    href_path = parsed_href.path.rstrip("/") or "/"
+    if href_host in {"postech.ac.kr", "aif.postech.ac.kr", "home.postech.ac.kr"} and href_path == "/":
+        return -999
+    if href_host == source_host and href_path in {"/", "/ko", "/en", "/kor", "/eng"}:
+        return -999
+    low = f"{context} {href}".casefold()
+    score = 0
+    strength = lab_link_label_strength(context)
+    score += 55 if strength == 2 else 25 if strength == 1 else 0
+    if exact_email:
+        score += 35
+    if exact_name:
+        score += 8
+    if is_official_postech_source(source_url):
+        score += 12
+    if source_kind == "professor_profile":
+        score += 8
+    if href_host != source_host:
+        score += 12
+    if any(token in low for token in LAB_PATH_HINTS):
+        score += 14
+    if hostname(href).endswith("postech.ac.kr"):
+        score += 5
+    if not strength and exact_email and not same_site(href, source_url):
+        score += 12
+    if any(token in low for token in ("curriculum vitae", " cv ", "google scholar", "orcid", "linkedin")):
+        score -= 50
+    path_low = urlparse(href).path.casefold()
+    if any(token in path_low for token in ("/news", "/notice", "/seminar", "/publication", "/paper")):
+        score -= 60
+    return score
+
+
+def extract_lab_link_candidates_from_block(
+    lab: dict[str, str],
+    block: Tag,
+    source_url: str,
+    source_kind: str,
+    exact_email: bool,
+    exact_name: bool,
+) -> list[LabLinkCandidate]:
+    professor_name = clean_text(lab.get("professor_name", ""))
+    professor_profile_url = clean_text(lab.get("professor_profile_url", ""))
+    lab_name = extract_labeled_lab_name_from_block(block, professor_name)
+    candidates: list[LabLinkCandidate] = []
+    seen: set[str] = set()
+
+    for anchor in block.find_all("a"):
+        href = anchor_target_url(source_url, anchor)
+        context = lab_link_context_text(anchor)
+        score = score_lab_link_candidate(
+            href,
+            source_url,
+            context,
+            exact_email,
+            exact_name,
+            source_kind,
+            professor_profile_url,
+        )
+        key = canonical_url_key(href)
+        if score <= 0 or not key or key in seen:
+            continue
+        seen.add(key)
+        candidates.append(
+            LabLinkCandidate(
+                lab_id=clean_text(lab.get("lab_id", "")),
+                url=normalize_url(href),
+                source_url=normalize_url(source_url),
+                source_kind=source_kind,
+                evidence_method="official_exact_email_card" if exact_email else "official_unique_name_card",
+                score=score,
+                label_text=context,
+                exact_email=exact_email,
+                exact_name=exact_name,
+                lab_name=lab_name,
+            )
+        )
+
+    block_text = deobfuscate_email_text(block.get_text(" ", strip=True))
+    url_text = EMAIL_RE.sub(" ", block_text)
+    raw_urls: list[str] = []
+    raw_urls.extend(match.group(0) for match in URL_RE.finditer(url_text))
+    raw_urls.extend(match.group(0) for match in BARE_DOMAIN_RE.finditer(url_text))
+    for raw in raw_urls:
+        raw = raw.rstrip(".,);]}")
+        href = raw if re.match(r"(?i)^https?://", raw) else "https://" + raw.lstrip("/")
+        href = normalize_url(href)
+        key = canonical_url_key(href)
+        if not key or key in seen:
+            continue
+        context = block_text[max(0, block_text.find(raw) - 80) : block_text.find(raw) + len(raw) + 80]
+        score = score_lab_link_candidate(
+            href,
+            source_url,
+            context,
+            exact_email,
+            exact_name,
+            source_kind,
+            professor_profile_url,
+        )
+        if score <= 0:
+            continue
+        seen.add(key)
+        candidates.append(
+            LabLinkCandidate(
+                lab_id=clean_text(lab.get("lab_id", "")),
+                url=href,
+                source_url=normalize_url(source_url),
+                source_kind=source_kind,
+                evidence_method="official_exact_email_text_url" if exact_email else "official_unique_name_text_url",
+                score=score,
+                label_text=clean_text(context),
+                exact_email=exact_email,
+                exact_name=exact_name,
+                lab_name=lab_name,
+            )
+        )
+
+    candidates.sort(key=lambda item: (item.score, bool(item.lab_name), -len(item.url)), reverse=True)
+    return candidates
+
+
+def find_text_node_for_email(soup: BeautifulSoup, email: str) -> Optional[NavigableString]:
+    local = re.escape(email.split("@", 1)[0])
+    pattern = re.compile(local, re.I)
+    for node in soup.find_all(string=pattern):
+        if email in extract_identity_emails(str(node)):
+            return node
+        parent_text = clean_text(node.parent.get_text(" ", strip=True)) if isinstance(node.parent, Tag) else str(node)
+        if email in extract_identity_emails(parent_text):
+            return node
+    return None
+
+
+def collect_lab_link_seed_urls(
+    departments: Sequence[dict[str, str]],
+    labs_by_id: dict[str, dict[str, str]],
+    target_lab_ids: Optional[set[str]] = None,
+) -> list[tuple[int, str, str]]:
+    target_lab_ids = set(labs_by_id.keys()) if target_lab_ids is None else set(target_lab_ids)
+    target_labs = [labs_by_id[lab_id] for lab_id in target_lab_ids if lab_id in labs_by_id]
+    target_department_ids = {
+        clean_text(lab.get("primary_department_id", "") or lab.get("department_id", ""))
+        for lab in target_labs
+        if clean_text(lab.get("primary_department_id", "") or lab.get("department_id", ""))
+    }
+    target_department_names: set[str] = set()
+    for lab in target_labs:
+        target_department_names.add(clean_text(lab.get("department_name", "")))
+        target_department_names.update(split_multi(lab.get("affiliated_programs", "")))
+    target_department_names.discard("")
+
+    seeds: list[tuple[int, str, str]] = []
+    for url in LAB_LINK_DIRECTORY_URLS:
+        seeds.append((3200, normalize_url(url), "official_directory"))
+    for department in departments:
+        department_id = clean_text(department.get("department_id", ""))
+        department_name = clean_text(department.get("department_name_kor", ""))
+        if department_id not in target_department_ids and department_name not in target_department_names:
+            continue
+        for url in split_multi(department.get("faculty_page_urls", "")):
+            seeds.append((4200, normalize_url(url), "department_faculty_page"))
+        for field_name, priority in (("homepage_url", 1000), ("detail_url", 900), ("source_url", 800)):
+            url = normalize_url(department.get(field_name, ""))
+            if url:
+                seeds.append((priority, url, "department_source"))
+    for lab in target_labs:
+        for field_name, priority, kind in (
+            ("department_page_url", 5000, "department_profile"),
+            ("professor_profile_url", 4800, "professor_profile"),
+            ("source_url", 4600, "professor_profile"),
+        ):
+            url = normalize_url(lab.get(field_name, ""))
+            if url:
+                seeds.append((priority, url, kind))
+        for url in split_multi(lab.get("enrichment_source_urls", "")):
+            url = normalize_url(url)
+            if url and is_official_postech_source(url) and not is_non_identity_source_url(url):
+                seeds.append((4400, url, "enrichment_source"))
+    dedup: dict[str, tuple[int, str, str]] = {}
+    for priority, url, kind in seeds:
+        key = canonical_url_key(url)
+        if not key or not is_official_postech_source(url) or is_non_identity_source_url(url):
+            continue
+        current = dedup.get(key)
+        if current is None or priority > current[0]:
+            dedup[key] = (priority, url, kind)
+    return sorted(dedup.values(), key=lambda item: (-item[0], item[1]))
+
+
+def individual_lab_identity_sources(lab: dict[str, str], limit: int = 4) -> list[tuple[str, str]]:
+    candidates: list[tuple[str, str]] = []
+    for field_name, kind in (
+        ("professor_profile_url", "professor_profile"),
+        ("source_url", "professor_profile"),
+        ("department_page_url", "department_profile"),
+    ):
+        url = normalize_url(lab.get(field_name, ""))
+        if url:
+            candidates.append((url, kind))
+    for url in split_multi(lab.get("enrichment_source_urls", "")):
+        url = normalize_url(url)
+        if url:
+            candidates.append((url, "enrichment_source"))
+    result: list[tuple[str, str]] = []
+    seen: set[str] = set()
+    for url, kind in candidates:
+        key = canonical_url_key(url)
+        if (
+            not key
+            or key in seen
+            or not is_official_postech_source(url)
+            or is_non_identity_source_url(url)
+        ):
+            continue
+        seen.add(key)
+        result.append((url, kind))
+        if len(result) >= max(1, limit):
+            break
+    return result
+
+
+
+def is_aif_researcher_listing(url: str) -> bool:
+    parsed = urlparse(normalize_url(url))
+    return hostname(url) == "aif.postech.ac.kr" and parsed.path.endswith("/researcher-search.do") and parse_qs(parsed.query).get("mode", ["list"])[0] != "view"
+
+
+def aif_researcher_list_url(offset: int) -> str:
+    return (
+        f"{AIF_RESEARCHER_LIST_URL}?article.offset={max(0, int(offset))}"
+        f"&articleLimit={AIF_RESEARCHER_PAGE_SIZE}&mode=list"
+    )
+
+
+def build_unique_name_index(labs_by_id: dict[str, dict[str, str]]) -> dict[str, str]:
+    grouped: defaultdict[str, list[str]] = defaultdict(list)
+    for lab_id, lab in labs_by_id.items():
+        key = normalize_name(lab.get("professor_name", ""))
+        if key:
+            grouped[key].append(lab_id)
+    return {key: ids[0] for key, ids in grouped.items() if len(ids) == 1}
+
+
+def mine_aif_unique_name_cards(
+    result: PageResult,
+    labs_by_id: dict[str, dict[str, str]],
+    unique_name_index: dict[str, str],
+    normalized_known_names: set[str],
+    candidate_map: defaultdict[str, list[LabLinkCandidate]],
+    name_evidence: dict[str, tuple[int, str, str, str]],
+) -> int:
+    """Recover official AIF cards that omit a visible e-mail but have a unique professor name."""
+    if not is_aif_researcher_listing(result.url):
+        return 0
+    matched = 0
+    soup = result.soup
+    for anchor in soup.find_all("a"):
+        href = anchor_target_url(result.url, anchor)
+        query = parse_qs(urlparse(href).query)
+        if query.get("mode", [""])[0] != "view" or not query.get("articleNo"):
+            continue
+        display_name = clean_professor_name(anchor.get_text(" ", strip=True))
+        name_key = normalize_name(display_name)
+        lab_id = unique_name_index.get(name_key)
+        if not lab_id or lab_id not in labs_by_id:
+            continue
+        lab = labs_by_id[lab_id]
+        block = find_person_container(anchor, lab.get("professor_name", ""), "", normalized_known_names)
+        # Short list cards can be smaller than the generic container threshold.
+        # Climb to the nearest compact ancestor that contains both the detail and Website links.
+        if len(block.find_all("a")) < 2:
+            current = anchor.parent
+            for _ in range(5):
+                if not isinstance(current, Tag):
+                    break
+                current_text = clean_text(current.get_text(" ", strip=True))
+                if len(current.find_all("a")) >= 2 and len(current_text) <= 1800 and visible_identity_count(current_text, normalized_known_names) <= 2:
+                    block = current
+                    break
+                current = current.parent
+        block_text = deobfuscate_email_text(block.get_text(" ", strip=True))
+        # A unique name is accepted only inside one compact official researcher card.
+        if len(block_text) > 1800 or visible_identity_count(block_text, normalized_known_names) > 2:
+            continue
+        lab_name = extract_labeled_lab_name_from_block(block, lab.get("professor_name", ""))
+        if lab_name:
+            current = name_evidence.get(lab_id)
+            if current is None or 80 > current[0]:
+                name_evidence[lab_id] = (80, lab_name, result.url, "aif_unique_name_card")
+        before = len(candidate_map.get(lab_id, []))
+        candidate_map[lab_id].extend(
+            extract_lab_link_candidates_from_block(
+                lab,
+                block,
+                result.url,
+                "aif_researcher_index",
+                exact_email=False,
+                exact_name=True,
+            )
+        )
+        if len(candidate_map.get(lab_id, [])) > before:
+            matched += 1
+    return matched
+
+
+def mine_aif_researcher_index(
+    client: RespectfulClient,
+    labs_by_id: dict[str, dict[str, str]],
+    labs_by_email: dict[str, str],
+    normalized_known_names: set[str],
+    candidate_map: defaultdict[str, list[LabLinkCandidate]],
+    name_evidence: dict[str, tuple[int, str, str, str]],
+    paths: RuntimePaths,
+    progress_every: int,
+    deadline: Optional[float],
+) -> dict[str, int | bool]:
+    """Scan the authoritative AIF index deterministically: ~30 list pages cover all researchers."""
+    unique_name_index = build_unique_name_index(labs_by_id)
+    pages = attempts = failures = matches = 0
+    consecutive_empty = 0
+    deadline_hit = False
+    max_offsets = range(0, AIF_RESEARCHER_MAX_RECORDS, AIF_RESEARCHER_PAGE_SIZE)
+    print("[LAB-CENTRAL] POSTECH 산학협력단 연구자 인덱스를 우선 확인합니다.", flush=True)
+    for page_no, offset in enumerate(max_offsets, start=1):
+        if deadline is not None and time.monotonic() >= deadline:
+            deadline_hit = True
+            break
+        attempts += 1
+        url = aif_researcher_list_url(offset)
+        if page_no == 1 or page_no % max(1, progress_every) == 0:
+            print(f"[LAB-CENTRAL] 페이지={page_no} | offset={offset} | 후보교수={len(candidate_map)}", flush=True)
+        try:
+            result = client.fetch(url)
+        except Exception as exc:
+            failures += 1
+            append_jsonl(paths.log, {
+                "timestamp": now_iso(), "level": "aif_researcher_index_failed",
+                "url": url, "error": str(exc), "enricher_version": ENRICHER_VERSION,
+            })
+            if failures >= 3 and pages == 0:
+                break
+            continue
+        pages += 1
+        exact_matches = mine_lab_link_page(
+            result, "aif_researcher_index", labs_by_id, labs_by_email,
+            normalized_known_names, candidate_map, name_evidence,
+        )
+        name_matches = mine_aif_unique_name_cards(
+            result, labs_by_id, unique_name_index, normalized_known_names,
+            candidate_map, name_evidence,
+        )
+        page_matches = exact_matches + name_matches
+        matches += page_matches
+        # List pages contain 10 researcher detail links until the final page.
+        detail_links = 0
+        for anchor in result.soup.find_all("a"):
+            href = anchor_target_url(result.url, anchor)
+            q = parse_qs(urlparse(href).query)
+            if q.get("mode", [""])[0] == "view" and q.get("articleNo"):
+                detail_links += 1
+        consecutive_empty = consecutive_empty + 1 if detail_links == 0 else 0
+        if consecutive_empty >= 2 or (0 < detail_links < AIF_RESEARCHER_PAGE_SIZE):
+            break
+    print(
+        f"[LAB-CENTRAL-DONE] 페이지={pages} | 실패={failures} | 매칭={matches} | 후보교수={len(candidate_map)}",
+        flush=True,
+    )
+    return {
+        "pages": pages, "attempts": attempts, "failures": failures,
+        "matches": matches, "deadline_hit": deadline_hit,
+    }
+
+
+HOMEPAGE_PROBE_TERMS = (
+    "about", "people", "member", "members", "team", "contact", "pi", "principal-investigator",
+    "professor", "research", "laboratory", "lab", "소개", "구성원", "연구", "연락처",
+)
+
+
+def homepage_identity_probe_urls(soup: BeautifulSoup, base_url: str, limit: int = 2) -> list[str]:
+    scored: list[tuple[int, str]] = []
+    base_key = canonical_url_key(base_url)
+    for anchor in soup.find_all("a"):
+        href = anchor_target_url(base_url, anchor)
+        key = canonical_url_key(href)
+        if not key or key == base_key or not same_site(base_url, href):
+            continue
+        path = urlparse(href).path.casefold()
+        if any(path.endswith(ext) for ext in (".pdf", ".zip", ".jpg", ".png", ".doc", ".docx")):
+            continue
+        text = clean_text(" ".join([
+            anchor.get_text(" ", strip=True), anchor.get("title", ""), anchor.get("aria-label", ""), path
+        ])).casefold()
+        score = sum(10 for term in HOMEPAGE_PROBE_TERMS if term in text)
+        if any(token in text for token in ("publication", "paper", "news", "notice", "seminar", "gallery", "login")):
+            score -= 30
+        if score > 0:
+            scored.append((score, href))
+    result: list[str] = []
+    seen: set[str] = set()
+    for _, href in sorted(scored, key=lambda item: (-item[0], len(item[1]))):
+        key = canonical_url_key(href)
+        if key in seen:
+            continue
+        seen.add(key)
+        result.append(href)
+        if len(result) >= max(0, limit):
+            break
+    return result
+
+
+def lab_link_diagnostic_recommendation(reason_counts: Counter[str], candidate_count: int) -> str:
+    if candidate_count == 0:
+        return "official_directory_has_no_website"
+    keys = " ".join(reason_counts.keys())
+    if "fetch_failed" in keys:
+        return "retry_network_or_browser"
+    if "ambiguous_name_without_email" in keys or "identity_conflict" in keys:
+        return "manual_identity_review"
+    if "dead_or_generic_page" in keys:
+        return "homepage_dead_or_redirected"
+    if "forbidden_final_url" in keys:
+        return "candidate_is_profile_news_or_publication"
+    return "candidate_identity_not_confirmed"
+
+def classify_lab_link_verification_failure(method: str) -> str:
+    method = clean_text(method)
+    if method.startswith("fetch_failed"):
+        return "transient_network_failure"
+    if method in {"dead_or_generic_page"}:
+        return "dead_homepage"
+    if method in {"known_department_page", "forbidden_final_url", "broad_multi_professor_page"} or method.startswith("broad_multi_professor_page"):
+        return "false_positive_page"
+    if method in {"identity_conflict", "ambiguous_name_without_email"}:
+        return "identity_insufficient"
+    return "identity_insufficient"
+
+
+def lab_link_source_follow_score(anchor: Tag, current_url: str, href: str, known_names: set[str]) -> int:
+    if not href or not is_official_postech_source(href) or is_non_identity_source_url(href):
+        return -999
+    if is_pagination_link(anchor, current_url, href):
+        return 800
+    if is_profile_detail_link(anchor, href, known_names):
+        return 1000
+    text = clean_text(anchor.get_text(" ", strip=True)).casefold()
+    haystack = f"{text} {urlparse(href).path} {urlparse(href).query}".casefold()
+    if any(token in haystack for token in LAB_LINK_SOURCE_PATH_HINTS):
+        return 300
+    return -999
+
+
+def discover_lab_link_source_pages(
+    client: RespectfulClient,
+    departments: Sequence[dict[str, str]],
+    labs_by_id: dict[str, dict[str, str]],
+    max_pages: int,
+    max_depth: int,
+    paths: RuntimePaths,
+    save_raw: bool,
+    target_lab_ids: Optional[set[str]] = None,
+    host_page_cap: int = DEFAULT_LAB_LINK_HOST_PAGE_CAP,
+    progress_every: int = DEFAULT_LAB_LINK_PROGRESS_EVERY,
+    deadline: Optional[float] = None,
+) -> tuple[list[tuple[PageResult, str]], dict[str, object]]:
+    target_lab_ids = set(labs_by_id.keys()) if target_lab_ids is None else set(target_lab_ids)
+    known_names = {
+        normalize_name(labs_by_id[lab_id].get("professor_name", ""))
+        for lab_id in target_lab_ids
+        if lab_id in labs_by_id and normalize_name(labs_by_id[lab_id].get("professor_name", ""))
+    }
+    queue: list[tuple[int, int, str, str]] = []
+    queued: set[str] = set()
+    visited: set[str] = set()
+    for priority, url, kind in collect_lab_link_seed_urls(departments, labs_by_id, target_lab_ids):
+        key = canonical_url_key(url)
+        if key and key not in queued:
+            queued.add(key)
+            heapq.heappush(queue, (-priority, 0, url, kind))
+
+    results: list[tuple[PageResult, str]] = []
+    attempts = 0
+    failed = 0
+    skipped_host_cap = 0
+    deadline_hit = False
+    host_pages: Counter[str] = Counter()
+    max_attempts = max(max_pages * 2, max_pages + 30)
+    progress_every = max(1, int(progress_every))
+    while queue and len(results) < max_pages and attempts < max_attempts:
+        if deadline is not None and time.monotonic() >= deadline:
+            deadline_hit = True
+            print("[LAB-SOURCE] 시간 예산 도달 — 현재까지 찾은 후보로 검증을 계속합니다.", flush=True)
+            break
+        neg_priority, depth, url, kind = heapq.heappop(queue)
+        attempts += 1
+        key = canonical_url_key(url)
+        queued.discard(key)
+        if not key or key in visited:
+            continue
+        visited.add(key)
+        host = hostname(url)
+        if host_page_cap > 0 and host_pages[host] >= host_page_cap:
+            skipped_host_cap += 1
+            continue
+        if attempts == 1 or attempts % progress_every == 0:
+            print(
+                f"[LAB-SOURCE] 시도={attempts}/{max_attempts} | 성공={len(results)}/{max_pages} | "
+                f"큐={len(queue)} | depth={depth} | host={host}",
+                flush=True,
+            )
+        try:
+            result = client.fetch(url)
+        except Exception as exc:
+            failed += 1
+            append_jsonl(
+                paths.log,
+                {
+                    "timestamp": now_iso(),
+                    "level": "lab_link_source_fetch_failed",
+                    "url": url,
+                    "error": str(exc),
+                    "enricher_version": ENRICHER_VERSION,
+                },
+            )
+            continue
+        if not is_official_postech_source(result.url):
+            continue
+        results.append((result, kind))
+        host_pages[hostname(result.url)] += 1
+        save_raw_html(paths, "LAB_LINKS", len(results), result, save_raw)
+        if depth >= max_depth:
+            continue
+        soup = result.soup
+        for anchor in soup.find_all("a"):
+            href = anchor_target_url(result.url, anchor)
+            score = lab_link_source_follow_score(anchor, result.url, href, known_names)
+            next_key = canonical_url_key(href)
+            if score <= 0 or not next_key or next_key in visited or next_key in queued:
+                continue
+            next_host = hostname(href)
+            if host_page_cap > 0 and host_pages[next_host] >= host_page_cap:
+                continue
+            queued.add(next_key)
+            next_kind = "professor_profile" if is_profile_detail_link(anchor, href, known_names) else kind
+            heapq.heappush(queue, (-(max(1, -neg_priority) + score), depth + 1, href, next_kind))
+    print(
+        f"[LAB-SOURCE-DONE] 성공={len(results)} | 실패={failed} | 시도={attempts} | "
+        f"호스트상한건너뜀={skipped_host_cap}",
+        flush=True,
+    )
+    return results, {
+        "attempts": attempts,
+        "failed": failed,
+        "skipped_host_cap": skipped_host_cap,
+        "deadline_hit": deadline_hit,
+        "host_pages": dict(host_pages),
+    }
+
+
+def mine_lab_link_page(
+    result: PageResult,
+    source_kind: str,
+    labs_by_id: dict[str, dict[str, str]],
+    labs_by_email: dict[str, str],
+    normalized_known_names: set[str],
+    candidate_map: defaultdict[str, list[LabLinkCandidate]],
+    name_evidence: dict[str, tuple[int, str, str, str]],
+) -> int:
+    soup = result.soup
+    page_text = deobfuscate_email_text(soup.get_text(" ", strip=True))
+    page_emails = extract_identity_emails(page_text)
+    direct_nodes = find_email_nodes(soup)
+    matched = 0
+    for email in sorted(page_emails):
+        lab_id = labs_by_email.get(email)
+        if not lab_id or lab_id not in labs_by_id:
+            continue
+        lab = labs_by_id[lab_id]
+        node = direct_nodes.get(email) or find_text_node_for_email(soup, email)
+        if node is None:
+            continue
+        block = find_person_container(
+            node,
+            lab.get("professor_name", ""),
+            email,
+            normalized_known_names,
+        )
+        block_text = deobfuscate_email_text(block.get_text(" ", strip=True))
+        professor_emails = {
+            item for item in extract_identity_emails(block_text)
+            if item in labs_by_email
+        }
+        if len(professor_emails) > 4:
+            continue
+        exact_name = bool(
+            normalize_name(lab.get("professor_name", ""))
+            and normalize_name(lab.get("professor_name", "")) in normalize_name(block_text)
+        )
+        lab_name = extract_labeled_lab_name_from_block(block, lab.get("professor_name", ""))
+        if lab_name:
+            current = name_evidence.get(lab_id)
+            evidence_score = 100 if exact_name else 90
+            if current is None or evidence_score > current[0]:
+                name_evidence[lab_id] = (evidence_score, lab_name, result.url, "official_exact_email_card")
+        candidate_map[lab_id].extend(
+            extract_lab_link_candidates_from_block(
+                lab,
+                block,
+                result.url,
+                source_kind,
+                exact_email=True,
+                exact_name=exact_name,
+            )
+        )
+        matched += 1
+    return matched
+
+
+def page_looks_dead_or_generic(soup: BeautifulSoup) -> bool:
+    text = clean_text(soup.get_text(" ", strip=True))
+    title = clean_text(soup.title.get_text(" ", strip=True) if soup.title else "")
+    if any(pattern.search(f"{title} {text[:1000]}") for pattern in DEAD_HOMEPAGE_PATTERNS):
+        return True
+    if len(text) < 60 and len(soup.find_all("script")) < 3:
+        return True
+    if title.casefold().strip(" -|·") in GENERIC_HOMEPAGE_TITLES and not re.search(
+        r"(?i)(?:laboratory|\blab\b|research group|연구실|연구그룹)", text[:3000]
+    ):
+        return True
+    return False
+
+
+def homepage_research_context(soup: BeautifulSoup) -> bool:
+    text = clean_text(soup.get_text(" ", strip=True)).casefold()
+    title = clean_text(soup.title.get_text(" ", strip=True) if soup.title else "").casefold()
+    return any(
+        token in f" {title} {text[:5000]} "
+        for token in (
+            " laboratory", " lab ", "research group", "research center", "research", "연구실", "연구그룹", "연구센터",
+        )
+    )
+
+
+def verify_lab_link_candidate(
+    client: RespectfulClient,
+    lab: dict[str, str],
+    candidate: LabLinkCandidate,
+    ambiguous_name: bool,
+    max_probe_pages: int = DEFAULT_LAB_LINK_HOMEPAGE_PROBE_PAGES,
+    department_url_keys: Optional[set[str]] = None,
+    known_professor_emails: Optional[set[str]] = None,
+    known_professor_names: Optional[set[str]] = None,
+) -> tuple[dict[str, str], str]:
+    department_url_keys = department_url_keys or set()
+    known_professor_emails = known_professor_emails or set()
+    known_professor_names = known_professor_names or set()
+    if canonical_url_key(candidate.url) in department_url_keys:
+        return {}, "known_department_page"
+    result: Optional[PageResult] = None
+    fetch_errors: list[str] = []
+    for variant in candidate_url_variants(candidate.url):
+        try:
+            result = client.fetch(variant)
+            break
+        except Exception as exc:
+            fetch_errors.append(str(exc))
+    if result is None:
+        strength = lab_link_label_strength(candidate.label_text)
+        source_authoritative = candidate.exact_email and is_official_postech_source(candidate.source_url)
+        card_verified = bool(
+            source_authoritative
+            and canonical_url_key(candidate.url) not in department_url_keys
+            and (strength >= 2 or (strength >= 1 and candidate.lab_name and candidate.score >= 85))
+        )
+        if card_verified:
+            lab_name_kor, lab_name_eng = split_discovered_lab_name(candidate.lab_name)
+            return {
+                "lab_url": normalize_url(candidate.url), "lab_url_status": "verified_card",
+                "lab_name_kor": lab_name_kor, "lab_name_eng": lab_name_eng,
+                "enrichment_source_urls": candidate.source_url,
+                "_lab_link_evidence_method": "official_exact_email_card_unreachable",
+                "_source_scope": "department_page",
+            }, "official_exact_email_card_unreachable"
+        return {}, "fetch_failed: " + " | ".join(fetch_errors[:2])
+    final_url = normalize_url(result.url)
+    if (not final_url or is_forbidden_lab_url(final_url, lab.get("professor_profile_url", ""))
+            or canonical_url_key(final_url) in department_url_keys):
+        return {}, "known_department_page" if canonical_url_key(final_url) in department_url_keys else "forbidden_final_url"
+    soup = result.soup
+    probe_urls = homepage_identity_probe_urls(soup, final_url, max_probe_pages)
+    main_page_usable = not page_looks_dead_or_generic(soup)
+    if not main_page_usable and not probe_urls:
+        return {}, "dead_or_generic_page"
+    identity_pages: list[tuple[BeautifulSoup, str]] = [(soup, final_url)] if main_page_usable else []
+    for probe_url in probe_urls:
+        try:
+            probe = client.fetch(probe_url)
+        except Exception:
+            continue
+        if same_site(final_url, probe.url) and not page_looks_dead_or_generic(probe.soup):
+            identity_pages.append((probe.soup, normalize_url(probe.url)))
+    if not identity_pages:
+        return {}, "dead_or_generic_page"
+    target_email = normalize_email(lab.get("email", ""))
+    target_name = normalize_name(lab.get("professor_name", ""))
+    aggregate_text = " ".join(deobfuscate_email_text(x.get_text(" ", strip=True)) for x, _ in identity_pages)
+    page_emails = extract_identity_emails(aggregate_text)
+    exact_email = bool(target_email and target_email in page_emails)
+    exact_name = bool(target_name and target_name in normalize_name(aggregate_text))
+    research_context = any(homepage_research_context(x) for x, _ in identity_pages)
+    homepage_name = ""
+    for item_soup, _ in identity_pages:
+        homepage_name = extract_homepage_lab_name(item_soup)
+        if homepage_name:
+            break
+    label_strength = lab_link_label_strength(candidate.label_text)
+    url_lab_signal = any(token in f"{hostname(final_url)} {urlparse(final_url).path}".casefold() for token in LAB_PATH_HINTS)
+    lab_specific = bool(homepage_name or candidate.lab_name or label_strength >= 2 or url_lab_signal)
+    known_email_count, known_name_count = known_professor_identity_counts(
+        aggregate_text, known_professor_emails, known_professor_names
+    )
+    if (known_email_count >= BROAD_PAGE_MAX_KNOWN_EMAILS or known_name_count >= BROAD_PAGE_MAX_KNOWN_NAMES) and not (homepage_name and known_email_count <= 3):
+        return {}, f"broad_multi_professor_page:{known_email_count}:{known_name_count}"
+    unrelated_postech = {x for x in page_emails if x.endswith("@postech.ac.kr") and x != target_email}
+    if unrelated_postech and not exact_email and not exact_name:
+        return {}, "identity_conflict"
+    if ambiguous_name and not exact_email and not candidate.exact_email:
+        return {}, "ambiguous_name_without_email"
+    official_name_card = bool(
+        candidate.exact_name and is_official_postech_source(candidate.source_url)
+        and candidate.source_kind in {"aif_researcher_index", "official_directory", "professor_profile"}
+    )
+    status = "candidate_card"
+    evidence_method = candidate.evidence_method
+    if exact_email and research_context and lab_specific:
+        status = "verified_homepage"
+        evidence_method = "homepage_exact_email"
+    elif exact_name and research_context and lab_specific and (candidate.exact_email or official_name_card):
+        status = "verified_homepage"
+        evidence_method = "official_card_email_plus_homepage_name" if candidate.exact_email else "official_unique_name_card_plus_homepage_name"
+    elif candidate.exact_email and (label_strength >= 1 or candidate.lab_name) and research_context:
+        status = "verified_card"
+        evidence_method = "official_exact_email_card_reachable"
+    elif candidate.exact_email and label_strength >= 2:
+        status = "verified_card"
+        evidence_method = "official_exact_email_strong_label"
+    chosen_name = clean_discovered_lab_name(candidate.lab_name, lab.get("professor_name", "")) or clean_discovered_lab_name(homepage_name, lab.get("professor_name", ""))
+    lab_name_kor, lab_name_eng = split_discovered_lab_name(chosen_name)
+    return {
+        "lab_url": final_url, "lab_url_status": status,
+        "lab_name_kor": lab_name_kor, "lab_name_eng": lab_name_eng,
+        "enrichment_source_urls": merge_multi(candidate.source_url, *(url for _, url in identity_pages)),
+        "_lab_link_evidence_method": evidence_method,
+        "_source_scope": "lab_homepage" if status == "verified_homepage" else "department_page",
+    }, evidence_method
+
+def lab_link_safety_issues(
+    before: Sequence[dict[str, str]], after: Sequence[dict[str, str]],
+    department_url_keys: Optional[set[str]] = None, allowed_trusted_decrease: int = 0,
+) -> list[str]:
+    department_url_keys = department_url_keys or set()
+    issues: list[str] = []
+    before_trusted = sum(bool(normalize_url(r.get("lab_url", ""))) and r.get("lab_url_status") in TRUSTED_LAB_URL_STATUSES for r in before)
+    after_trusted = sum(bool(normalize_url(r.get("lab_url", ""))) and r.get("lab_url_status") in TRUSTED_LAB_URL_STATUSES for r in after)
+    if after_trusted + max(0, allowed_trusted_decrease) < before_trusted:
+        issues.append(f"신뢰 URL 수 비정상 감소 {before_trusted}→{after_trusted}")
+    groups: defaultdict[str, list[dict[str, str]]] = defaultdict(list)
+    for row in after:
+        url = normalize_url(row.get("lab_url", ""))
+        status = clean_text(row.get("lab_url_status", ""))
+        if not url or status not in TRUSTED_LAB_URL_STATUSES:
+            continue
+        key = canonical_url_key(url)
+        if is_forbidden_lab_url(url, row.get("professor_profile_url", "")):
+            issues.append(f"금지 URL이 신뢰 상태: {row.get('lab_id')} {url}")
+        if key in department_url_keys and status != "manual":
+            issues.append(f"학과/교수목록 URL이 신뢰 상태: {row.get('lab_id')} {url}")
+        groups[key].append(row)
+    for key, rows in groups.items():
+        emails = {normalize_email(r.get("email", "")) for r in rows if normalize_email(r.get("email", ""))}
+        departments = {clean_text(r.get("primary_department_id", "") or r.get("department_id", "")) for r in rows}
+        if len(rows) < 2:
+            continue
+        if len(emails) >= 4 or len(departments) >= 2:
+            issues.append(f"신뢰 URL 다중 교수 충돌 {len(emails)}명: {key}")
+        elif not shared_lab_group_is_verified(rows):
+            issues.append(f"신뢰 URL 공유 연구실 근거 부족 {len(emails)}명: {key}")
+    return unique_preserve_order(issues)
+
+def discover_lab_links_in_memory(
+    client: RespectfulClient,
+    departments: Sequence[dict[str, str]],
+    labs_by_id: dict[str, dict[str, str]],
+    paths: RuntimePaths,
+    args: argparse.Namespace,
+) -> dict:
+    snapshot = deepcopy(labs_by_id)
+    sanitation = sanitize_existing_lab_link_records(departments, labs_by_id)
+    department_url_keys = sanitation["department_url_keys"]
+    trusted_before_raw = sum(
+        bool(normalize_url(row.get("lab_url", "")))
+        and row.get("lab_url_status") in TRUSTED_LAB_URL_STATUSES
+        for row in snapshot.values()
+    )
+    trusted_before = sum(
+        bool(normalize_url(row.get("lab_url", "")))
+        and row.get("lab_url_status") in TRUSTED_LAB_URL_STATUSES
+        for row in labs_by_id.values()
+    )
+    any_url_before = sum(bool(normalize_url(row.get("lab_url", ""))) for row in labs_by_id.values())
+    actual_name_before = sum(lab_name_is_actual(row) for row in labs_by_id.values())
+    labs_by_email, _, normalized_known_names, _ = build_indexes(labs_by_id)
+    name_counts = Counter(
+        normalize_name(row.get("professor_name", ""))
+        for row in labs_by_id.values()
+        if normalize_name(row.get("professor_name", ""))
+    )
+    known_professor_emails = {normalize_email(row.get("email", "")) for row in labs_by_id.values() if normalize_email(row.get("email", ""))}
+    known_professor_names = {normalize_name(row.get("professor_name", "")) for row in labs_by_id.values() if normalize_name(row.get("professor_name", ""))}
+    candidate_map: defaultdict[str, list[LabLinkCandidate]] = defaultdict(list)
+    name_evidence: dict[str, tuple[int, str, str, str]] = {}
+    refresh_all = bool(getattr(args, "refresh_lab_links", False))
+    target_lab_ids = {
+        lab_id
+        for lab_id, lab in labs_by_id.items()
+        if lab_link_target_required(lab, refresh_all)
+    }
+    time_budget_minutes = max(0.0, float(getattr(args, "lab_link_time_budget_minutes", DEFAULT_LAB_LINK_TIME_BUDGET_MINUTES)))
+    started_at = time.monotonic()
+    deadline = (started_at + time_budget_minutes * 60.0) if time_budget_minutes > 0 else None
+    source_deadline = (started_at + time_budget_minutes * 60.0 * 0.45) if deadline is not None else None
+    identity_deadline = (started_at + time_budget_minutes * 60.0 * 0.70) if deadline is not None else None
+    progress_every = max(1, int(getattr(args, "lab_link_progress_every", DEFAULT_LAB_LINK_PROGRESS_EVERY)))
+    print(f"[LAB-TARGET] 링크 또는 이름 보완 대상={len(target_lab_ids)}/{len(labs_by_id)}", flush=True)
+    if not target_lab_ids:
+        return {
+            "committed_in_memory": True,
+            "issues": [],
+            "source_pages": 0,
+            "individual_source_pages": 0,
+            "source_attempts": 0,
+            "source_failures": 0,
+            "source_host_cap_skips": 0,
+            "time_budget_exhausted": False,
+            "page_matches": 0,
+            "candidate_labs": 0,
+            "updated_labs": 0,
+            "updated_lab_ids": [],
+            "verified_homepage": 0,
+            "verified_card": 0,
+            "candidate_only": 0,
+            "lab_names_added": 0,
+            "fetch_failures": 0,
+            "trusted_before": trusted_before,
+            "trusted_after": trusted_before,
+            "any_url_before": any_url_before,
+            "any_url_after": any_url_before,
+            "actual_name_before": actual_name_before,
+            "actual_name_after": actual_name_before,
+            "post_clean_changed_fields": {},
+        }
+
+    central_deadline = (started_at + time_budget_minutes * 60.0 * 0.22) if deadline is not None else None
+    central_stats = mine_aif_researcher_index(
+        client, labs_by_id, labs_by_email, normalized_known_names,
+        candidate_map, name_evidence, paths, progress_every, central_deadline,
+    )
+
+    source_pages, source_stats = discover_lab_link_source_pages(
+        client,
+        departments,
+        labs_by_id,
+        max_pages=int(getattr(args, "lab_link_max_pages", DEFAULT_LAB_LINK_MAX_PAGES)),
+        max_depth=int(getattr(args, "lab_link_max_depth", DEFAULT_LAB_LINK_MAX_DEPTH)),
+        paths=paths,
+        save_raw=bool(getattr(args, "save_raw_html", False)),
+        target_lab_ids=target_lab_ids,
+        host_page_cap=int(getattr(args, "lab_link_host_page_cap", DEFAULT_LAB_LINK_HOST_PAGE_CAP)),
+        progress_every=progress_every,
+        deadline=source_deadline,
+    )
+    page_match_count = 0
+    for page_index, (result, source_kind) in enumerate(source_pages, start=1):
+        page_match_count += mine_lab_link_page(
+            result,
+            source_kind,
+            labs_by_id,
+            labs_by_email,
+            normalized_known_names,
+            candidate_map,
+            name_evidence,
+        )
+        if page_index == 1 or page_index % progress_every == 0:
+            print(
+                f"[LAB-MINE] {page_index}/{len(source_pages)} | 후보교수={len(candidate_map)} | "
+                f"연구실명근거={len(name_evidence)}",
+                flush=True,
+            )
+
+    # Guarantee a professor-level fallback even when the global directory crawl
+    # reaches its page cap. Each unresolved professor's official POSTECH profile
+    # and matched department page are fetched directly; RespectfulClient caching
+    # prevents duplicate network requests for pages already visited above.
+    individual_source_pages = 0
+    identity_source_limit = max(1, int(getattr(args, "lab_link_identity_sources_per_lab", DEFAULT_LAB_LINK_IDENTITY_SOURCES_PER_LAB)))
+    target_items = [(lab_id, labs_by_id[lab_id]) for lab_id in sorted(target_lab_ids) if lab_id in labs_by_id]
+    for target_index, (lab_id, lab) in enumerate(target_items, start=1):
+        if identity_deadline is not None and time.monotonic() >= identity_deadline:
+            print("[LAB-IDENTITY] 단계 시간 예산 도달 — URL 후보 검증 단계로 이동합니다.", flush=True)
+            break
+        if target_index == 1 or target_index % progress_every == 0:
+            print(
+                f"[LAB-IDENTITY] {target_index}/{len(target_items)} | 교수={lab.get('professor_name', '-')} | "
+                f"후보={len(candidate_map.get(lab_id, []))}",
+                flush=True,
+            )
+        current_trusted = bool(normalize_url(lab.get("lab_url", ""))) and clean_text(
+            lab.get("lab_url_status", "")
+        ) in TRUSTED_LAB_URL_STATUSES
+        needs_name = looks_placeholder_lab_name(lab.get("lab_name_kor", ""))
+        needs_provenance = current_trusted and not lab_url_provenance_complete(lab)
+        if not refresh_all and current_trusted and not needs_name and not needs_provenance:
+            continue
+        strong_existing_candidate = any(
+            candidate.exact_email and candidate.score >= 105
+            for candidate in candidate_map.get(lab_id, [])
+        )
+        if strong_existing_candidate:
+            continue
+        for source_url, source_kind in individual_lab_identity_sources(lab, identity_source_limit):
+            try:
+                result = client.fetch(source_url)
+            except Exception as exc:
+                append_jsonl(
+                    paths.log,
+                    {
+                        "timestamp": now_iso(),
+                        "level": "lab_link_identity_source_failed",
+                        "lab_id": lab_id,
+                        "email": normalize_email(lab.get("email", "")),
+                        "url": source_url,
+                        "error": str(exc),
+                        "enricher_version": ENRICHER_VERSION,
+                    },
+                )
+                continue
+            if not is_official_postech_source(result.url):
+                continue
+            individual_source_pages += 1
+            page_match_count += mine_lab_link_page(
+                result,
+                source_kind,
+                {lab_id: lab},
+                {normalize_email(lab.get("email", "")): lab_id},
+                normalized_known_names,
+                candidate_map,
+                name_evidence,
+            )
+            if (
+                any(candidate.exact_email and candidate.score >= 105 for candidate in candidate_map.get(lab_id, []))
+                and lab_id in name_evidence
+            ):
+                break
+
+    # Existing non-trusted URLs and trusted legacy URLs without field-level
+    # provenance deserve one verification pass.
+    for lab_id, lab in labs_by_id.items():
+        existing_url = normalize_url(lab.get("lab_url", ""))
+        current_status = clean_text(lab.get("lab_url_status", ""))
+        needs_revalidation = lab_link_revalidation_required(lab, refresh_all)
+        if needs_revalidation:
+            candidate_map[lab_id].append(
+                LabLinkCandidate(
+                    lab_id=lab_id, url=existing_url,
+                    source_url=normalize_url(
+                        lab_url_provenance(lab).get("source_url", "")
+                        or lab.get("department_page_url", "")
+                        or lab.get("source_url", "")
+                        or lab.get("professor_profile_url", "")
+                        or existing_url
+                    ),
+                    source_kind="existing_candidate" if current_status not in TRUSTED_LAB_URL_STATUSES else "existing_trusted_revalidation",
+                    evidence_method="existing_candidate_revalidation" if current_status not in TRUSTED_LAB_URL_STATUSES else "legacy_trusted_revalidation",
+                    score=82 if current_status in TRUSTED_LAB_URL_STATUSES else 75,
+                    exact_email=False, exact_name=False,
+                    lab_name=clean_lab_name(lab.get("lab_name_kor", ""), lab.get("professor_name", "")) or clean_lab_name(lab.get("lab_name_eng", ""), lab.get("professor_name", "")),
+                )
+            )
+
+    updated_lab_ids: set[str] = set()
+    verified_homepage = 0
+    verified_card = 0
+    candidate_only = 0
+    names_added = 0
+    fetch_failures = 0
+    provenance_only_updates = 0
+    revalidation_targets = sum(
+        bool(normalize_url(labs_by_id[lab_id].get("lab_url", "")))
+        and clean_text(labs_by_id[lab_id].get("lab_url_status", "")) in TRUSTED_LAB_URL_STATUSES
+        and (refresh_all or not lab_url_provenance_complete(labs_by_id[lab_id]))
+        for lab_id in target_lab_ids if lab_id in labs_by_id
+    )
+    revalidation_attempts = 0
+    revalidation_success = 0
+    revalidation_failures: Counter[str] = Counter()
+    verification_reasons: defaultdict[str, Counter[str]] = defaultdict(Counter)
+    max_candidates = max(1, int(getattr(args, "lab_link_candidates_per_lab", DEFAULT_LAB_LINK_CANDIDATES_PER_LAB)))
+
+    verify_items = [(lab_id, labs_by_id[lab_id]) for lab_id in sorted(target_lab_ids) if lab_id in labs_by_id]
+    for verify_index, (lab_id, lab) in enumerate(verify_items, start=1):
+        if deadline is not None and time.monotonic() >= deadline:
+            print("[LAB-VERIFY] 시간 예산 도달 — 확보된 결과만 안전성 검사합니다.", flush=True)
+            break
+        if verify_index == 1 or verify_index % progress_every == 0:
+            print(
+                f"[LAB-VERIFY] {verify_index}/{len(verify_items)} | 교수={lab.get('professor_name', '-')} | "
+                f"URL후보={len(candidate_map.get(lab_id, []))}",
+                flush=True,
+            )
+        current_status = clean_text(lab.get("lab_url_status", ""))
+        current_url = normalize_url(lab.get("lab_url", ""))
+        current_trusted = bool(current_url) and current_status in TRUSTED_LAB_URL_STATUSES
+        needs_url = not current_url or current_status not in TRUSTED_LAB_URL_STATUSES
+        needs_name = looks_placeholder_lab_name(lab.get("lab_name_kor", ""))
+        needs_provenance = current_trusted and not lab_url_provenance_complete(lab)
+        revalidating_trusted = current_trusted and (refresh_all or needs_provenance)
+        if not refresh_all and not needs_url and not needs_name and not needs_provenance:
+            continue
+
+        before_name = clean_text(lab.get("lab_name_kor", ""))
+        if lab_id in name_evidence and needs_name:
+            _, lab_name, source_url, method = name_evidence[lab_id]
+            kor_name, eng_name = split_discovered_lab_name(lab_name)
+            name_update = {
+                "lab_name_kor": kor_name,
+                "lab_name_eng": eng_name,
+                "enrichment_source_urls": source_url,
+                "_source_scope": "department_page",
+            }
+            merged, changed = merge_lab_update(lab, name_update, "")
+            if changed:
+                record_field_provenance(merged, changed, "department_page", source_url, method)
+                labs_by_id[lab_id] = merged
+                lab = merged
+                updated_lab_ids.add(lab_id)
+                if before_name != clean_text(merged.get("lab_name_kor", "")):
+                    names_added += 1
+
+        candidates = candidate_map.get(lab_id, [])
+        dedup: dict[str, LabLinkCandidate] = {}
+        for candidate in candidates:
+            key = canonical_url_key(candidate.url)
+            current = dedup.get(key)
+            if key and (current is None or candidate_preference_key(candidate) > candidate_preference_key(current)):
+                dedup[key] = candidate
+        ordered = sorted(
+            dedup.values(),
+            key=candidate_preference_key,
+            reverse=True,
+        )[:max_candidates]
+
+        best_candidate_update: Optional[tuple[dict[str, str], LabLinkCandidate, str]] = None
+        trusted_failure_methods: list[str] = []
+        for candidate in ordered:
+            candidate_is_current = revalidating_trusted and canonical_url_key(candidate.url) == canonical_url_key(current_url)
+            if candidate_is_current:
+                revalidation_attempts += 1
+            update, method = verify_lab_link_candidate(
+                client,
+                lab,
+                candidate,
+                ambiguous_name=name_counts.get(normalize_name(lab.get("professor_name", "")), 0) >= 2,
+                max_probe_pages=int(getattr(args, "lab_link_homepage_probe_pages", DEFAULT_LAB_LINK_HOMEPAGE_PROBE_PAGES)),
+                department_url_keys=department_url_keys,
+                known_professor_emails=known_professor_emails,
+                known_professor_names=known_professor_names,
+            )
+            verification_reasons[lab_id][method] += 1
+            if not update:
+                if method.startswith("fetch_failed"):
+                    fetch_failures += 1
+                if candidate_is_current:
+                    trusted_failure_methods.append(method)
+                continue
+            status = update.get("lab_url_status", "candidate_card")
+            if candidate_is_current and status not in TRUSTED_LAB_URL_STATUSES:
+                # Insufficient current evidence is not destructive. Preserve the
+                # previously trusted value and report the reason separately.
+                trusted_failure_methods.append(method)
+                continue
+            if best_candidate_update is None or verified_candidate_preference_key(update, candidate, method) > verified_candidate_preference_key(
+                best_candidate_update[0], best_candidate_update[1], best_candidate_update[2]
+            ):
+                best_candidate_update = (update, candidate, method)
+
+        if best_candidate_update is None:
+            if revalidating_trusted:
+                reason = trusted_failure_methods[0] if trusted_failure_methods else "identity_not_confirmed"
+                revalidation_failures[classify_lab_link_verification_failure(reason)] += 1
+            continue
+        update, candidate, method = best_candidate_update
+        merged, changed = merge_lab_update(lab, update, "")
+        trusted_update = clean_text(update.get("lab_url_status", "")) in TRUSTED_LAB_URL_STATUSES
+        missing_link_provenance = trusted_update and not lab_url_provenance_complete(lab)
+        refresh_provenance = bool(refresh_all and revalidating_trusted and trusted_update)
+        if not changed and not missing_link_provenance and not refresh_provenance:
+            continue
+        if not changed:
+            merged = dict(lab)
+        provenance_fields = unique_preserve_order(
+            [*changed, *(["lab_url", "lab_url_status"] if trusted_update else [])]
+        )
+        source_scope = "lab_homepage" if update.get("lab_url_status") == "verified_homepage" else "department_page"
+        record_lab_link_provenance(merged, provenance_fields, candidate, update, method)
+        if (missing_link_provenance or refresh_provenance) and "field_provenance" not in changed:
+            changed = [*changed, "field_provenance"]
+            provenance_only_updates += 1
+        merged["enrichment_status"] = "success"
+        merged["enrichment_message"] = merge_multi(
+            merged.get("enrichment_message", ""),
+            "랩 링크 우선 보완: " + ", ".join(changed),
+        )
+        merged["enriched_at"] = now_iso()
+        merged["enricher_version"] = ENRICHER_VERSION
+        merged["data_quality_status"] = data_quality_status(merged)
+        labs_by_id[lab_id] = merged
+        updated_lab_ids.add(lab_id)
+        if revalidating_trusted and trusted_update:
+            revalidation_success += 1
+        status = clean_text(merged.get("lab_url_status", ""))
+        if status == "verified_homepage":
+            verified_homepage += 1
+        elif status == "verified_card":
+            verified_card += 1
+        elif status == "candidate_card":
+            candidate_only += 1
+
+    # Do not run the general cross-record cleaner in link-only work. It may alter
+    # affiliations or unrelated fields. merge_lab_update already sanitizes every
+    # changed link/name field.
+    candidate_rows = {lab_id: dict(row) for lab_id, row in labs_by_id.items()}
+    shared_lab_rows_marked = mark_all_verified_shared_lab_groups(candidate_rows)
+    immutable_fields = (
+        "professor_name", "email", "department_id", "primary_department_id",
+        "department_name", "affiliated_programs", "affiliation_evidence",
+        "department_page_url", "phone", "location", "primary_field",
+        "research_summary", "keywords", "profile_image_url",
+    )
+    issues = lab_link_safety_issues(
+        list(snapshot.values()), list(candidate_rows.values()),
+        department_url_keys=department_url_keys,
+        allowed_trusted_decrease=int(sanitation.get("invalidated_count", 0)),
+    )
+    for lab_id, before_row in snapshot.items():
+        after_row = candidate_rows.get(lab_id, {})
+        for field_name in immutable_fields:
+            if clean_text(before_row.get(field_name, "")) != clean_text(after_row.get(field_name, "")):
+                issues.append(f"랩링크 모드 비대상 필드 변경: {lab_id} {field_name}")
+    if issues:
+        labs_by_id.clear()
+        labs_by_id.update(snapshot)
+        return {
+            "committed_in_memory": False,
+            "issues": issues,
+            "source_pages": len(source_pages),
+            "individual_source_pages": individual_source_pages,
+            "page_matches": page_match_count,
+            "updated_labs": 0,
+            "trusted_before": trusted_before,
+            "trusted_after": trusted_before,
+            "any_url_before": any_url_before,
+            "any_url_after": any_url_before,
+            "actual_name_before": actual_name_before,
+            "actual_name_after": actual_name_before,
+        }
+    labs_by_id.clear()
+    labs_by_id.update(candidate_rows)
+    trusted_after = sum(
+        bool(normalize_url(row.get("lab_url", "")))
+        and row.get("lab_url_status") in TRUSTED_LAB_URL_STATUSES
+        for row in labs_by_id.values()
+    )
+    any_url_after = sum(bool(normalize_url(row.get("lab_url", ""))) for row in labs_by_id.values())
+    actual_name_after = sum(lab_name_is_actual(row) for row in labs_by_id.values())
+    diagnostic_rows: list[dict[str, str]] = []
+    for lab_id in sorted(target_lab_ids):
+        lab = labs_by_id.get(lab_id, {})
+        status = clean_text(lab.get("lab_url_status", ""))
+        trusted = bool(normalize_url(lab.get("lab_url", ""))) and status in TRUSTED_LAB_URL_STATUSES
+        review = status == "candidate_card"
+        if trusted and not review:
+            continue
+        candidates = sorted(
+            {canonical_url_key(c.url): c for c in candidate_map.get(lab_id, []) if canonical_url_key(c.url)}.values(),
+            key=lambda c: c.score, reverse=True,
+        )
+        reasons = verification_reasons.get(lab_id, Counter())
+        diagnostic_rows.append({
+            "lab_id": lab_id,
+            "professor_name": clean_text(lab.get("professor_name", "")),
+            "email": normalize_email(lab.get("email", "")),
+            "department_name": clean_text(lab.get("department_name", "")),
+            "result_class": "review_candidate" if review else "unresolved",
+            "current_lab_url": normalize_url(lab.get("lab_url", "")),
+            "lab_url_status": status,
+            "candidate_count": str(len(candidates)),
+            "candidate_urls": ";".join(c.url for c in candidates[:5]),
+            "verification_reasons": ";".join(f"{key}:{value}" for key, value in reasons.most_common()),
+            "recommendation": lab_link_diagnostic_recommendation(reasons, len(candidates)),
+        })
+
+    return {
+        "committed_in_memory": True,
+        "issues": [],
+        "source_pages": len(source_pages),
+        "central_directory_pages": int(central_stats.get("pages", 0)),
+        "central_directory_matches": int(central_stats.get("matches", 0)),
+        "diagnostic_rows": diagnostic_rows,
+        "individual_source_pages": individual_source_pages,
+        "source_attempts": source_stats.get("attempts", 0),
+        "source_failures": source_stats.get("failed", 0),
+        "source_host_cap_skips": source_stats.get("skipped_host_cap", 0),
+        "time_budget_exhausted": bool(deadline is not None and time.monotonic() >= deadline),
+        "page_matches": page_match_count,
+        "candidate_labs": len(candidate_map),
+        "updated_labs": len(updated_lab_ids),
+        "updated_lab_ids": sorted(updated_lab_ids),
+        "verified_homepage": verified_homepage,
+        "verified_card": verified_card,
+        "candidate_only": candidate_only,
+        "lab_names_added": actual_name_after - actual_name_before,
+        "lab_name_stage_updates": names_added,
+        "fetch_failures": fetch_failures,
+        "provenance_only_updates": provenance_only_updates,
+        "revalidation_targets": revalidation_targets,
+        "revalidation_attempts": revalidation_attempts,
+        "revalidation_success": revalidation_success,
+        "revalidation_failures": dict(revalidation_failures),
+        "shared_lab_rows_marked": shared_lab_rows_marked,
+        "trusted_before": trusted_before_raw,
+        "trusted_after": trusted_after,
+        "invalid_department_urls_removed": int(sanitation.get("invalidated_count", 0)),
+        "lab_names_sanitized": int(sanitation.get("names_cleaned", 0)),
+        "lab_names_promoted_from_eng": int(sanitation.get("names_promoted", 0)),
+        "legacy_trusted_without_provenance": int(sanitation.get("trusted_without_provenance", 0)),
+        "legacy_trusted_incomplete_provenance": int(sanitation.get("trusted_incomplete_provenance", 0)),
+        "manual_provenance_backfilled": int(sanitation.get("manual_provenance_backfilled", 0)),
+        "shared_lab_rows_marked_during_sanitation": int(sanitation.get("shared_lab_rows_marked", 0)),
+        "any_url_before": any_url_before,
+        "any_url_after": any_url_after,
+        "actual_name_before": actual_name_before,
+        "actual_name_after": actual_name_after,
+        "post_clean_changed_fields": {},
+    }
+
+
+def prune_old_backups(backup_dir: Path, keep: int) -> None:
+    if keep < 1 or not backup_dir.exists():
+        return
+    for prefix in ("labs_before_stage2_", "departments_before_stage2_", "research_outputs_clean_before_"):
+        files = sorted(
+            (path for path in backup_dir.glob(prefix + "*") if path.is_file()),
+            key=lambda path: path.stat().st_mtime,
+            reverse=True,
+        )
+        for stale in files[keep:]:
+            stale.unlink(missing_ok=True)
+
+
+def run_lab_links_only(args: argparse.Namespace) -> None:
+    paths = RuntimePaths.from_args(Path(args.data_dir), Path(args.overrides) if args.overrides else None)
+    departments, _ = read_csv_rows(paths.departments)
+    labs, lab_existing_fields = read_csv_rows(paths.labs)
+    lab_fields = ensure_fields(lab_existing_fields, BASE_LAB_FIELDS + STAGE2_LAB_FIELDS)
+    labs_by_id = {clean_text(row.get("lab_id", "")): dict(row) for row in labs if clean_text(row.get("lab_id", ""))}
+    before_rows = deepcopy(list(labs_by_id.values()))
+    lab_order = [clean_text(row.get("lab_id", "")) for row in labs if clean_text(row.get("lab_id", ""))]
+
+    client = RespectfulClient(
+        delay_seconds=args.delay,
+        timeout_seconds=min(args.timeout, 12),
+        connect_timeout_seconds=args.connect_timeout,
+        browser_fallback=args.browser_fallback,
+        allow_insecure=args.allow_insecure,
+        respect_robots=not args.ignore_robots,
+        retry_total=args.http_retries,
+        max_host_failures=args.lab_link_max_host_failures,
+    )
+    print("=" * 100)
+    print(f"POSTECH LAB LINK FIRST — {ENRICHER_VERSION}")
+    print("=" * 100)
+    print(f"연구실 레코드       : {len(labs_by_id)}")
+    print(f"소스 페이지 상한    : {args.lab_link_max_pages}")
+    print(f"후속 탐색 깊이      : {args.lab_link_max_depth}")
+    print(f"랩당 후보 검증 상한 : {args.lab_link_candidates_per_lab}")
+    print(f"교수별 신원소스 상한: {args.lab_link_identity_sources_per_lab}")
+    print(f"호스트별 페이지 상한: {args.lab_link_host_page_cap}")
+    print(f"호스트 연속실패 상한: {args.lab_link_max_host_failures}")
+    print(f"홈페이지 내부 확인  : {args.lab_link_homepage_probe_pages}")
+    print(f"전체 시간 예산(분)  : {args.lab_link_time_budget_minutes}")
+
+    try:
+        metrics = discover_lab_links_in_memory(client, departments, labs_by_id, paths, args)
+    finally:
+        client.close()
+    if not metrics.get("committed_in_memory"):
+        print("[ABORT-LAB-LINKS] 링크 안전성 검증 실패")
+        for issue in metrics.get("issues", []):
+            print(f"  - {issue}")
+        print("원본 labs.csv는 변경하지 않았습니다.")
+        return
+
+    for lab_id in metrics.get("updated_lab_ids", []):
+        row = labs_by_id.get(lab_id)
+        if row is None:
+            continue
+        row["data_quality_status"] = data_quality_status(row)
+        row["enricher_version"] = ENRICHER_VERSION
+    final_rows = [labs_by_id[lab_id] for lab_id in lab_order if lab_id in labs_by_id]
+    safety_issues = lab_link_safety_issues(before_rows, final_rows)
+    if safety_issues:
+        print("[ABORT-LAB-LINKS] 최종 검증 실패")
+        for issue in safety_issues:
+            print(f"  - {issue}")
+        print("원본 labs.csv는 변경하지 않았습니다.")
+        return
+
+    if args.dry_run:
+        print("[DRY-RUN] CSV에는 기록하지 않았습니다.")
+    else:
+        run_slug = timestamp_slug()
+        backup_path = backup_file(paths.labs, paths.backups, run_slug)
+        print(f"[BACKUP] labs.csv → {backup_path}")
+        atomic_write_csv(paths.labs, final_rows, lab_fields)
+        diagnostic_fields = [
+            "lab_id", "professor_name", "email", "department_name", "result_class",
+            "current_lab_url", "lab_url_status", "candidate_count", "candidate_urls",
+            "verification_reasons", "recommendation",
+        ]
+        atomic_write_csv(paths.lab_link_diagnostics, metrics.get("diagnostic_rows", []), diagnostic_fields)
+        prune_old_backups(paths.backups, args.backup_keep)
+        print(f"저장: {paths.labs}")
+        print(f"진단: {paths.lab_link_diagnostics}")
+    print(f"중앙 인덱스 페이지 : {metrics.get('central_directory_pages', 0)}")
+    print(f"중앙 인덱스 매칭   : {metrics.get('central_directory_matches', 0)}")
+    print(f"소스 페이지        : {metrics.get('source_pages', 0)}")
+    print(f"소스 요청 시도     : {metrics.get('source_attempts', 0)}")
+    print(f"소스 요청 실패     : {metrics.get('source_failures', 0)}")
+    print(f"호스트 상한 건너뜀 : {metrics.get('source_host_cap_skips', 0)}")
+    print(f"시간 예산 도달     : {metrics.get('time_budget_exhausted', False)}")
+    print(f"교수별 직접 페이지 : {metrics.get('individual_source_pages', 0)}")
+    print(f"교수 카드 매칭     : {metrics.get('page_matches', 0)}")
+    print(f"갱신 연구실        : {metrics.get('updated_labs', 0)}")
+    print(f"홈페이지 직접 검증 : {metrics.get('verified_homepage', 0)}")
+    print(f"공식 카드 검증     : {metrics.get('verified_card', 0)}")
+    print(f"검토 후보          : {metrics.get('candidate_only', 0)}")
+    print(f"연구실명 순증      : {metrics.get('lab_names_added', 0)}")
+    print(f"연구실명 단계 갱신 : {metrics.get('lab_name_stage_updates', 0)}")
+    print(f"학과페이지 오탐 제거: {metrics.get('invalid_department_urls_removed', 0)}")
+    print(f"연구실명 정제      : {metrics.get('lab_names_sanitized', 0)}")
+    print(f"영문명 승격        : {metrics.get('lab_names_promoted_from_eng', 0)}")
+    print(f"출처 항목 누락 대상: {metrics.get('legacy_trusted_without_provenance', 0)}")
+    print(f"출처 구조 불완전   : {metrics.get('legacy_trusted_incomplete_provenance', 0)}")
+    print(f"신뢰 URL 재검증 대상: {metrics.get('revalidation_targets', 0)}")
+    print(f"신뢰 URL 재검증 시도: {metrics.get('revalidation_attempts', 0)}")
+    print(f"신뢰 URL 재검증 성공: {metrics.get('revalidation_success', 0)}")
+    print(f"재검증 실패 분류   : {metrics.get('revalidation_failures', {})}")
+    print(f"provenance-only 갱신: {metrics.get('provenance_only_updates', 0)}")
+    print(f"공유 연구실 근거표시: {metrics.get('shared_lab_rows_marked', 0) + metrics.get('shared_lab_rows_marked_during_sanitation', 0)}")
+    print(f"수동 출처 보완     : {metrics.get('manual_provenance_backfilled', 0)}")
+    print(
+        f"신뢰 URL 총계      : {metrics.get('trusted_before', 0)} → "
+        f"{metrics.get('trusted_after', 0)}"
+    )
+    print(
+        f"전체 URL 총계      : {metrics.get('any_url_before', 0)} → "
+        f"{metrics.get('any_url_after', 0)}"
+    )
+    print(
+        f"실제 연구실명 총계 : {metrics.get('actual_name_before', 0)} → "
+        f"{metrics.get('actual_name_after', 0)}"
+    )
+
+
+# ============================================================
 # 10. Merge and quality rules
 # ============================================================
 def text_quality(field_name: str, value: str, row: Optional[dict[str, str]] = None) -> int:
@@ -3692,8 +5923,8 @@ def text_quality(field_name: str, value: str, row: Optional[dict[str, str]] = No
         return 0
     if field_name == "professor_name":
         return professor_name_quality(text, (row or {}).get("department_name", ""))
-    if field_name == "lab_name_kor":
-        if looks_placeholder_lab_name(text):
+    if field_name in {"lab_name_kor", "lab_name_eng"}:
+        if field_name == "lab_name_kor" and looks_placeholder_lab_name(text):
             return 1
         return 10 if is_probable_lab_name(text) else 0
     if field_name == "lab_url":
@@ -3730,6 +5961,9 @@ def sanitize_update(update: dict[str, str], current: dict[str, str]) -> dict[str
     )
     professor_for_name = result.get("professor_name", "") or current.get("professor_name", "")
     result["lab_name_kor"] = clean_lab_name(result.get("lab_name_kor", ""), professor_for_name)
+    result["lab_name_eng"] = clean_lab_name(result.get("lab_name_eng", ""), professor_for_name)
+    if (not result["lab_name_kor"] or looks_placeholder_lab_name(result["lab_name_kor"])) and result["lab_name_eng"]:
+        result["lab_name_kor"] = result["lab_name_eng"]
     result["location"] = clean_location_value(result.get("location", ""))
     result["phone"] = canonical_phone(result.get("phone", ""))
     result["primary_field"] = clean_primary_field_value(result.get("primary_field", ""))
@@ -4314,7 +6548,13 @@ def quarantine_unverified_affiliations(
     labs_by_id: dict[str, dict[str, str]],
     overrides: dict,
 ) -> int:
-    """Keep only secondary affiliations that satisfy the current evidence contract."""
+    """Keep only secondary affiliations that satisfy the current evidence contract.
+
+    Existing affiliation order is preserved. Clean-only must also preserve the
+    successful faculty-page roster because scoped unique-name evidence depends
+    on that immutable crawl record; deleting it makes a second clean pass remove
+    affiliations that the first pass accepted.
+    """
     changed = 0
     department_by_name = {
         clean_text(row.get("department_name_kor", "")): row
@@ -4325,8 +6565,13 @@ def quarantine_unverified_affiliations(
         primary = clean_text(row.get("department_name", ""))
         evidence = parse_json_dict(row.get("affiliation_evidence", ""))
         valid_secondary: list[str] = []
-        for name, item in evidence.items():
-            if name == primary or not isinstance(item, dict):
+        # Preserve the user-facing/current authoritative ordering rather than
+        # iterating a JSON object serialized with sort_keys=True.
+        for name in split_multi(row.get("affiliated_programs", "")):
+            if name == primary:
+                continue
+            item = evidence.get(name)
+            if not isinstance(item, dict):
                 continue
             method = clean_text(item.get("method", ""))
             source_url = normalize_url(item.get("source_url", ""))
@@ -4350,13 +6595,11 @@ def quarantine_unverified_affiliations(
         for affiliation in valid_secondary:
             retained_evidence[affiliation] = evidence[affiliation]
         row["affiliation_evidence"] = compact_json(retained_evidence)
-        row["data_state"] = "affiliations_quarantined"
-    for department in departments:
-        department["faculty_page_urls"] = ""
-        department["faculty_match_count"] = "0"
-        department["enrichment_status"] = "pending"
-        department["enrichment_message"] = "증거 없는 과거 복수소속 격리 후 전체 재수집 대기"
-        department["enriched_at"] = ""
+        # Affiliation cleanup is a maintenance action, not source lineage.
+        # Preserve data_state exactly; the caller may recover legacy states from
+        # backups or reconstruct them from enrichment evidence.
+    # Do not clear department faculty_page_urls/status in clean-only mode. They
+    # are the source-of-truth evidence used above and are not derived noise.
     return changed
 
 
@@ -4745,6 +6988,13 @@ def run_stage2(args: argparse.Namespace) -> None:
     cleaned_labs, clean_report = clean_all_labs(labs)
     clean_departments(departments)
     labs_by_id, department_by_id = initialize_rows(departments, cleaned_labs)
+    local_link_sanitation: dict[str, object] = {}
+    data_state_repair = {"preserved": 0, "restored_from_backup": 0, "reconstructed": 0}
+    if args.clean_only:
+        # Local-only integrity repair: remove known department/faculty pages
+        # falsely stored as lab homepages and normalize lab-name fields.
+        local_link_sanitation = sanitize_existing_lab_link_records(departments, labs_by_id)
+        data_state_repair = recover_data_states_from_backups(labs_by_id, paths.backups)
     full_scope = not args.department and args.test_limit is None
     # A normal unscoped run is authoritative by default. Incremental behavior
     # must be explicitly requested; otherwise a stale "success" flag can freeze
@@ -4798,6 +7048,15 @@ def run_stage2(args: argparse.Namespace) -> None:
         print(f"외부 학과 출처 격리   : {dict(foreign_source_report)}")
     if args.clean_only:
         print(f"증거 없는 소속 격리   : {quarantined_affiliation_count}개 연구실")
+        print(f"학과페이지 링크 제거  : {local_link_sanitation.get('invalidated_count', 0)}개")
+        print(f"연구실명 로컬 정제    : {local_link_sanitation.get('names_cleaned', 0)}개")
+        print(f"수동 링크 출처 보완   : {local_link_sanitation.get('manual_provenance_backfilled', 0)}개")
+        print(
+            "data_state 복구      : "
+            f"백업 {data_state_repair.get('restored_from_backup', 0)}개, "
+            f"재구성 {data_state_repair.get('reconstructed', 0)}개, "
+            f"보존 {data_state_repair.get('preserved', 0)}개"
+        )
     if args.reset_affiliations or authoritative_rebuild:
         mode_label = "명시적" if args.reset_affiliations else "기본 전체 권위 재구축"
         print(f"소속 전체 초기화      : {reset_affiliation_count}개 연구실 ({mode_label})")
@@ -4815,7 +7074,11 @@ def run_stage2(args: argparse.Namespace) -> None:
         manual_count = apply_manual_overrides(labs_by_id, overrides)
         for lab in labs_by_id.values():
             lab["data_quality_status"] = data_quality_status(lab)
-            lab["data_state"] = "clean_only_quarantined"
+            # clean-only describes a maintenance action, not source lineage.
+            # Preserve or reconstruct data_state; never overwrite it with a
+            # blanket cleaning marker.
+            if not clean_text(lab.get("data_state", "")):
+                lab["data_state"] = infer_data_state(lab)
             lab["enricher_version"] = ENRICHER_VERSION
         for row in departments:
             row["enricher_version"] = ENRICHER_VERSION
@@ -4833,6 +7096,7 @@ def run_stage2(args: argparse.Namespace) -> None:
                 "duplicate_noise": dict(clean_report.duplicate_noise),
                 "invalid_urls": clean_report.invalid_urls,
                 "manual_overrides": manual_count,
+                "data_state_repair": data_state_repair,
                 "dry_run": args.dry_run,
             },
         )
@@ -4863,9 +7127,12 @@ def run_stage2(args: argparse.Namespace) -> None:
     client = RespectfulClient(
         delay_seconds=args.delay,
         timeout_seconds=args.timeout,
+        connect_timeout_seconds=args.connect_timeout,
         browser_fallback=args.browser_fallback,
         allow_insecure=args.allow_insecure,
         respect_robots=not args.ignore_robots,
+        retry_total=max(3, args.http_retries),
+        max_host_failures=0,
     )
 
     selected_departments = departments
@@ -5424,6 +7691,28 @@ def run_stage2(args: argparse.Namespace) -> None:
         if department_index % DEFAULT_CHECKPOINT_EVERY == 0:
             save_checkpoint(paths, departments, labs_by_id, department_fields, lab_fields, checkpoint_dry_run)
 
+    lab_link_metrics: dict = {}
+    if not args.skip_lab_homepages:
+        print("\n" + "-" * 100)
+        print("[LAB-LINK-FIRST] 공식 교수·연구실 디렉터리와 개별 홈페이지를 교차 검증합니다.")
+        lab_link_metrics = discover_lab_links_in_memory(
+            client, departments, labs_by_id, paths, args
+        )
+        touched_lab_ids.update(lab_link_metrics.get("updated_lab_ids", []))
+        if not lab_link_metrics.get("committed_in_memory", False):
+            print("[LAB-LINK-ROLLBACK] 링크 단계만 롤백했습니다.")
+            for issue in lab_link_metrics.get("issues", []):
+                print(f"  - {issue}")
+        else:
+            print(
+                "[LAB-LINK-DONE] "
+                f"소스={lab_link_metrics.get('source_pages', 0)}, "
+                f"갱신={lab_link_metrics.get('updated_labs', 0)}, "
+                f"verified_homepage={lab_link_metrics.get('verified_homepage', 0)}, "
+                f"verified_card={lab_link_metrics.get('verified_card', 0)}, "
+                f"연구실명 추가={lab_link_metrics.get('lab_names_added', 0)}"
+            )
+
     # Re-clean after crawling. This makes clean-only and full runs idempotent and
     # catches cross-department page-wide contamination introduced by a bad site.
     final_rows, final_clean_report = clean_all_labs(list(labs_by_id.values()))
@@ -5514,6 +7803,10 @@ def run_stage2(args: argparse.Namespace) -> None:
             "quality_counts": dict(quality_counts),
             "status_counts": dict(status_counts),
             "lab_url_status_counts": dict(url_status_counts),
+            "lab_link_first": {
+                key: value for key, value in lab_link_metrics.items()
+                if key != "updated_lab_ids"
+            },
             "pre_clean": {
                 "changed_rows": clean_report.changed_rows,
                 "changed_fields": dict(clean_report.changed_fields),
@@ -6152,11 +8445,7 @@ def build_data_audit_report(
             "keywords",
         )
     }
-    field_counts["actual_lab_name"] = sum(
-        bool(clean_text(row.get("lab_name_kor", "")))
-        and not looks_placeholder_lab_name(row.get("lab_name_kor", ""))
-        for row in labs
-    )
+    field_counts["actual_lab_name"] = sum(lab_name_is_actual(row) for row in labs)
     field_counts["trusted_lab_url"] = sum(
         bool(clean_text(row.get("lab_url", "")))
         and clean_text(row.get("lab_url_status", "")) in TRUSTED_LAB_URL_STATUSES
@@ -6200,6 +8489,7 @@ def build_data_audit_report(
         )
 
     repeated_lab_names = []
+    invalid_repeated_generic_lab_names = []
     lab_name_rows: defaultdict[str, list[dict[str, str]]] = defaultdict(list)
     for row in labs:
         name = clean_text(row.get("lab_name_kor", ""))
@@ -6208,13 +8498,22 @@ def build_data_audit_report(
     for name, group in lab_name_rows.items():
         emails = {normalize_email(row.get("email", "")) for row in group if normalize_email(row.get("email", ""))}
         if len(emails) >= 3:
-            repeated_lab_names.append(
-                {
-                    "lab_name": clean_text(group[0].get("lab_name_kor", "")),
-                    "professor_count": len(emails),
-                    "departments": sorted({clean_text(row.get("department_name", "")) for row in group}),
-                }
+            item = {
+                "lab_name": clean_text(group[0].get("lab_name_kor", "")),
+                "professor_count": len(emails),
+                "departments": sorted({clean_text(row.get("department_name", "")) for row in group}),
+                "urls": sorted({normalize_url(row.get("lab_url", "")) for row in group if normalize_url(row.get("lab_url", ""))}),
+            }
+            repeated_lab_names.append(item)
+            trusted_group = [row for row in group if clean_text(row.get("lab_url_status", "")) in TRUSTED_LAB_URL_STATUSES]
+            all_distinct_official = len(item["urls"]) == len(group) and all(
+                is_official_postech_source(lab_url_provenance(row).get("source_url", ""))
+                and "exact_email" in clean_text(lab_url_provenance(row).get("method", ""))
+                for row in group
             )
+            shared_verified = len(trusted_group) == len(group) and shared_lab_group_is_verified(trusted_group)
+            if not (all_distinct_official or shared_verified):
+                invalid_repeated_generic_lab_names.append(item)
 
     exact_raw_groups: defaultdict[tuple[str, str], list[dict[str, str]]] = defaultdict(list)
     invalid_titles: Counter[str] = Counter()
@@ -6272,6 +8571,112 @@ def build_data_audit_report(
                 "department_page_url": page_url,
             })
 
+    department_url_keys = department_reference_url_keys(departments)
+    known_department_page_rows = []
+    trusted_without_provenance = []
+    trusted_incomplete_provenance = []
+    suspicious_lab_name_rows = []
+    trusted_url_groups: defaultdict[str, list[dict[str, str]]] = defaultdict(list)
+    for row in labs:
+        url = normalize_url(row.get("lab_url", ""))
+        status = clean_text(row.get("lab_url_status", ""))
+        if url and canonical_url_key(url) in department_url_keys:
+            known_department_page_rows.append({
+                "lab_id": clean_text(row.get("lab_id", "")),
+                "professor_name": clean_text(row.get("professor_name", "")),
+                "lab_url": url, "lab_url_status": status,
+            })
+        if url and status in TRUSTED_LAB_URL_STATUSES:
+            provenance_item = {
+                "lab_id": clean_text(row.get("lab_id", "")),
+                "professor_name": clean_text(row.get("professor_name", "")),
+                "lab_url": url,
+            }
+            if not lab_url_provenance(row):
+                trusted_without_provenance.append(provenance_item)
+            if not lab_url_provenance_complete(row):
+                trusted_incomplete_provenance.append(provenance_item)
+        if url and status in TRUSTED_LAB_URL_STATUSES:
+            trusted_url_groups[canonical_url_key(url)].append(row)
+        professor = clean_text(row.get("professor_name", ""))
+        raw_kor = clean_text(row.get("lab_name_kor", ""))
+        raw_eng = clean_text(row.get("lab_name_eng", ""))
+        clean_kor = clean_lab_name(raw_kor, professor)
+        clean_eng = clean_lab_name(raw_eng, professor)
+        suspicious = (raw_kor and not looks_placeholder_lab_name(raw_kor) and not clean_kor) or (raw_eng and not clean_eng)
+        if suspicious:
+            suspicious_lab_name_rows.append({
+                "lab_id": clean_text(row.get("lab_id", "")),
+                "professor_name": professor,
+                "lab_name_kor": raw_kor, "lab_name_eng": raw_eng,
+            })
+    duplicate_trusted_url_groups = []
+    for key, group in trusted_url_groups.items():
+        if len(group) < 2:
+            continue
+        duplicate_trusted_url_groups.append({
+            "lab_url": normalize_url(group[0].get("lab_url", "")),
+            "professor_count": len(group),
+            "professors": [clean_text(row.get("professor_name", "")) for row in group],
+            "departments": sorted({clean_text(row.get("department_name", "")) for row in group}),
+            "methods": [clean_text(lab_url_provenance(row).get("method", "")) for row in group],
+            "shared_lab_verified": shared_lab_group_is_verified(group),
+        })
+    lab_link_audit = {
+        "any_url": sum(bool(normalize_url(row.get("lab_url", ""))) for row in labs),
+        "trusted_url": sum(bool(normalize_url(row.get("lab_url", ""))) and clean_text(row.get("lab_url_status", "")) in TRUSTED_LAB_URL_STATUSES for row in labs),
+        "candidate_url": sum(clean_text(row.get("lab_url_status", "")) == "candidate_card" for row in labs),
+        "missing_url": sum(not normalize_url(row.get("lab_url", "")) for row in labs),
+        "known_department_page_rows": known_department_page_rows,
+        "known_department_page_count": len(known_department_page_rows),
+        "trusted_without_field_provenance": trusted_without_provenance,
+        "trusted_without_field_provenance_count": len(trusted_without_provenance),
+        "trusted_with_incomplete_field_provenance": trusted_incomplete_provenance,
+        "trusted_with_incomplete_field_provenance_count": len(trusted_incomplete_provenance),
+        "duplicate_trusted_url_groups": duplicate_trusted_url_groups,
+        "unverified_shared_url_group_count": sum(not item["shared_lab_verified"] for item in duplicate_trusted_url_groups),
+        "suspicious_lab_name_rows": suspicious_lab_name_rows,
+        "suspicious_lab_name_count": len(suspicious_lab_name_rows),
+    }
+    lab_link_audit["valid"] = not any((
+        lab_link_audit["known_department_page_count"],
+        lab_link_audit["suspicious_lab_name_count"],
+        lab_link_audit["trusted_with_incomplete_field_provenance_count"],
+        lab_link_audit["unverified_shared_url_group_count"],
+    ))
+
+    suspicious_location_rows = []
+    suspicious_summary_rows = []
+    for row in labs:
+        raw_location = clean_text(row.get("location", ""))
+        cleaned_location = clean_location_value(raw_location)
+        if raw_location and cleaned_location != raw_location:
+            suspicious_location_rows.append({
+                "lab_id": clean_text(row.get("lab_id", "")),
+                "professor_name": clean_text(row.get("professor_name", "")),
+                "location": raw_location,
+                "cleaned_value": cleaned_location,
+            })
+        raw_summary = clean_text(row.get("research_summary", ""))
+        cleaned_summary = clean_summary_value(raw_summary)
+        if raw_summary and cleaned_summary != raw_summary:
+            suspicious_summary_rows.append({
+                "lab_id": clean_text(row.get("lab_id", "")),
+                "professor_name": clean_text(row.get("professor_name", "")),
+                "research_summary": raw_summary,
+                "cleaned_value": cleaned_summary,
+            })
+    content_quality = {
+        "suspicious_location_rows": suspicious_location_rows,
+        "suspicious_location_count": len(suspicious_location_rows),
+        "suspicious_summary_rows": suspicious_summary_rows,
+        "suspicious_summary_count": len(suspicious_summary_rows),
+    }
+    content_quality["valid"] = not any((
+        content_quality["suspicious_location_count"],
+        content_quality["suspicious_summary_count"],
+    ))
+
     return {
         "enricher_version": ENRICHER_VERSION,
         "departments_total": len(departments),
@@ -6283,14 +8688,19 @@ def build_data_audit_report(
         "quality_counts": dict(Counter(clean_text(row.get("data_quality_status", "")) or "unknown" for row in labs)),
         "enrichment_status_counts": dict(Counter(clean_text(row.get("enrichment_status", "")) or "unknown" for row in labs)),
         "lab_url_status_counts": dict(Counter(clean_text(row.get("lab_url_status", "")) or "unknown" for row in labs)),
+        "lab_links": lab_link_audit,
+        "content_quality": content_quality,
         "affiliation_counts": dict(affiliation_counts.most_common()),
         "affiliation_guard_violations": affiliation_guard_violations,
         "affiliation_evidence_violation_count": len(affiliation_guard_violations),
         "foreign_department_page_rows": foreign_department_page_rows,
         "foreign_department_page_count": len(foreign_department_page_rows),
         "data_state_counts": dict(Counter(clean_text(row.get("data_state", "")) or "unknown" for row in labs)),
+        "quarantined_data_state_count": sum(clean_text(row.get("data_state", "")) in QUARANTINED_DATA_STATES for row in labs),
         "duplicate_name_groups": duplicate_name_groups,
         "repeated_lab_names": repeated_lab_names,
+        "invalid_repeated_generic_lab_names": invalid_repeated_generic_lab_names,
+        "invalid_repeated_generic_lab_name_count": len(invalid_repeated_generic_lab_names),
         "research_outputs": {
             "type_counts": dict(Counter(normalize_output_type(row.get("output_type", "")) for row in outputs)),
             "exact_duplicate_groups": len(duplicate_raw_groups),
@@ -6943,6 +9353,328 @@ def run_self_test() -> None:
     assert len(scoped_matches) == 1 and scoped_matches[0].method.startswith("name")
     tests += 1
 
+    # Exact-email official cards must expose both the lab homepage and lab name.
+    lab_card_soup = BeautifulSoup(
+        """<div class='person'><h3>김도형</h3>
+        <p>E-mail kimd42@postech.ac.kr</p>
+        <p>Research Office Systems Neuroscience Lab for Cognition and Neural Interface</p>
+        <p>Official Website <a href='https://anne.postech.ac.kr'>Homepage</a></p></div>""",
+        "lxml",
+    )
+    link_lab = {
+        "lab_id": "LAB_LINK_1", "professor_name": "김도형",
+        "email": "kimd42@postech.ac.kr", "professor_profile_url": "",
+    }
+    link_candidates = extract_lab_link_candidates_from_block(
+        link_lab, lab_card_soup.div, "https://emed.postech.ac.kr/web/?sub=lab&top=study",
+        "official_directory", True, True,
+    )
+    assert link_candidates and link_candidates[0].url == "https://anne.postech.ac.kr/"
+    assert "Systems Neuroscience" in link_candidates[0].lab_name
+    tests += 1
+
+    # Icon-only homepage links inherit their strong label from the parent card.
+    icon_soup = BeautifulSoup(
+        """<div class='faculty'><span>jskoh@postech.ac.kr</span>
+        <div class='website'>Website <a aria-label='open website' href='https://sites.google.com/view/jesungkoh'>↗</a></div>
+        <div>Lab. Mechanical Intelligence Robotic Research Laboratory</div></div>""",
+        "lxml",
+    )
+    icon_candidates = extract_lab_link_candidates_from_block(
+        {"lab_id": "L2", "professor_name": "고제성", "email": "jskoh@postech.ac.kr", "professor_profile_url": ""},
+        icon_soup.div, "https://me.postech.ac.kr/page/professor32_en",
+        "professor_profile", True, False,
+    )
+    assert icon_candidates and "sites.google.com/view/jesungkoh" in icon_candidates[0].url
+    assert "Mechanical Intelligence" in icon_candidates[0].lab_name
+    tests += 1
+
+    class FakeHomepageClient:
+        def fetch(self, url: str, force_browser: bool = False) -> PageResult:
+            return PageResult(
+                "https://lab.example.com/",
+                """<html><head><title>Adaptive Robotics Laboratory</title></head><body>
+                <h1>Adaptive Robotics Laboratory</h1><p>Professor Hong Gil Dong</p>
+                <p>hong@postech.ac.kr</p><p>Our research focuses on adaptive robot learning.</p>
+                </body></html>""",
+                "fake", 200,
+            )
+    verified_update, verified_method = verify_lab_link_candidate(
+        FakeHomepageClient(),
+        {"professor_name": "홍길동", "email": "hong@postech.ac.kr", "primary_field": "Robotics", "professor_profile_url": ""},
+        LabLinkCandidate(
+            lab_id="L3", url="https://lab.example.com", source_url="https://dept.postech.ac.kr/faculty",
+            source_kind="official_directory", evidence_method="official_exact_email_card", score=100,
+            label_text="연구실 홈페이지", exact_email=True, exact_name=True,
+        ),
+        ambiguous_name=False,
+    )
+    assert verified_update["lab_url_status"] == "verified_homepage"
+    assert verified_update["lab_name_kor"] == "Adaptive Robotics Laboratory"
+    assert verified_method == "homepage_exact_email"
+    tests += 1
+
+    class FakeDeadClient:
+        def fetch(self, url: str, force_browser: bool = False) -> PageResult:
+            return PageResult(url, "<html><title>404 Not Found</title><body>404 Not Found</body></html>", "fake", 200)
+    dead_update, dead_reason = verify_lab_link_candidate(
+        FakeDeadClient(),
+        {"professor_name": "홍길동", "email": "hong@postech.ac.kr", "professor_profile_url": ""},
+        LabLinkCandidate(
+            lab_id="L4", url="https://dead.example.com", source_url="https://dept.postech.ac.kr/faculty",
+            source_kind="official_directory", evidence_method="official_exact_email_card", score=100,
+            label_text="Official Website", exact_email=True,
+        ),
+        ambiguous_name=False,
+    )
+    assert not dead_update and dead_reason == "dead_or_generic_page"
+    tests += 1
+
+    class FakeUnavailableClient:
+        def fetch(self, url: str, force_browser: bool = False) -> PageResult:
+            raise requests.Timeout("temporary timeout")
+    card_update, card_method = verify_lab_link_candidate(
+        FakeUnavailableClient(),
+        {"professor_name": "홍길동", "email": "hong@postech.ac.kr", "professor_profile_url": ""},
+        LabLinkCandidate(
+            lab_id="L5", url="https://lab-temporary.example.com",
+            source_url="https://dept.postech.ac.kr/faculty",
+            source_kind="official_directory", evidence_method="official_exact_email_card", score=120,
+            label_text="연구실 홈페이지", exact_email=True, lab_name="Adaptive Systems Laboratory",
+        ),
+        ambiguous_name=False,
+    )
+    assert card_update["lab_url_status"] == "verified_card"
+    assert card_method == "official_exact_email_card_unreachable"
+    tests += 1
+
+    # The lab-link transaction must reject one trusted URL assigned across departments.
+    duplicate_issues = lab_link_safety_issues(
+        [],
+        [
+            {"lab_id": "A", "email": "a@postech.ac.kr", "primary_department_id": "D1", "lab_url": "https://same.example.com", "lab_url_status": "verified_homepage", "professor_profile_url": ""},
+            {"lab_id": "B", "email": "b@postech.ac.kr", "primary_department_id": "D2", "lab_url": "https://same.example.com", "lab_url_status": "verified_card", "professor_profile_url": ""},
+        ],
+    )
+    assert any("다중 교수 충돌" in issue for issue in duplicate_issues)
+    tests += 1
+
+    # AIF deterministic list URL and unique-name official-card recovery.
+    assert "article.offset=20" in aif_researcher_list_url(20)
+    tests += 1
+    aif_html = """
+    <html><body><ul><li class='researcher-card'>
+      <a href='/kor/research/researcher-search.do?articleNo=1&mode=view'>홍길동</a>
+      <span>기계공학과</span><a href='https://honglab.example.com'>Website</a>
+    </li></ul></body></html>
+    """
+    aif_candidates = defaultdict(list)
+    aif_names = {}
+    aif_labs = {"L6": {"lab_id": "L6", "professor_name": "홍길동", "email": "", "department_name": "기계공학과", "professor_profile_url": ""}}
+    aif_match = mine_aif_unique_name_cards(
+        PageResult(aif_researcher_list_url(0), aif_html, "fake"), aif_labs,
+        {normalize_name("홍길동"): "L6"}, {normalize_name("홍길동")}, aif_candidates, aif_names,
+    )
+    assert aif_match == 1 and aif_candidates["L6"][0].url == "https://honglab.example.com/"
+    tests += 1
+
+    probe_html = """<html><body><a href='/people'>People</a><a href='/publications'>Publications</a></body></html>"""
+    probes = homepage_identity_probe_urls(BeautifulSoup(probe_html, "lxml"), "https://lab.example.com/", 2)
+    assert probes == ["https://lab.example.com/people"]
+    tests += 1
+
+    class FakeDepartmentClient:
+        def fetch(self, url: str, force_browser: bool = False) -> PageResult:
+            if url.endswith("/people"):
+                return PageResult(url, "<html><h1>Faculty</h1><p>hong@postech.ac.kr</p><p>Professor Hong</p><p>Research areas</p></html>", "fake", 200)
+            return PageResult(url, "<html><title>Department of Physics</title><body><a href='/people'>People</a><p>Research</p></body></html>", "fake", 200)
+    department_candidate, department_reason = verify_lab_link_candidate(
+        FakeDepartmentClient(),
+        {"professor_name": "홍길동", "email": "hong@postech.ac.kr", "professor_profile_url": ""},
+        LabLinkCandidate(
+            lab_id="DHOME", url="https://dept.postech.ac.kr/", source_url="https://aif.postech.ac.kr/list",
+            source_kind="aif_researcher_index", evidence_method="official_exact_email_card", score=100,
+            label_text="Website", exact_email=True, exact_name=True,
+        ),
+        ambiguous_name=False,
+        department_url_keys={canonical_url_key("https://dept.postech.ac.kr/")},
+        known_professor_emails={"hong@postech.ac.kr"},
+        known_professor_names={normalize_name("홍길동")},
+    )
+    assert not department_candidate and department_reason == "known_department_page"
+    tests += 1
+
+    assert not clean_lab_name("Our lab is funded by", "홍길동")
+    assert not clean_lab_name("Head, Hana-Postech TechFin Collab", "홍길동")
+    assert clean_lab_name("Welcome to Adaptive Robotics Lab", "홍길동") == "Adaptive Robotics Lab"
+    assert clean_lab_name("권순호 교수 연구실(증강재료설계연구실", "권순호") == "증강재료설계연구실"
+    tests += 1
+
+    sanitize_rows = {
+        "S1": {
+            "lab_id": "S1", "professor_name": "홍길동", "lab_url": "https://dept.postech.ac.kr/",
+            "lab_url_status": "verified_homepage", "lab_name_kor": "홍길동 교수 연구실",
+            "lab_name_eng": "Adaptive Robotics Lab", "field_provenance": "{}",
+        }
+    }
+    sanitize_metrics = sanitize_existing_lab_link_records(
+        [{"homepage_url": "https://dept.postech.ac.kr/", "detail_url": "", "source_url": "", "faculty_page_urls": ""}],
+        sanitize_rows,
+    )
+    assert sanitize_metrics["invalidated_count"] == 1
+    assert not sanitize_rows["S1"]["lab_url"]
+    assert sanitize_rows["S1"]["lab_name_kor"] == "Adaptive Robotics Lab"
+    tests += 1
+
+    manual_rows = {
+        "M1": {
+            "lab_id": "M1", "professor_name": "홍길동",
+            "lab_url": "https://manual.example.com/", "lab_url_status": "manual",
+            "lab_name_kor": "Adaptive Robotics Lab", "lab_name_eng": "",
+            "field_provenance": "{}", "enriched_at": "2026-01-01T00:00:00+09:00",
+        }
+    }
+    manual_metrics = sanitize_existing_lab_link_records([], manual_rows)
+    assert manual_metrics["manual_provenance_backfilled"] == 1
+    assert lab_url_provenance(manual_rows["M1"])["method"] == "manual_existing"
+    tests += 1
+
+    shared_rows = [
+        {"lab_id": "SL1", "professor_name": "가나다", "email": "a@postech.ac.kr", "department_id": "AI", "department_name": "인공지능대학원", "lab_name_kor": "Machine Learning Lab", "lab_url": "https://ml.example.com/", "lab_url_status": "verified_homepage"},
+        {"lab_id": "SL2", "professor_name": "라마바", "email": "b@postech.ac.kr", "department_id": "AI", "department_name": "인공지능대학원", "lab_name_kor": "Machine Learning Lab", "lab_url": "https://ml.example.com/", "lab_url_status": "verified_homepage"},
+        {"lab_id": "SL3", "professor_name": "사아자", "email": "c@postech.ac.kr", "department_id": "AI", "department_name": "인공지능대학원", "lab_name_kor": "Machine Learning Lab", "lab_url": "https://ml.example.com/", "lab_url_status": "verified_homepage"},
+    ]
+    for row in shared_rows:
+        row["field_provenance"] = compact_json({"lab_url": {
+            "source_url": "https://ai.postech.ac.kr/faculty",
+            "verified_url": "https://ml.example.com/",
+            "method": "homepage_exact_email",
+            "verified_at": "2026-01-01T00:00:00+09:00",
+        }})
+    assert mark_shared_lab_verified(shared_rows) == 3
+    assert shared_lab_group_is_verified(shared_rows)
+    assert not lab_link_safety_issues([], shared_rows)
+    shared_report = CleanReport()
+    remove_repeated_generic_values(shared_rows, shared_report)
+    assert all(row["lab_name_kor"] == "Machine Learning Lab" for row in shared_rows)
+    tests += 1
+
+    generic_rows = [
+        {"lab_id": "G1", "professor_name": "가나다", "email": "g1@postech.ac.kr", "department_name": "인공지능대학원", "lab_name_kor": "Machine Learning Lab", "lab_name_eng": "Machine Learning Lab", "lab_url": "https://ml.example.com/", "lab_url_status": "verified_homepage", "field_provenance": "{}"},
+        {"lab_id": "G2", "professor_name": "라마바", "email": "g2@postech.ac.kr", "department_name": "인공지능대학원", "lab_name_kor": "Machine Learning Lab", "lab_name_eng": "Machine Learning Lab @ Postech", "lab_url": "https://ml.example.com/", "lab_url_status": "candidate_card", "field_provenance": "{}"},
+        {"lab_id": "G3", "professor_name": "사아자", "email": "g3@postech.ac.kr", "department_name": "인공지능대학원", "lab_name_kor": "Machine Learning Lab", "lab_name_eng": "Machine Learning Lab @ Postech", "lab_url": "https://ml.example.com/", "lab_url_status": "candidate_card", "field_provenance": "{}"},
+    ]
+    generic_report = CleanReport()
+    remove_repeated_generic_values(generic_rows, generic_report)
+    assert all(looks_placeholder_lab_name(row["lab_name_kor"]) for row in generic_rows)
+    assert all(not row["lab_name_eng"] for row in generic_rows)
+    tests += 1
+
+    # Clean-only affiliation quarantine is idempotent and preserves the exact
+    # faculty page needed by scoped unique-name evidence.
+    q_url = "https://gscst.postech.ac.kr/web/?depart=16&position=2&sub=professor&top=member"
+    q_departments = [{
+        "department_id": "D16", "department_name_kor": "푸드테크융합전공",
+        "faculty_page_urls": q_url, "homepage_url": "", "detail_url": "",
+    }]
+    q_rows = {"Q1": {
+        "lab_id": "Q1", "department_name": "기계공학과",
+        "affiliated_programs": "기계공학과;푸드테크융합전공",
+        "affiliation_evidence": compact_json({
+            "기계공학과": {"method": "stage1_primary_department", "primary": True, "source_url": "https://postech.ac.kr/profile"},
+            "푸드테크융합전공": {"method": "unique_name_scoped_faculty_page", "primary": False, "source_url": q_url},
+        }),
+    }}
+    q_overrides = effective_builtin_overrides()
+    assert quarantine_unverified_affiliations(q_departments, q_rows, q_overrides) == 0
+    assert quarantine_unverified_affiliations(q_departments, q_rows, q_overrides) == 0
+    assert q_rows["Q1"]["affiliated_programs"] == "기계공학과;푸드테크융합전공"
+    assert q_departments[0]["faculty_page_urls"] == q_url
+    tests += 1
+
+    # A trusted legacy URL with unchanged values still receives field-level
+    # provenance after successful revalidation.
+    legacy = {
+        "lab_url": "https://lab.example.com/", "lab_url_status": "verified_homepage",
+        "lab_name_kor": "Adaptive Robotics Lab", "lab_name_eng": "Adaptive Robotics Lab",
+        "field_provenance": "{}", "enrichment_source_urls": "https://lab.example.com/",
+        "enricher_version": ENRICHER_VERSION,
+    }
+    same_update = {"lab_url": "https://lab.example.com/", "lab_url_status": "verified_homepage"}
+    legacy_merged, legacy_changed = merge_lab_update(legacy, same_update, "")
+    assert not legacy_changed
+    legacy_candidate = LabLinkCandidate(
+        lab_id="LEGACY", url="https://lab.example.com/",
+        source_url="https://aif.postech.ac.kr/official", source_kind="existing_trusted_revalidation",
+        evidence_method="legacy_trusted_revalidation", score=82,
+    )
+    record_lab_link_provenance(legacy_merged, ["lab_url", "lab_url_status"], legacy_candidate, same_update, "homepage_exact_email")
+    assert lab_url_provenance(legacy_merged)["verified_url"] == "https://lab.example.com/"
+    assert lab_url_provenance_complete(legacy_merged)
+    assert lab_link_target_required(legacy, refresh_all=False)
+    assert lab_link_revalidation_required(legacy, refresh_all=False)
+    assert not lab_link_target_required(legacy_merged, refresh_all=False)
+    assert not lab_link_revalidation_required(legacy_merged, refresh_all=False)
+    assert lab_link_target_required(legacy_merged, refresh_all=True)
+    assert lab_link_revalidation_required(legacy_merged, refresh_all=True)
+    tests += 1
+
+    department_candidate = LabLinkCandidate(
+        lab_id="P", url="https://new.example.com/", source_url="https://dept.postech.ac.kr/faculty/hong",
+        source_kind="department_profile", evidence_method="official_exact_email_card", score=90, exact_email=True,
+    )
+    aif_candidate = LabLinkCandidate(
+        lab_id="P", url="https://old.example.com/", source_url=aif_researcher_list_url(0),
+        source_kind="aif_researcher_index", evidence_method="official_exact_email_card", score=140, exact_email=True,
+    )
+    assert candidate_preference_key(department_candidate) > candidate_preference_key(aif_candidate)
+    tests += 1
+
+    same_department_unverified = [
+        {"lab_id": "U1", "email": "u1@postech.ac.kr", "department_id": "D", "lab_url": "https://same.example.com/", "lab_url_status": "verified_homepage", "field_provenance": "{}", "professor_profile_url": ""},
+        {"lab_id": "U2", "email": "u2@postech.ac.kr", "department_id": "D", "lab_url": "https://same.example.com/", "lab_url_status": "verified_homepage", "field_provenance": "{}", "professor_profile_url": ""},
+    ]
+    assert any("공유 연구실 근거 부족" in issue for issue in lab_link_safety_issues([], same_department_unverified))
+    tests += 1
+
+    state_rows = {
+        "A": {"lab_id": "A", "data_state": "authoritative_rebuilt", "enrichment_status": "success"},
+        "B": {"lab_id": "B", "data_state": "clean_only_quarantined", "enrichment_status": "no_match"},
+        "C": {"lab_id": "C", "data_state": "clean_only_quarantined", "enrichment_status": "matched_identity_only"},
+    }
+    with tempfile.TemporaryDirectory() as temp_dir:
+        backup_dir = Path(temp_dir)
+        atomic_write_csv(
+            backup_dir / "labs_before_stage2_20260101.csv",
+            [{"lab_id": "B", "data_state": "authoritative_central_identity_fallback"}],
+            ["lab_id", "data_state"],
+        )
+        state_metrics = recover_data_states_from_backups(state_rows, backup_dir)
+    assert state_rows["A"]["data_state"] == "authoritative_rebuilt"
+    assert state_rows["B"]["data_state"] == "authoritative_central_identity_fallback"
+    assert state_rows["C"]["data_state"] == "authoritative_identity_only"
+    assert state_metrics == {"preserved": 1, "restored_from_backup": 1, "reconstructed": 1}
+    tests += 1
+
+    assert classify_lab_link_verification_failure("fetch_failed: timeout") == "transient_network_failure"
+    assert classify_lab_link_verification_failure("identity_conflict") == "identity_insufficient"
+    assert classify_lab_link_verification_failure("dead_or_generic_page") == "dead_homepage"
+    assert classify_lab_link_verification_failure("known_department_page") == "false_positive_page"
+    tests += 1
+
+    assert clean_location_value("37673 경상북도 포항시 남구 청암로 77(효자동 산31)") == ""
+    tests += 1
+    assert clean_location_value("3동 3329호") == "3동 3329호"
+    tests += 1
+    assert clean_summary_value("대학원생 및 Post-Doc 모집 본 연구실에서는 연구원을 모집하고 있습니다. 관심 있는 학생은 연락 주세요~ more") == ""
+    tests += 1
+    assert clean_summary_value("고준위방사성폐기물 관리 특별법 통과! 국회를 통과해 법적 제도적 기반을 갖추게 되었습니다.") == ""
+    tests += 1
+    assert clean_summary_value("We are hiring highly motivated graduate students and postdoctoral scholars") == ""
+    tests += 1
+    assert clean_summary_value("첨단에너지AI연구실 / Numerical Investigation for Nature & Energy Lab") == ""
+    tests += 1
+
     print(f"SELF TEST PASSED: {tests} tests")
 
 
@@ -6964,6 +9696,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--max-depth", type=int, default=DEFAULT_MAX_DEPTH)
     parser.add_argument("--delay", type=float, default=DEFAULT_REQUEST_DELAY_SECONDS)
     parser.add_argument("--timeout", type=int, default=DEFAULT_TIMEOUT_SECONDS)
+    parser.add_argument("--connect-timeout", type=int, default=DEFAULT_CONNECT_TIMEOUT_SECONDS)
+    parser.add_argument("--http-retries", type=int, default=DEFAULT_HTTP_RETRIES)
     parser.add_argument("--force", action="store_true", help="부분/증분 실행에서도 이전 성공 상태를 다시 수집")
     parser.add_argument(
         "--incremental",
@@ -6978,6 +9712,76 @@ def build_parser() -> argparse.ArgumentParser:
         help="전체 강제 재수집 전에 affiliated_programs를 주 소속으로 초기화하여 과거 교차오염 제거",
     )
     parser.add_argument("--skip-lab-homepages", action="store_true", help="개별 연구실 홈페이지 검증·보완 생략")
+    parser.add_argument(
+        "--lab-links-only",
+        action="store_true",
+        help="학과·연구실적은 건드리지 않고 labs.csv의 연구실 링크와 연구실명만 집중 보완",
+    )
+    parser.add_argument(
+        "--lab-link-max-pages",
+        type=int,
+        default=DEFAULT_LAB_LINK_MAX_PAGES,
+        help="랩 링크 탐색에 사용할 공식 소스 페이지 전체 상한",
+    )
+    parser.add_argument(
+        "--lab-link-max-depth",
+        type=int,
+        default=DEFAULT_LAB_LINK_MAX_DEPTH,
+        help="공식 교수 목록에서 상세 프로필·페이지네이션을 따라갈 깊이",
+    )
+    parser.add_argument(
+        "--lab-link-candidates-per-lab",
+        type=int,
+        default=DEFAULT_LAB_LINK_CANDIDATES_PER_LAB,
+        help="연구실별로 실제 접근·신원 검증할 URL 후보 상한",
+    )
+    parser.add_argument(
+        "--lab-link-identity-sources-per-lab",
+        type=int,
+        default=DEFAULT_LAB_LINK_IDENTITY_SOURCES_PER_LAB,
+        help="전역 페이지 상한과 별개로 교수별 직접 확인할 공식 신원 페이지 상한",
+    )
+    parser.add_argument(
+        "--lab-link-host-page-cap",
+        type=int,
+        default=DEFAULT_LAB_LINK_HOST_PAGE_CAP,
+        help="한 호스트에서 수집할 공식 페이지 상한. 0이면 제한 없음",
+    )
+    parser.add_argument(
+        "--lab-link-max-host-failures",
+        type=int,
+        default=DEFAULT_MAX_HOST_FAILURES,
+        help="같은 호스트가 연속 실패하면 이번 실행에서 차단할 횟수. 0이면 차단 안 함",
+    )
+    parser.add_argument(
+        "--lab-link-progress-every",
+        type=int,
+        default=DEFAULT_LAB_LINK_PROGRESS_EVERY,
+        help="몇 건마다 진행 로그를 출력할지",
+    )
+    parser.add_argument(
+        "--lab-link-time-budget-minutes",
+        type=float,
+        default=DEFAULT_LAB_LINK_TIME_BUDGET_MINUTES,
+        help="랩 링크 단계 전체 시간 예산(분). 0이면 제한 없음",
+    )
+    parser.add_argument(
+        "--lab-link-homepage-probe-pages",
+        type=int,
+        default=DEFAULT_LAB_LINK_HOMEPAGE_PROBE_PAGES,
+        help="후보 홈페이지에서 About/People/Contact 등 신원 확인용 내부 페이지 상한",
+    )
+    parser.add_argument(
+        "--refresh-lab-links",
+        action="store_true",
+        help="이미 검증된 링크도 다시 접근해 URL·연구실명을 갱신",
+    )
+    parser.add_argument(
+        "--backup-keep",
+        type=int,
+        default=3,
+        help="성공 실행 후 종류별 최신 백업 보관 개수. 0이면 정리하지 않음",
+    )
     parser.add_argument("--browser-fallback", action="store_true", help="정적 HTML 부족 시 Playwright 사용")
     parser.add_argument("--allow-insecure", action="store_true", help="SSL 인증서 검증 실패 사이트 허용")
     parser.add_argument("--ignore-robots", action="store_true", help="robots.txt 검사 생략")
@@ -7019,6 +9823,30 @@ def validate_args(parser: argparse.ArgumentParser, args: argparse.Namespace) -> 
         parser.error("--delay는 0 이상이어야 합니다.")
     if args.timeout < 1:
         parser.error("--timeout은 1 이상이어야 합니다.")
+    if args.connect_timeout < 1:
+        parser.error("--connect-timeout은 1 이상이어야 합니다.")
+    if args.http_retries < 0:
+        parser.error("--http-retries는 0 이상이어야 합니다.")
+    if args.lab_link_max_pages < 1:
+        parser.error("--lab-link-max-pages는 1 이상이어야 합니다.")
+    if args.lab_link_max_depth < 0:
+        parser.error("--lab-link-max-depth는 0 이상이어야 합니다.")
+    if args.lab_link_candidates_per_lab < 1:
+        parser.error("--lab-link-candidates-per-lab은 1 이상이어야 합니다.")
+    if args.lab_link_identity_sources_per_lab < 1:
+        parser.error("--lab-link-identity-sources-per-lab은 1 이상이어야 합니다.")
+    if args.lab_link_host_page_cap < 0:
+        parser.error("--lab-link-host-page-cap은 0 이상이어야 합니다.")
+    if args.lab_link_max_host_failures < 0:
+        parser.error("--lab-link-max-host-failures는 0 이상이어야 합니다.")
+    if args.lab_link_progress_every < 1:
+        parser.error("--lab-link-progress-every는 1 이상이어야 합니다.")
+    if args.lab_link_time_budget_minutes < 0:
+        parser.error("--lab-link-time-budget-minutes는 0 이상이어야 합니다.")
+    if args.lab_link_homepage_probe_pages < 0:
+        parser.error("--lab-link-homepage-probe-pages는 0 이상이어야 합니다.")
+    if args.backup_keep < 0:
+        parser.error("--backup-keep는 0 이상이어야 합니다.")
     if args.test_limit is not None and args.test_limit < 1:
         parser.error("--test-limit은 1 이상이어야 합니다.")
     if args.reset_affiliations and args.clean_only:
@@ -7027,11 +9855,20 @@ def validate_args(parser: argparse.ArgumentParser, args: argparse.Namespace) -> 
         parser.error("--reset-affiliations는 일부 학과 실행과 함께 사용할 수 없습니다. 전체 재수집에만 사용하세요.")
     if args.incremental and args.reset_affiliations:
         parser.error("--incremental과 --reset-affiliations는 함께 사용할 수 없습니다.")
-    exclusive_modes = sum(bool(value) for value in (args.audit_only, args.clean_research_outputs, args.self_test))
+    exclusive_modes = sum(
+        bool(value)
+        for value in (args.audit_only, args.clean_research_outputs, args.self_test, args.lab_links_only)
+    )
     if exclusive_modes > 1:
-        parser.error("--audit-only, --clean-research-outputs, --self-test는 동시에 사용할 수 없습니다.")
-    if (args.audit_only or args.clean_research_outputs or args.self_test) and args.clean_only:
-        parser.error("감사/연구실적/자체테스트 모드는 --clean-only와 함께 사용할 수 없습니다.")
+        parser.error(
+            "--audit-only, --clean-research-outputs, --self-test, --lab-links-only는 동시에 사용할 수 없습니다."
+        )
+    if (args.audit_only or args.clean_research_outputs or args.self_test or args.lab_links_only) and args.clean_only:
+        parser.error("감사/연구실적/자체테스트/랩링크 모드는 --clean-only와 함께 사용할 수 없습니다.")
+    if args.lab_links_only and args.skip_lab_homepages:
+        parser.error("--lab-links-only와 --skip-lab-homepages는 함께 사용할 수 없습니다.")
+    if args.lab_links_only and (args.department or args.test_limit is not None or args.reset_affiliations):
+        parser.error("--lab-links-only는 학과 범위·소속 초기화 옵션과 함께 사용할 수 없습니다.")
 
 
 def main() -> None:
@@ -7046,6 +9883,9 @@ def main() -> None:
         return
     if args.clean_research_outputs:
         run_research_output_cleaner(args)
+        return
+    if args.lab_links_only:
+        run_lab_links_only(args)
         return
     run_stage2(args)
 

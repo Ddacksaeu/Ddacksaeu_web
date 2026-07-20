@@ -1,40 +1,1873 @@
 {
-  "enricher_version": "0.10.4-evidence-contract",
+  "enricher_version": "0.12.3-provenance-state-repair",
   "departments_total": 29,
   "labs_total": 290,
-  "outputs_total": 66842,
+  "outputs_total": 54340,
   "unique_lab_ids": 290,
   "unique_emails": 290,
   "field_counts": {
     "professor_name": 290,
     "email": 290,
     "phone": 194,
-    "location": 89,
-    "lab_url": 78,
+    "location": 112,
+    "lab_url": 186,
     "profile_image_url": 178,
     "primary_field": 49,
-    "research_summary": 76,
-    "keywords": 57,
-    "actual_lab_name": 68,
-    "trusted_lab_url": 67
+    "research_summary": 90,
+    "keywords": 87,
+    "actual_lab_name": 155,
+    "trusted_lab_url": 183
   },
   "quality_counts": {
-    "basic_only": 206,
-    "partial": 66,
-    "complete": 18
+    "basic_only": 114,
+    "partial": 137,
+    "complete": 39
   },
   "enrichment_status_counts": {
-    "success": 242,
-    "no_match": 28,
-    "matched_identity_only": 20
+    "success": 237,
+    "no_match": 32,
+    "matched_identity_only": 21
   },
   "lab_url_status_counts": {
-    "unverified": 210,
-    "verified_homepage": 57,
-    "candidate_card": 11,
+    "unverified": 103,
+    "verified_homepage": 173,
+    "candidate_card": 3,
     "verified_card": 8,
     "manual": 2,
-    "invalid": 2
+    "invalid": 1
+  },
+  "lab_links": {
+    "any_url": 186,
+    "trusted_url": 183,
+    "candidate_url": 3,
+    "missing_url": 104,
+    "known_department_page_rows": [],
+    "known_department_page_count": 0,
+    "trusted_without_field_provenance": [
+      {
+        "lab_id": "LAB_087BF230D568",
+        "professor_name": "박성민",
+        "lab_url": "https://postechimslab.wixsite.com/citeimslab"
+      },
+      {
+        "lab_id": "LAB_25EE489C236F",
+        "professor_name": "박주홍",
+        "lab_url": "https://juhong.wixsite.com/designml"
+      },
+      {
+        "lab_id": "LAB_B6DC41061769",
+        "professor_name": "백창기",
+        "lab_url": "https://idea.postech.ac.kr/idea/index.do"
+      },
+      {
+        "lab_id": "LAB_D8A17CA58EC0",
+        "professor_name": "유창현",
+        "lab_url": "https://np.postech.ac.kr/nplab202509/index.do"
+      },
+      {
+        "lab_id": "LAB_86C45FB07EA5",
+        "professor_name": "김기현",
+        "lab_url": "https://sites.google.com/site/bmoptics5/home"
+      },
+      {
+        "lab_id": "LAB_5ADC0D319626",
+        "professor_name": "김동성",
+        "lab_url": "https://www.mib-postech.com/"
+      },
+      {
+        "lab_id": "LAB_DAC1B4272416",
+        "professor_name": "김동식",
+        "lab_url": "https://lpmht.postech.ac.kr/lpmht/index.do"
+      },
+      {
+        "lab_id": "LAB_2D948C940B49",
+        "professor_name": "김진태",
+        "lab_url": "https://sites.google.com/view/mechanicslab"
+      },
+      {
+        "lab_id": "LAB_87DED0DB29C6",
+        "professor_name": "노준석",
+        "lab_url": "https://sites.google.com/site/junsukrho"
+      },
+      {
+        "lab_id": "LAB_D271CE232512",
+        "professor_name": "박형규",
+        "lab_url": "https://nets.postech.ac.kr/Adminnets/index.do"
+      },
+      {
+        "lab_id": "LAB_7EA3D0E7B56D",
+        "professor_name": "신원동",
+        "lab_url": "https://birdlab.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_971B844A9F2B",
+        "professor_name": "안지환",
+        "lab_url": "https://enterlab.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_C135BA220800",
+        "professor_name": "이상준",
+        "lab_url": "http://bbrc.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_6EC5147966AC",
+        "professor_name": "이안나",
+        "lab_url": "http://xml-postech.com/"
+      },
+      {
+        "lab_id": "LAB_CFCC6A7E97DC",
+        "professor_name": "장진아",
+        "lab_url": "https://www.btmpostech.com/"
+      },
+      {
+        "lab_id": "LAB_FADF14F5AEF4",
+        "professor_name": "진현규",
+        "lab_url": "https://telab-postech.com/"
+      },
+      {
+        "lab_id": "LAB_2FE2E0C6C2E7",
+        "professor_name": "김준성",
+        "lab_url": "https://amex.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_52F301DB47C5",
+        "professor_name": "김태환",
+        "lab_url": "https://stmt.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_4F089FF5AB04",
+        "professor_name": "김희철",
+        "lab_url": "https://string.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_3EA125094AA0",
+        "professor_name": "박경덕",
+        "lab_url": "https://nearfield.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_E95D071F919A",
+        "professor_name": "박재모",
+        "lab_url": "https://string.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_ECBC8C199753",
+        "professor_name": "박지우",
+        "lab_url": "https://www.ultracold.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_73D5AE097FD4",
+        "professor_name": "서준호",
+        "lab_url": "https://hql.postech.ac.kr/hybrid6626/index.do"
+      },
+      {
+        "lab_id": "LAB_16D33A947364",
+        "professor_name": "손민주",
+        "lab_url": "http://shonlab.org/"
+      },
+      {
+        "lab_id": "LAB_BE0CB61B0CAF",
+        "professor_name": "송창용",
+        "lab_url": "https://sites.google.com/site/femtoxv4"
+      },
+      {
+        "lab_id": "LAB_CECD0A4C1CC2",
+        "professor_name": "신희득",
+        "lab_url": "https://qnp.postech.ac.kr/qnp/index.do"
+      },
+      {
+        "lab_id": "LAB_2ED280FBAEF1",
+        "professor_name": "이길호",
+        "lab_url": "https://ghleelab.postech.ac.kr/ghleelab/index.do"
+      },
+      {
+        "lab_id": "LAB_BCE97E8A96DE",
+        "professor_name": "이대수",
+        "lab_url": "https://sites.google.com/site/dleepostech"
+      },
+      {
+        "lab_id": "LAB_CFE182899CB7",
+        "professor_name": "이종봉",
+        "lab_url": "https://jblab.postech.ac.kr/jblab/index.do"
+      },
+      {
+        "lab_id": "LAB_D1C3E35F2EE8",
+        "professor_name": "지승훈",
+        "lab_url": "https://cnpl.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_02B67BA32BAB",
+        "professor_name": "최영준",
+        "lab_url": "https://sites.google.com/view/yjchoilab"
+      },
+      {
+        "lab_id": "LAB_7D9968DA3A97",
+        "professor_name": "송재용",
+        "lab_url": "https://sites.google.com/view/hintlab"
+      },
+      {
+        "lab_id": "LAB_CD5B7DF8B97B",
+        "professor_name": "오명철",
+        "lab_url": "https://molab.postech.ac.kr/molab/index.do"
+      },
+      {
+        "lab_id": "LAB_2C32BD073FFC",
+        "professor_name": "이선규",
+        "lab_url": "https://ics-lab.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_2DEC89692EF6",
+        "professor_name": "고영명",
+        "lab_url": "https://www.lstlab.org/"
+      },
+      {
+        "lab_id": "LAB_28D08B364170",
+        "professor_name": "김광재",
+        "lab_url": "https://quality.postech.ac.kr/quality/index.do"
+      },
+      {
+        "lab_id": "LAB_6D5CA648F2FD",
+        "professor_name": "김덕영",
+        "lab_url": "http://factory.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_9E838387A295",
+        "professor_name": "김병인",
+        "lab_url": "https://plogistics.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_1E676A388D35",
+        "professor_name": "송민석",
+        "lab_url": "https://aim.postech.ac.kr/aim2/index.do"
+      },
+      {
+        "lab_id": "LAB_92C247AD79D2",
+        "professor_name": "신민석",
+        "lab_url": "https://sites.google.com/view/minseokshin"
+      },
+      {
+        "lab_id": "LAB_AC3DA7AA4E8B",
+        "professor_name": "유희천",
+        "lab_url": "http://edt.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_273E53ECEFCD",
+        "professor_name": "이강복",
+        "lab_url": "https://www.msolab.org/"
+      },
+      {
+        "lab_id": "LAB_433341F03AD4",
+        "professor_name": "장봉규",
+        "lab_url": "https://bgjang.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_88E711B612C0",
+        "professor_name": "정광민",
+        "lab_url": "https://airm.postech.ac.kr/airm/index.do"
+      },
+      {
+        "lab_id": "LAB_04D4A7C70349",
+        "professor_name": "정우성",
+        "lab_url": "https://complex.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_570456EAA45F",
+        "professor_name": "채민우",
+        "lab_url": "https://sds.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_6A8B31B015B2",
+        "professor_name": "최동구",
+        "lab_url": "https://imesea.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_7C2ABFEBB238",
+        "professor_name": "한성호",
+        "lab_url": "https://www.eden.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_595836DA9323",
+        "professor_name": "고용송",
+        "lab_url": "https://catapy17.wixsite.com/lab-icn"
+      },
+      {
+        "lab_id": "LAB_E2A46AD66956",
+        "professor_name": "김상욱",
+        "lab_url": "https://sbi.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_6D6715ABD7D9",
+        "professor_name": "김성철",
+        "lab_url": "https://sungchulkim.org/"
+      },
+      {
+        "lab_id": "LAB_C6DD9663D391",
+        "professor_name": "김종경",
+        "lab_url": "https://cb.postech.ac.kr/lcb_postech/index.do"
+      },
+      {
+        "lab_id": "LAB_FA4BC44D6A3C",
+        "professor_name": "김종신",
+        "lab_url": "https://neuroimm.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_616FF75AD6BA",
+        "professor_name": "김종흠",
+        "lab_url": "https://sites.google.com/view/jonghum-kim-website"
+      },
+      {
+        "lab_id": "LAB_3A528AD0F321",
+        "professor_name": "박상기",
+        "lab_url": "https://mnpsy.postech.ac.kr/mnpsy/index.do"
+      },
+      {
+        "lab_id": "LAB_3A106836FDEC",
+        "professor_name": "유웅재",
+        "lab_url": "https://sites.google.com/view/woongjae-yoo-website"
+      },
+      {
+        "lab_id": "LAB_C62F47C92F11",
+        "professor_name": "이민식",
+        "lab_url": "https://cancermetabolism.postech.ac.kr/TME/index.do"
+      },
+      {
+        "lab_id": "LAB_3654ADD4C316",
+        "professor_name": "이윤태",
+        "lab_url": "https://sites.google.com/view/postechleelab"
+      },
+      {
+        "lab_id": "LAB_6CAA730CA73B",
+        "professor_name": "최규하",
+        "lab_url": "https://www.pgr.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_F939E6F231F6",
+        "professor_name": "최세규",
+        "lab_url": "https://choilab.postech.ac.kr/choilab/index.do"
+      },
+      {
+        "lab_id": "LAB_920236BC61EF",
+        "professor_name": "허윤하",
+        "lab_url": "https://hurlab.postech.ac.kr/hurlab2024/index.do"
+      },
+      {
+        "lab_id": "LAB_4B02359B833D",
+        "professor_name": "Valentin Buciumas",
+        "lab_url": "https://sites.google.com/site/valentinbuciumas/home"
+      },
+      {
+        "lab_id": "LAB_93049F354610",
+        "professor_name": "김건우",
+        "lab_url": "https://sites.google.com/view/kunwookim"
+      },
+      {
+        "lab_id": "LAB_C25BA88FCCBD",
+        "professor_name": "김민성",
+        "lab_url": "https://minsungdream.github.io/"
+      },
+      {
+        "lab_id": "LAB_E466BFE34C0E",
+        "professor_name": "김진수",
+        "lab_url": "https://mathjinsukim.com/"
+      },
+      {
+        "lab_id": "LAB_F8D493E4022F",
+        "professor_name": "손영환",
+        "lab_url": "https://sites.google.com/site/yhson1719"
+      },
+      {
+        "lab_id": "LAB_7AED397442A6",
+        "professor_name": "신선영",
+        "lab_url": "https://sites.google.com/view/sunyoungshin"
+      },
+      {
+        "lab_id": "LAB_93B3EB65477B",
+        "professor_name": "오용근",
+        "lab_url": "https://cgp.ibs.re.kr/~yongoh"
+      },
+      {
+        "lab_id": "LAB_19D5BA381953",
+        "professor_name": "이기예",
+        "lab_url": "http://qirui.li/"
+      },
+      {
+        "lab_id": "LAB_599EE8AA6DCC",
+        "professor_name": "이동현",
+        "lab_url": "https://sites.google.com/site/donghyunlee295"
+      },
+      {
+        "lab_id": "LAB_0002C3D271C0",
+        "professor_name": "장진우",
+        "lab_url": "https://jangjw.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_348C41B078E0",
+        "professor_name": "정재훈",
+        "lab_url": "https://sites.google.com/view/jaehunjung"
+      },
+      {
+        "lab_id": "LAB_1CC64FC8E77B",
+        "professor_name": "최민석",
+        "lab_url": "https://sites.google.com/view/choiminseok"
+      },
+      {
+        "lab_id": "LAB_E10BFB94AFD8",
+        "professor_name": "황형주",
+        "lab_url": "https://hjhwang.postech.ac.kr/hjhwang/index.do"
+      },
+      {
+        "lab_id": "LAB_58C6E764F2ED",
+        "professor_name": "강병우",
+        "lab_url": "https://amee.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_19358848DCEE",
+        "professor_name": "강종훈",
+        "lab_url": "https://eqml.postech.ac.kr/emqljkang/index.do"
+      },
+      {
+        "lab_id": "LAB_394BF7A679A4",
+        "professor_name": "김연수",
+        "lab_url": "https://hydrogel.postech.ac.kr/hydrogel/index.do"
+      },
+      {
+        "lab_id": "LAB_26E0DA4A97CD",
+        "professor_name": "오승수",
+        "lab_url": "https://ssohlab.weebly.com/"
+      },
+      {
+        "lab_id": "LAB_9FC49A882A2D",
+        "professor_name": "이동화",
+        "lab_url": "https://cnmd.postech.ac.kr/cnmd/index.do"
+      },
+      {
+        "lab_id": "LAB_F1AF262EA18B",
+        "professor_name": "이장식",
+        "lab_url": "https://neml.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_713C0CAFA789",
+        "professor_name": "이준민",
+        "lab_url": "https://sbmd.postech.ac.kr/junminlee/index.do"
+      },
+      {
+        "lab_id": "LAB_76144262522C",
+        "professor_name": "정성준",
+        "lab_url": "https://bipp.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_960DFAFF5C57",
+        "professor_name": "정운룡",
+        "lab_url": "https://www.hybrid.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_F4EBACBD4CFC",
+        "professor_name": "조창순",
+        "lab_url": "https://ngo.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_D49A3B744BB8",
+        "professor_name": "천동원",
+        "lab_url": "https://dongwonlab.postech.ac.kr/dwchun/index.do"
+      },
+      {
+        "lab_id": "LAB_5BA24652882F",
+        "professor_name": "최시영",
+        "lab_url": "http://aefi.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_44190A950E8D",
+        "professor_name": "한세광",
+        "lab_url": "https://bnl.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_E2C278E4824B",
+        "professor_name": "한현",
+        "lab_url": "https://oxide.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_D6E47413FA34",
+        "professor_name": "황현상",
+        "lab_url": "http://www.sidp.kr/"
+      },
+      {
+        "lab_id": "LAB_0A2684FB1103",
+        "professor_name": "김광인",
+        "lab_url": "https://sites.google.com/view/mlvlab"
+      },
+      {
+        "lab_id": "LAB_0478584A50D1",
+        "professor_name": "김동우",
+        "lab_url": "https://ml.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_FC7D9777A8E3",
+        "professor_name": "서영주",
+        "lab_url": "https://aiot.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_C91F925CD2FE",
+        "professor_name": "손진희",
+        "lab_url": "https://jeanyson.github.io/"
+      },
+      {
+        "lab_id": "LAB_A3F7EDCD76D7",
+        "professor_name": "안희갑",
+        "lab_url": "https://algo.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_B3AFDB5B412A",
+        "professor_name": "이근배",
+        "lab_url": "https://nlp.postech.ac.kr/home"
+      },
+      {
+        "lab_id": "LAB_7AFFF35DE143",
+        "professor_name": "조은경",
+        "lab_url": "https://eunkyungjo.com/"
+      },
+      {
+        "lab_id": "LAB_634271121D8B",
+        "professor_name": "강석형",
+        "lab_url": "https://soc.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_49F84BDF1206",
+        "professor_name": "공병돈",
+        "lab_url": "https://sites.google.com/view/pel-home"
+      },
+      {
+        "lab_id": "LAB_D5F3C1D7CE6C",
+        "professor_name": "김병섭",
+        "lab_url": "https://bevillab.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_8B50C6B8367D",
+        "professor_name": "김상우",
+        "lab_url": "https://icsl.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_5239095527D7",
+        "professor_name": "김세영",
+        "lab_url": "http://ace.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_847277A7E888",
+        "professor_name": "김용준",
+        "lab_url": "https://iil.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_45DD55360D7C",
+        "professor_name": "김욱성",
+        "lab_url": "https://sites.google.com/view/kimwooksung"
+      },
+      {
+        "lab_id": "LAB_AB31E98B544F",
+        "professor_name": "김철홍",
+        "lab_url": "http://www.boa-lab.com/"
+      },
+      {
+        "lab_id": "LAB_97B28777A418",
+        "professor_name": "나동엽",
+        "lab_url": "https://sites.google.com/view/acem-postech/home"
+      },
+      {
+        "lab_id": "LAB_A9DEE2CA43B0",
+        "professor_name": "박부견",
+        "lab_url": "https://spac.postech.ac.kr/spac/index.do"
+      },
+      {
+        "lab_id": "LAB_18B8AC005168",
+        "professor_name": "백록현",
+        "lab_url": "https://sites.google.com/view/team-postech-ac-kr"
+      },
+      {
+        "lab_id": "LAB_F4FEC2DD7428",
+        "professor_name": "신세운",
+        "lab_url": "https://pictus.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_DC86231DD34E",
+        "professor_name": "심재윤",
+        "lab_url": "https://pics.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_5D39E3C5F825",
+        "professor_name": "안혜민",
+        "lab_url": "https://ahrilab.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_0C04FC0D88F5",
+        "professor_name": "양경철",
+        "lab_url": "https://www.csdl-lab.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_4A1FE15F800D",
+        "professor_name": "이승구",
+        "lab_url": "https://esa.postech.ac.kr/esa/index.do"
+      },
+      {
+        "lab_id": "LAB_7A1215131ECD",
+        "professor_name": "이정수",
+        "lab_url": "http://ndp.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_3469B3AD4DFE",
+        "professor_name": "정윤영",
+        "lab_url": "https://chunglab.postech.ac.kr/ISWDLab/index.do"
+      },
+      {
+        "lab_id": "LAB_BA96CC94D8C2",
+        "professor_name": "채수용",
+        "lab_url": "https://sites.google.com/view/apes-postech/home"
+      },
+      {
+        "lab_id": "LAB_24518AA40DD5",
+        "professor_name": "최수석",
+        "lab_url": "https://csspostech.wixsite.com/css1"
+      },
+      {
+        "lab_id": "LAB_410A5912783A",
+        "professor_name": "한해욱",
+        "lab_url": "https://sites.google.com/view/nano-biothzphotonicsnbtplab"
+      },
+      {
+        "lab_id": "LAB_D870743AF6BB",
+        "professor_name": "엄우용",
+        "lab_url": "https://nel.postech.ac.kr/DANENEL/index.do"
+      },
+      {
+        "lab_id": "LAB_E7AD27951F2D",
+        "professor_name": "염화성",
+        "lab_url": "https://sites.google.com/view/sen-lab/home"
+      },
+      {
+        "lab_id": "LAB_C37DCCE7A13F",
+        "professor_name": "유선철",
+        "lab_url": "https://hero.postech.ac.kr/hero/index.do"
+      },
+      {
+        "lab_id": "LAB_AB1B47E246E6",
+        "professor_name": "윤건수",
+        "lab_url": "https://sites.google.com/site/p4postech"
+      },
+      {
+        "lab_id": "LAB_1EA2735FF1E2",
+        "professor_name": "전준구",
+        "lab_url": "http://ninelab.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_7B3E98C878A9",
+        "professor_name": "정모세",
+        "lab_url": "https://sites.google.com/view/moses-caphe"
+      },
+      {
+        "lab_id": "LAB_9E0737034CA3",
+        "professor_name": "박규영",
+        "lab_url": "http://emrl.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_4C5BF2CE6104",
+        "professor_name": "이민아",
+        "lab_url": "https://sec.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_3510089433CF",
+        "professor_name": "조창신",
+        "lab_url": "http://nedl.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_69EF75154617",
+        "professor_name": "강윤배",
+        "lab_url": "http://sites.google.com/site/cslgiftpostech"
+      },
+      {
+        "lab_id": "LAB_845BFFC8F5F2",
+        "professor_name": "김경덕",
+        "lab_url": "http://icmel.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_DACA4DF9C133",
+        "professor_name": "김지훈",
+        "lab_url": "https://mfm.postech.ac.kr/MFM/index.do"
+      },
+      {
+        "lab_id": "LAB_C875E9DA9432",
+        "professor_name": "김형섭",
+        "lab_url": "https://snmpl.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_2DA413CF5A4D",
+        "professor_name": "이을범",
+        "lab_url": "https://pmc.postech.ac.kr/pmc/index.do"
+      },
+      {
+        "lab_id": "LAB_918EBDA3EB85",
+        "professor_name": "김광선",
+        "lab_url": "https://www.psal.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_425DB6C24BD1",
+        "professor_name": "송황준",
+        "lab_url": "https://mcnl.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_16DF74FE0323",
+        "professor_name": "유환조",
+        "lab_url": "https://di.postech.ac.kr/di/index.do"
+      },
+      {
+        "lab_id": "LAB_02A439B184EE",
+        "professor_name": "이승용",
+        "lab_url": "http://cg.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_E1B7261D087E",
+        "professor_name": "황인석",
+        "lab_url": "https://www.his-lab.org/"
+      },
+      {
+        "lab_id": "LAB_A2D3271806E1",
+        "professor_name": "김영기",
+        "lab_url": "https://ssm.postech.ac.kr/ykkim/index.do"
+      },
+      {
+        "lab_id": "LAB_C2AEC031D98A",
+        "professor_name": "김철주",
+        "lab_url": "https://www.cjkimlab.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_6E84F6D0BB7B",
+        "professor_name": "노용영",
+        "lab_url": "https://sema.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_B2EAEE997B36",
+        "professor_name": "손재성",
+        "lab_url": "https://sonjs.postech.ac.kr/sonjs/index.do"
+      },
+      {
+        "lab_id": "LAB_F8453B417A3F",
+        "professor_name": "용기중",
+        "lab_url": "https://schema.postech.ac.kr/schema/index.do"
+      },
+      {
+        "lab_id": "LAB_B8CDBEEA6143",
+        "professor_name": "윤용주",
+        "lab_url": "http://andl.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_FB7F35DEB835",
+        "professor_name": "윤창원",
+        "lab_url": "https://aches.postech.ac.kr/aches/index.do"
+      },
+      {
+        "lab_id": "LAB_016ACC1DF339",
+        "professor_name": "이기라",
+        "lab_url": "https://yigira.com/"
+      },
+      {
+        "lab_id": "LAB_20AC957F1C40",
+        "professor_name": "이상민",
+        "lab_url": "https://pdl.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_3B7A800F46D4",
+        "professor_name": "이정욱",
+        "lab_url": "https://sbl.postech.ac.kr/sblmanager/index.do"
+      },
+      {
+        "lab_id": "LAB_92D7BFA92B24",
+        "professor_name": "이준구",
+        "lab_url": "https://chb.postech.ac.kr/chembiolab/index.do"
+      },
+      {
+        "lab_id": "LAB_13CE5D35A604",
+        "professor_name": "이효민",
+        "lab_url": "https://smfil.postech.ac.kr/SMFIL/index.do"
+      },
+      {
+        "lab_id": "LAB_5556B05F72E6",
+        "professor_name": "전상민",
+        "lab_url": "http://smart.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_6F15440DA95E",
+        "professor_name": "정규열",
+        "lab_url": "https://mdsb.postech.ac.kr/mdsb_lab/index.do"
+      },
+      {
+        "lab_id": "LAB_3707C0A9939C",
+        "professor_name": "정대성",
+        "lab_url": "https://peml.postech.ac.kr/PEML/index.do"
+      },
+      {
+        "lab_id": "LAB_B282F860A020",
+        "professor_name": "정우빈",
+        "lab_url": "https://wbj.postech.ac.kr/woobinjung/index.do"
+      },
+      {
+        "lab_id": "LAB_9196973DDAC9",
+        "professor_name": "조길원",
+        "lab_url": "http://crg.postech.ac.kr/korean/viewforum.php?f=1"
+      },
+      {
+        "lab_id": "LAB_A292ECE8F88F",
+        "professor_name": "차형준",
+        "lab_url": "http://magic.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_32BD33956118",
+        "professor_name": "한지훈",
+        "lab_url": "https://pse.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_78072957B110",
+        "professor_name": "권도훈",
+        "lab_url": "https://kwonlab.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_7B7E24164CF5",
+        "professor_name": "김경환",
+        "lab_url": "https://www.xlcr.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_1D3BF0652D66",
+        "professor_name": "김성지",
+        "lab_url": "http://www.nanotrio.com/"
+      },
+      {
+        "lab_id": "LAB_254C1BCC5330",
+        "professor_name": "김원종",
+        "lab_url": "http://bmpl.postech.ac.kr/index.php"
+      },
+      {
+        "lab_id": "LAB_D006DEF67684",
+        "professor_name": "김현우",
+        "lab_url": "https://lexontkfu.wixsite.com/scnspostech"
+      },
+      {
+        "lab_id": "LAB_3108F90232FA",
+        "professor_name": "류순민",
+        "lab_url": "https://sunryu.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_D844430B46F4",
+        "professor_name": "박문정",
+        "lab_url": "https://parkgroup.postech.ac.kr/Parkgroup/index.do"
+      },
+      {
+        "lab_id": "LAB_A88522466048",
+        "professor_name": "이영호",
+        "lab_url": "https://yhr.postech.ac.kr/yhr/index.do"
+      },
+      {
+        "lab_id": "LAB_DEFA3C6975B5",
+        "professor_name": "조승환",
+        "lab_url": "http://chogroup.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_C2E2BFAA95CB",
+        "professor_name": "주태하",
+        "lab_url": "https://femto.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_81CD1E31AEA2",
+        "professor_name": "최창혁",
+        "lab_url": "https://www.ecatlab.com/"
+      },
+      {
+        "lab_id": "LAB_ED6C74F2736E",
+        "professor_name": "감종훈",
+        "lab_url": "https://hydroclimatology.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_E0CC55A8E6D2",
+        "professor_name": "권세윤",
+        "lab_url": "http://ehal.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_61B4A7F0F488",
+        "professor_name": "민승기",
+        "lab_url": "http://climatechange.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_4B2985567864",
+        "professor_name": "송우철",
+        "lab_url": "https://membrane.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_1D117305D473",
+        "professor_name": "이기택",
+        "lab_url": "http://climate.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_4A1F3FAD4D99",
+        "professor_name": "이형주",
+        "lab_url": "https://airpollution.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_4777106A4930",
+        "professor_name": "조강우",
+        "lab_url": "http://create.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_6CDAE2F98FBD",
+        "professor_name": "황동수",
+        "lab_url": "https://lbem.postech.ac.kr/lbem/index.do"
+      },
+      {
+        "lab_id": "LAB_E5B0A5A1E2A7",
+        "professor_name": "황석환",
+        "lab_url": "http://best.postech.ac.kr/"
+      }
+    ],
+    "trusted_without_field_provenance_count": 175,
+    "trusted_with_incomplete_field_provenance": [
+      {
+        "lab_id": "LAB_087BF230D568",
+        "professor_name": "박성민",
+        "lab_url": "https://postechimslab.wixsite.com/citeimslab"
+      },
+      {
+        "lab_id": "LAB_25EE489C236F",
+        "professor_name": "박주홍",
+        "lab_url": "https://juhong.wixsite.com/designml"
+      },
+      {
+        "lab_id": "LAB_B6DC41061769",
+        "professor_name": "백창기",
+        "lab_url": "https://idea.postech.ac.kr/idea/index.do"
+      },
+      {
+        "lab_id": "LAB_D8A17CA58EC0",
+        "professor_name": "유창현",
+        "lab_url": "https://np.postech.ac.kr/nplab202509/index.do"
+      },
+      {
+        "lab_id": "LAB_86C45FB07EA5",
+        "professor_name": "김기현",
+        "lab_url": "https://sites.google.com/site/bmoptics5/home"
+      },
+      {
+        "lab_id": "LAB_5ADC0D319626",
+        "professor_name": "김동성",
+        "lab_url": "https://www.mib-postech.com/"
+      },
+      {
+        "lab_id": "LAB_DAC1B4272416",
+        "professor_name": "김동식",
+        "lab_url": "https://lpmht.postech.ac.kr/lpmht/index.do"
+      },
+      {
+        "lab_id": "LAB_2D948C940B49",
+        "professor_name": "김진태",
+        "lab_url": "https://sites.google.com/view/mechanicslab"
+      },
+      {
+        "lab_id": "LAB_87DED0DB29C6",
+        "professor_name": "노준석",
+        "lab_url": "https://sites.google.com/site/junsukrho"
+      },
+      {
+        "lab_id": "LAB_D271CE232512",
+        "professor_name": "박형규",
+        "lab_url": "https://nets.postech.ac.kr/Adminnets/index.do"
+      },
+      {
+        "lab_id": "LAB_7EA3D0E7B56D",
+        "professor_name": "신원동",
+        "lab_url": "https://birdlab.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_971B844A9F2B",
+        "professor_name": "안지환",
+        "lab_url": "https://enterlab.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_C135BA220800",
+        "professor_name": "이상준",
+        "lab_url": "http://bbrc.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_6EC5147966AC",
+        "professor_name": "이안나",
+        "lab_url": "http://xml-postech.com/"
+      },
+      {
+        "lab_id": "LAB_CFCC6A7E97DC",
+        "professor_name": "장진아",
+        "lab_url": "https://www.btmpostech.com/"
+      },
+      {
+        "lab_id": "LAB_FADF14F5AEF4",
+        "professor_name": "진현규",
+        "lab_url": "https://telab-postech.com/"
+      },
+      {
+        "lab_id": "LAB_2FE2E0C6C2E7",
+        "professor_name": "김준성",
+        "lab_url": "https://amex.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_52F301DB47C5",
+        "professor_name": "김태환",
+        "lab_url": "https://stmt.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_4F089FF5AB04",
+        "professor_name": "김희철",
+        "lab_url": "https://string.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_3EA125094AA0",
+        "professor_name": "박경덕",
+        "lab_url": "https://nearfield.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_E95D071F919A",
+        "professor_name": "박재모",
+        "lab_url": "https://string.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_ECBC8C199753",
+        "professor_name": "박지우",
+        "lab_url": "https://www.ultracold.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_73D5AE097FD4",
+        "professor_name": "서준호",
+        "lab_url": "https://hql.postech.ac.kr/hybrid6626/index.do"
+      },
+      {
+        "lab_id": "LAB_16D33A947364",
+        "professor_name": "손민주",
+        "lab_url": "http://shonlab.org/"
+      },
+      {
+        "lab_id": "LAB_BE0CB61B0CAF",
+        "professor_name": "송창용",
+        "lab_url": "https://sites.google.com/site/femtoxv4"
+      },
+      {
+        "lab_id": "LAB_CECD0A4C1CC2",
+        "professor_name": "신희득",
+        "lab_url": "https://qnp.postech.ac.kr/qnp/index.do"
+      },
+      {
+        "lab_id": "LAB_2ED280FBAEF1",
+        "professor_name": "이길호",
+        "lab_url": "https://ghleelab.postech.ac.kr/ghleelab/index.do"
+      },
+      {
+        "lab_id": "LAB_BCE97E8A96DE",
+        "professor_name": "이대수",
+        "lab_url": "https://sites.google.com/site/dleepostech"
+      },
+      {
+        "lab_id": "LAB_CFE182899CB7",
+        "professor_name": "이종봉",
+        "lab_url": "https://jblab.postech.ac.kr/jblab/index.do"
+      },
+      {
+        "lab_id": "LAB_D1C3E35F2EE8",
+        "professor_name": "지승훈",
+        "lab_url": "https://cnpl.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_02B67BA32BAB",
+        "professor_name": "최영준",
+        "lab_url": "https://sites.google.com/view/yjchoilab"
+      },
+      {
+        "lab_id": "LAB_7D9968DA3A97",
+        "professor_name": "송재용",
+        "lab_url": "https://sites.google.com/view/hintlab"
+      },
+      {
+        "lab_id": "LAB_CD5B7DF8B97B",
+        "professor_name": "오명철",
+        "lab_url": "https://molab.postech.ac.kr/molab/index.do"
+      },
+      {
+        "lab_id": "LAB_2C32BD073FFC",
+        "professor_name": "이선규",
+        "lab_url": "https://ics-lab.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_2DEC89692EF6",
+        "professor_name": "고영명",
+        "lab_url": "https://www.lstlab.org/"
+      },
+      {
+        "lab_id": "LAB_28D08B364170",
+        "professor_name": "김광재",
+        "lab_url": "https://quality.postech.ac.kr/quality/index.do"
+      },
+      {
+        "lab_id": "LAB_6D5CA648F2FD",
+        "professor_name": "김덕영",
+        "lab_url": "http://factory.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_9E838387A295",
+        "professor_name": "김병인",
+        "lab_url": "https://plogistics.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_282717ED5899",
+        "professor_name": "모상우",
+        "lab_url": "https://sites.google.com/view/sangwoomo"
+      },
+      {
+        "lab_id": "LAB_1E676A388D35",
+        "professor_name": "송민석",
+        "lab_url": "https://aim.postech.ac.kr/aim2/index.do"
+      },
+      {
+        "lab_id": "LAB_92C247AD79D2",
+        "professor_name": "신민석",
+        "lab_url": "https://sites.google.com/view/minseokshin"
+      },
+      {
+        "lab_id": "LAB_AC3DA7AA4E8B",
+        "professor_name": "유희천",
+        "lab_url": "http://edt.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_273E53ECEFCD",
+        "professor_name": "이강복",
+        "lab_url": "https://www.msolab.org/"
+      },
+      {
+        "lab_id": "LAB_433341F03AD4",
+        "professor_name": "장봉규",
+        "lab_url": "https://bgjang.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_88E711B612C0",
+        "professor_name": "정광민",
+        "lab_url": "https://airm.postech.ac.kr/airm/index.do"
+      },
+      {
+        "lab_id": "LAB_04D4A7C70349",
+        "professor_name": "정우성",
+        "lab_url": "https://complex.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_B5DD1D9E5F37",
+        "professor_name": "조현보",
+        "lab_url": "https://sites.google.com/view/postech-isl"
+      },
+      {
+        "lab_id": "LAB_570456EAA45F",
+        "professor_name": "채민우",
+        "lab_url": "https://sds.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_6A8B31B015B2",
+        "professor_name": "최동구",
+        "lab_url": "https://imesea.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_7C2ABFEBB238",
+        "professor_name": "한성호",
+        "lab_url": "https://www.eden.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_595836DA9323",
+        "professor_name": "고용송",
+        "lab_url": "https://catapy17.wixsite.com/lab-icn"
+      },
+      {
+        "lab_id": "LAB_E2A46AD66956",
+        "professor_name": "김상욱",
+        "lab_url": "https://sbi.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_6D6715ABD7D9",
+        "professor_name": "김성철",
+        "lab_url": "https://sungchulkim.org/"
+      },
+      {
+        "lab_id": "LAB_C6DD9663D391",
+        "professor_name": "김종경",
+        "lab_url": "https://cb.postech.ac.kr/lcb_postech/index.do"
+      },
+      {
+        "lab_id": "LAB_FA4BC44D6A3C",
+        "professor_name": "김종신",
+        "lab_url": "https://neuroimm.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_616FF75AD6BA",
+        "professor_name": "김종흠",
+        "lab_url": "https://sites.google.com/view/jonghum-kim-website"
+      },
+      {
+        "lab_id": "LAB_3A528AD0F321",
+        "professor_name": "박상기",
+        "lab_url": "https://mnpsy.postech.ac.kr/mnpsy/index.do"
+      },
+      {
+        "lab_id": "LAB_3A106836FDEC",
+        "professor_name": "유웅재",
+        "lab_url": "https://sites.google.com/view/woongjae-yoo-website"
+      },
+      {
+        "lab_id": "LAB_C62F47C92F11",
+        "professor_name": "이민식",
+        "lab_url": "https://cancermetabolism.postech.ac.kr/TME/index.do"
+      },
+      {
+        "lab_id": "LAB_3654ADD4C316",
+        "professor_name": "이윤태",
+        "lab_url": "https://sites.google.com/view/postechleelab"
+      },
+      {
+        "lab_id": "LAB_6CAA730CA73B",
+        "professor_name": "최규하",
+        "lab_url": "https://www.pgr.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_F939E6F231F6",
+        "professor_name": "최세규",
+        "lab_url": "https://choilab.postech.ac.kr/choilab/index.do"
+      },
+      {
+        "lab_id": "LAB_920236BC61EF",
+        "professor_name": "허윤하",
+        "lab_url": "https://hurlab.postech.ac.kr/hurlab2024/index.do"
+      },
+      {
+        "lab_id": "LAB_4B02359B833D",
+        "professor_name": "Valentin Buciumas",
+        "lab_url": "https://sites.google.com/site/valentinbuciumas/home"
+      },
+      {
+        "lab_id": "LAB_93049F354610",
+        "professor_name": "김건우",
+        "lab_url": "https://sites.google.com/view/kunwookim"
+      },
+      {
+        "lab_id": "LAB_C25BA88FCCBD",
+        "professor_name": "김민성",
+        "lab_url": "https://minsungdream.github.io/"
+      },
+      {
+        "lab_id": "LAB_E466BFE34C0E",
+        "professor_name": "김진수",
+        "lab_url": "https://mathjinsukim.com/"
+      },
+      {
+        "lab_id": "LAB_F8D493E4022F",
+        "professor_name": "손영환",
+        "lab_url": "https://sites.google.com/site/yhson1719"
+      },
+      {
+        "lab_id": "LAB_7AED397442A6",
+        "professor_name": "신선영",
+        "lab_url": "https://sites.google.com/view/sunyoungshin"
+      },
+      {
+        "lab_id": "LAB_93B3EB65477B",
+        "professor_name": "오용근",
+        "lab_url": "https://cgp.ibs.re.kr/~yongoh"
+      },
+      {
+        "lab_id": "LAB_19D5BA381953",
+        "professor_name": "이기예",
+        "lab_url": "http://qirui.li/"
+      },
+      {
+        "lab_id": "LAB_599EE8AA6DCC",
+        "professor_name": "이동현",
+        "lab_url": "https://sites.google.com/site/donghyunlee295"
+      },
+      {
+        "lab_id": "LAB_0002C3D271C0",
+        "professor_name": "장진우",
+        "lab_url": "https://jangjw.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_348C41B078E0",
+        "professor_name": "정재훈",
+        "lab_url": "https://sites.google.com/view/jaehunjung"
+      },
+      {
+        "lab_id": "LAB_1CC64FC8E77B",
+        "professor_name": "최민석",
+        "lab_url": "https://sites.google.com/view/choiminseok"
+      },
+      {
+        "lab_id": "LAB_E10BFB94AFD8",
+        "professor_name": "황형주",
+        "lab_url": "https://hjhwang.postech.ac.kr/hjhwang/index.do"
+      },
+      {
+        "lab_id": "LAB_58C6E764F2ED",
+        "professor_name": "강병우",
+        "lab_url": "https://amee.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_19358848DCEE",
+        "professor_name": "강종훈",
+        "lab_url": "https://eqml.postech.ac.kr/emqljkang/index.do"
+      },
+      {
+        "lab_id": "LAB_394BF7A679A4",
+        "professor_name": "김연수",
+        "lab_url": "https://hydrogel.postech.ac.kr/hydrogel/index.do"
+      },
+      {
+        "lab_id": "LAB_26E0DA4A97CD",
+        "professor_name": "오승수",
+        "lab_url": "https://ssohlab.weebly.com/"
+      },
+      {
+        "lab_id": "LAB_9FC49A882A2D",
+        "professor_name": "이동화",
+        "lab_url": "https://cnmd.postech.ac.kr/cnmd/index.do"
+      },
+      {
+        "lab_id": "LAB_F1AF262EA18B",
+        "professor_name": "이장식",
+        "lab_url": "https://neml.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_713C0CAFA789",
+        "professor_name": "이준민",
+        "lab_url": "https://sbmd.postech.ac.kr/junminlee/index.do"
+      },
+      {
+        "lab_id": "LAB_76144262522C",
+        "professor_name": "정성준",
+        "lab_url": "https://bipp.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_960DFAFF5C57",
+        "professor_name": "정운룡",
+        "lab_url": "https://www.hybrid.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_F4EBACBD4CFC",
+        "professor_name": "조창순",
+        "lab_url": "https://ngo.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_D49A3B744BB8",
+        "professor_name": "천동원",
+        "lab_url": "https://dongwonlab.postech.ac.kr/dwchun/index.do"
+      },
+      {
+        "lab_id": "LAB_5BA24652882F",
+        "professor_name": "최시영",
+        "lab_url": "http://aefi.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_44190A950E8D",
+        "professor_name": "한세광",
+        "lab_url": "https://bnl.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_E2C278E4824B",
+        "professor_name": "한현",
+        "lab_url": "https://oxide.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_D6E47413FA34",
+        "professor_name": "황현상",
+        "lab_url": "http://www.sidp.kr/"
+      },
+      {
+        "lab_id": "LAB_0A2684FB1103",
+        "professor_name": "김광인",
+        "lab_url": "https://sites.google.com/view/mlvlab"
+      },
+      {
+        "lab_id": "LAB_0478584A50D1",
+        "professor_name": "김동우",
+        "lab_url": "https://ml.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_FC7D9777A8E3",
+        "professor_name": "서영주",
+        "lab_url": "https://aiot.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_C91F925CD2FE",
+        "professor_name": "손진희",
+        "lab_url": "https://jeanyson.github.io/"
+      },
+      {
+        "lab_id": "LAB_A3F7EDCD76D7",
+        "professor_name": "안희갑",
+        "lab_url": "https://algo.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_B3AFDB5B412A",
+        "professor_name": "이근배",
+        "lab_url": "https://nlp.postech.ac.kr/home"
+      },
+      {
+        "lab_id": "LAB_7AFFF35DE143",
+        "professor_name": "조은경",
+        "lab_url": "https://eunkyungjo.com/"
+      },
+      {
+        "lab_id": "LAB_634271121D8B",
+        "professor_name": "강석형",
+        "lab_url": "https://soc.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_49F84BDF1206",
+        "professor_name": "공병돈",
+        "lab_url": "https://sites.google.com/view/pel-home"
+      },
+      {
+        "lab_id": "LAB_D5F3C1D7CE6C",
+        "professor_name": "김병섭",
+        "lab_url": "https://bevillab.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_8B50C6B8367D",
+        "professor_name": "김상우",
+        "lab_url": "https://icsl.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_5239095527D7",
+        "professor_name": "김세영",
+        "lab_url": "http://ace.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_847277A7E888",
+        "professor_name": "김용준",
+        "lab_url": "https://iil.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_45DD55360D7C",
+        "professor_name": "김욱성",
+        "lab_url": "https://sites.google.com/view/kimwooksung"
+      },
+      {
+        "lab_id": "LAB_AB31E98B544F",
+        "professor_name": "김철홍",
+        "lab_url": "http://www.boa-lab.com/"
+      },
+      {
+        "lab_id": "LAB_97B28777A418",
+        "professor_name": "나동엽",
+        "lab_url": "https://sites.google.com/view/acem-postech/home"
+      },
+      {
+        "lab_id": "LAB_A9DEE2CA43B0",
+        "professor_name": "박부견",
+        "lab_url": "https://spac.postech.ac.kr/spac/index.do"
+      },
+      {
+        "lab_id": "LAB_18B8AC005168",
+        "professor_name": "백록현",
+        "lab_url": "https://sites.google.com/view/team-postech-ac-kr"
+      },
+      {
+        "lab_id": "LAB_F4FEC2DD7428",
+        "professor_name": "신세운",
+        "lab_url": "https://pictus.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_DC86231DD34E",
+        "professor_name": "심재윤",
+        "lab_url": "https://pics.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_5D39E3C5F825",
+        "professor_name": "안혜민",
+        "lab_url": "https://ahrilab.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_0C04FC0D88F5",
+        "professor_name": "양경철",
+        "lab_url": "https://www.csdl-lab.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_4A1FE15F800D",
+        "professor_name": "이승구",
+        "lab_url": "https://esa.postech.ac.kr/esa/index.do"
+      },
+      {
+        "lab_id": "LAB_7A1215131ECD",
+        "professor_name": "이정수",
+        "lab_url": "http://ndp.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_3469B3AD4DFE",
+        "professor_name": "정윤영",
+        "lab_url": "https://chunglab.postech.ac.kr/ISWDLab/index.do"
+      },
+      {
+        "lab_id": "LAB_BA96CC94D8C2",
+        "professor_name": "채수용",
+        "lab_url": "https://sites.google.com/view/apes-postech/home"
+      },
+      {
+        "lab_id": "LAB_24518AA40DD5",
+        "professor_name": "최수석",
+        "lab_url": "https://csspostech.wixsite.com/css1"
+      },
+      {
+        "lab_id": "LAB_410A5912783A",
+        "professor_name": "한해욱",
+        "lab_url": "https://sites.google.com/view/nano-biothzphotonicsnbtplab"
+      },
+      {
+        "lab_id": "LAB_D870743AF6BB",
+        "professor_name": "엄우용",
+        "lab_url": "https://nel.postech.ac.kr/DANENEL/index.do"
+      },
+      {
+        "lab_id": "LAB_E7AD27951F2D",
+        "professor_name": "염화성",
+        "lab_url": "https://sites.google.com/view/sen-lab/home"
+      },
+      {
+        "lab_id": "LAB_C37DCCE7A13F",
+        "professor_name": "유선철",
+        "lab_url": "https://hero.postech.ac.kr/hero/index.do"
+      },
+      {
+        "lab_id": "LAB_AB1B47E246E6",
+        "professor_name": "윤건수",
+        "lab_url": "https://sites.google.com/site/p4postech"
+      },
+      {
+        "lab_id": "LAB_1EA2735FF1E2",
+        "professor_name": "전준구",
+        "lab_url": "http://ninelab.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_7B3E98C878A9",
+        "professor_name": "정모세",
+        "lab_url": "https://sites.google.com/view/moses-caphe"
+      },
+      {
+        "lab_id": "LAB_9E0737034CA3",
+        "professor_name": "박규영",
+        "lab_url": "http://emrl.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_4C5BF2CE6104",
+        "professor_name": "이민아",
+        "lab_url": "https://sec.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_3510089433CF",
+        "professor_name": "조창신",
+        "lab_url": "http://nedl.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_69EF75154617",
+        "professor_name": "강윤배",
+        "lab_url": "http://sites.google.com/site/cslgiftpostech"
+      },
+      {
+        "lab_id": "LAB_845BFFC8F5F2",
+        "professor_name": "김경덕",
+        "lab_url": "http://icmel.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_DACA4DF9C133",
+        "professor_name": "김지훈",
+        "lab_url": "https://mfm.postech.ac.kr/MFM/index.do"
+      },
+      {
+        "lab_id": "LAB_C875E9DA9432",
+        "professor_name": "김형섭",
+        "lab_url": "https://snmpl.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_2DA413CF5A4D",
+        "professor_name": "이을범",
+        "lab_url": "https://pmc.postech.ac.kr/pmc/index.do"
+      },
+      {
+        "lab_id": "LAB_918EBDA3EB85",
+        "professor_name": "김광선",
+        "lab_url": "https://www.psal.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_61545CB1E75E",
+        "professor_name": "박성우",
+        "lab_url": "http://pl.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_075E1F6BC4D4",
+        "professor_name": "배경민",
+        "lab_url": "https://sv.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_425DB6C24BD1",
+        "professor_name": "송황준",
+        "lab_url": "https://mcnl.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_FFAFE71FBC9E",
+        "professor_name": "오은진",
+        "lab_url": "https://sites.google.com/view/discrete-algorithms-lab"
+      },
+      {
+        "lab_id": "LAB_16DF74FE0323",
+        "professor_name": "유환조",
+        "lab_url": "https://di.postech.ac.kr/di/index.do"
+      },
+      {
+        "lab_id": "LAB_BCC64EA66439",
+        "professor_name": "이성진",
+        "lab_url": "http://caos.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_02A439B184EE",
+        "professor_name": "이승용",
+        "lab_url": "http://cg.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_9381C0E29319",
+        "professor_name": "이원열",
+        "lab_url": "https://www.fpc-lab.com/"
+      },
+      {
+        "lab_id": "LAB_9DA24AA5A26E",
+        "professor_name": "조민수",
+        "lab_url": "http://cvlab.postech.ac.kr/lab"
+      },
+      {
+        "lab_id": "LAB_E1B7261D087E",
+        "professor_name": "황인석",
+        "lab_url": "https://www.his-lab.org/"
+      },
+      {
+        "lab_id": "LAB_A2D3271806E1",
+        "professor_name": "김영기",
+        "lab_url": "https://ssm.postech.ac.kr/ykkim/index.do"
+      },
+      {
+        "lab_id": "LAB_C2AEC031D98A",
+        "professor_name": "김철주",
+        "lab_url": "https://www.cjkimlab.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_6E84F6D0BB7B",
+        "professor_name": "노용영",
+        "lab_url": "https://sema.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_B2EAEE997B36",
+        "professor_name": "손재성",
+        "lab_url": "https://sonjs.postech.ac.kr/sonjs/index.do"
+      },
+      {
+        "lab_id": "LAB_F8453B417A3F",
+        "professor_name": "용기중",
+        "lab_url": "https://schema.postech.ac.kr/schema/index.do"
+      },
+      {
+        "lab_id": "LAB_B8CDBEEA6143",
+        "professor_name": "윤용주",
+        "lab_url": "http://andl.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_FB7F35DEB835",
+        "professor_name": "윤창원",
+        "lab_url": "https://aches.postech.ac.kr/aches/index.do"
+      },
+      {
+        "lab_id": "LAB_016ACC1DF339",
+        "professor_name": "이기라",
+        "lab_url": "https://yigira.com/"
+      },
+      {
+        "lab_id": "LAB_20AC957F1C40",
+        "professor_name": "이상민",
+        "lab_url": "https://pdl.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_3B7A800F46D4",
+        "professor_name": "이정욱",
+        "lab_url": "https://sbl.postech.ac.kr/sblmanager/index.do"
+      },
+      {
+        "lab_id": "LAB_92D7BFA92B24",
+        "professor_name": "이준구",
+        "lab_url": "https://chb.postech.ac.kr/chembiolab/index.do"
+      },
+      {
+        "lab_id": "LAB_13CE5D35A604",
+        "professor_name": "이효민",
+        "lab_url": "https://smfil.postech.ac.kr/SMFIL/index.do"
+      },
+      {
+        "lab_id": "LAB_5556B05F72E6",
+        "professor_name": "전상민",
+        "lab_url": "http://smart.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_6F15440DA95E",
+        "professor_name": "정규열",
+        "lab_url": "https://mdsb.postech.ac.kr/mdsb_lab/index.do"
+      },
+      {
+        "lab_id": "LAB_3707C0A9939C",
+        "professor_name": "정대성",
+        "lab_url": "https://peml.postech.ac.kr/PEML/index.do"
+      },
+      {
+        "lab_id": "LAB_B282F860A020",
+        "professor_name": "정우빈",
+        "lab_url": "https://wbj.postech.ac.kr/woobinjung/index.do"
+      },
+      {
+        "lab_id": "LAB_9196973DDAC9",
+        "professor_name": "조길원",
+        "lab_url": "http://crg.postech.ac.kr/korean/viewforum.php?f=1"
+      },
+      {
+        "lab_id": "LAB_A292ECE8F88F",
+        "professor_name": "차형준",
+        "lab_url": "http://magic.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_32BD33956118",
+        "professor_name": "한지훈",
+        "lab_url": "https://pse.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_78072957B110",
+        "professor_name": "권도훈",
+        "lab_url": "https://kwonlab.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_7B7E24164CF5",
+        "professor_name": "김경환",
+        "lab_url": "https://www.xlcr.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_1D3BF0652D66",
+        "professor_name": "김성지",
+        "lab_url": "http://www.nanotrio.com/"
+      },
+      {
+        "lab_id": "LAB_254C1BCC5330",
+        "professor_name": "김원종",
+        "lab_url": "http://bmpl.postech.ac.kr/index.php"
+      },
+      {
+        "lab_id": "LAB_D006DEF67684",
+        "professor_name": "김현우",
+        "lab_url": "https://lexontkfu.wixsite.com/scnspostech"
+      },
+      {
+        "lab_id": "LAB_3108F90232FA",
+        "professor_name": "류순민",
+        "lab_url": "https://sunryu.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_D844430B46F4",
+        "professor_name": "박문정",
+        "lab_url": "https://parkgroup.postech.ac.kr/Parkgroup/index.do"
+      },
+      {
+        "lab_id": "LAB_A88522466048",
+        "professor_name": "이영호",
+        "lab_url": "https://yhr.postech.ac.kr/yhr/index.do"
+      },
+      {
+        "lab_id": "LAB_DEFA3C6975B5",
+        "professor_name": "조승환",
+        "lab_url": "http://chogroup.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_C2E2BFAA95CB",
+        "professor_name": "주태하",
+        "lab_url": "https://femto.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_81CD1E31AEA2",
+        "professor_name": "최창혁",
+        "lab_url": "https://www.ecatlab.com/"
+      },
+      {
+        "lab_id": "LAB_ED6C74F2736E",
+        "professor_name": "감종훈",
+        "lab_url": "https://hydroclimatology.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_E0CC55A8E6D2",
+        "professor_name": "권세윤",
+        "lab_url": "http://ehal.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_61B4A7F0F488",
+        "professor_name": "민승기",
+        "lab_url": "http://climatechange.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_4B2985567864",
+        "professor_name": "송우철",
+        "lab_url": "https://membrane.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_1D117305D473",
+        "professor_name": "이기택",
+        "lab_url": "http://climate.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_4A1F3FAD4D99",
+        "professor_name": "이형주",
+        "lab_url": "https://airpollution.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_4777106A4930",
+        "professor_name": "조강우",
+        "lab_url": "http://create.postech.ac.kr/"
+      },
+      {
+        "lab_id": "LAB_6CDAE2F98FBD",
+        "professor_name": "황동수",
+        "lab_url": "https://lbem.postech.ac.kr/lbem/index.do"
+      },
+      {
+        "lab_id": "LAB_E5B0A5A1E2A7",
+        "professor_name": "황석환",
+        "lab_url": "http://best.postech.ac.kr/"
+      }
+    ],
+    "trusted_with_incomplete_field_provenance_count": 183,
+    "duplicate_trusted_url_groups": [
+      {
+        "lab_url": "https://string.postech.ac.kr/",
+        "professor_count": 2,
+        "professors": [
+          "김희철",
+          "박재모"
+        ],
+        "departments": [
+          "물리학과"
+        ],
+        "methods": [
+          "",
+          ""
+        ],
+        "shared_lab_verified": false
+      }
+    ],
+    "unverified_shared_url_group_count": 1,
+    "suspicious_lab_name_rows": [],
+    "suspicious_lab_name_count": 0,
+    "valid": false
+  },
+  "content_quality": {
+    "suspicious_location_rows": [],
+    "suspicious_location_count": 0,
+    "suspicious_summary_rows": [],
+    "suspicious_summary_count": 0,
+    "valid": true
   },
   "affiliation_counts": {
     "국방과학기술전공": 57,
@@ -58,7 +1891,7 @@
     "첨단재료과학부": 14,
     "친환경소재대학원 친환경소재학과": 11,
     "합성생물학전공": 10,
-    "환경공학부": 10,
+    "환경공학부": 9,
     "정보통신대학원": 8,
     "첨단원자력공학부": 8,
     "친환경소재대학원 배터리공학과": 7,
@@ -72,11 +1905,12 @@
   "foreign_department_page_rows": [],
   "foreign_department_page_count": 0,
   "data_state_counts": {
-    "authoritative_rebuilt": 246,
-    "authoritative_no_match": 28,
+    "authoritative_rebuilt": 241,
+    "authoritative_no_match": 32,
     "authoritative_identity_only": 11,
-    "authoritative_central_identity_fallback": 5
+    "authoritative_central_identity_fallback": 6
   },
+  "quarantined_data_state_count": 0,
   "duplicate_name_groups": [
     {
       "professor_name": "이승우",
@@ -120,22 +1954,20 @@
     }
   ],
   "repeated_lab_names": [],
+  "invalid_repeated_generic_lab_names": [],
+  "invalid_repeated_generic_lab_name_count": 0,
   "research_outputs": {
     "type_counts": {
-      "publication": 40075,
-      "patent": 9092,
-      "presentation": 17329,
-      "book": 346
+      "publication": 29478,
+      "patent": 7854,
+      "presentation": 16676,
+      "book": 332
     },
-    "exact_duplicate_groups": 9507,
-    "exact_duplicate_rows_excess": 9507,
-    "mixed_type_duplicate_groups": 9506,
-    "invalid_title_counts": {
-      "patent": 1221,
-      "publication": 7973,
-      "presentation": 3
-    },
-    "labs_with_raw_count_mismatch": 215,
+    "exact_duplicate_groups": 0,
+    "exact_duplicate_rows_excess": 0,
+    "mixed_type_duplicate_groups": 0,
+    "invalid_title_counts": {},
+    "labs_with_raw_count_mismatch": 0,
     "lab_count_basis": "research_outputs_clean.csv",
     "labs_with_active_count_mismatch": 0
   },
