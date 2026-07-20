@@ -30,7 +30,7 @@ from urllib3.util.retry import Retry
 # ============================================================
 # 0. Version and defaults
 # ============================================================
-ENRICHER_VERSION = "0.12.3-provenance-state-repair"
+ENRICHER_VERSION = "0.12.4-preservation-first-repair"
 
 DEFAULT_DATA_DIR = Path("./data")
 DEFAULT_REQUEST_DELAY_SECONDS = 0.55
@@ -2648,8 +2648,13 @@ def remove_repeated_generic_values(rows: list[dict[str, str]], report: CleanRepo
             and len(trusted_group_rows) == len(group)
             and shared_lab_group_is_verified(trusted_group_rows)
         )
+        plausible_shared_url_group = (
+            len(distinct_urls) == 1
+            and all(normalize_url(row.get("lab_url", "")) for row in group)
+        )
         repeated_generic = (
             not shared_single_trusted_url
+            and not plausible_shared_url_group
             and (
                 (len(professor_ids) >= 4 and len(departments) >= 2 and compact_generic)
                 or (len(professor_ids) >= 3 and (compact_generic or english_generic))
@@ -4148,6 +4153,159 @@ def lab_url_provenance_complete(row: dict[str, str]) -> bool:
     return all(clean_text(evidence.get(key, "")) for key in (
         "source_url", "verified_url", "method", "verified_at",
     ))
+
+
+def migrate_legacy_lab_url_provenance(row: dict[str, str]) -> bool:
+    """Complete legacy link evidence without inventing a new verification event.
+
+    Older versions stored source_url/method/verified_at but omitted verified_url.
+    The row's already trusted lab_url is the verified object referenced by that
+    evidence, so copying it into verified_url is a schema migration, not a new
+    network-verification claim. Evidence-free rows remain untouched and are
+    queued for real revalidation.
+    """
+    url = normalize_url(row.get("lab_url", ""))
+    status = clean_text(row.get("lab_url_status", ""))
+    if not url or status not in TRUSTED_LAB_URL_STATUSES:
+        return False
+    provenance = parse_json_dict(row.get("field_provenance", ""))
+    evidence = provenance.get("lab_url")
+    if not isinstance(evidence, dict) or not evidence:
+        return False
+    changed = False
+    if not normalize_url(evidence.get("verified_url", "")):
+        evidence["verified_url"] = url
+        changed = True
+    if not normalize_url(evidence.get("source_url", "")):
+        # Only use the homepage itself when the historic method explicitly says
+        # the homepage was checked. Otherwise source provenance is still unknown.
+        method = clean_text(evidence.get("method", ""))
+        if method.startswith("homepage_") or method == "manual_override":
+            evidence["source_url"] = url
+            changed = True
+    if changed:
+        provenance["lab_url"] = evidence
+        row["field_provenance"] = compact_json(provenance)
+    return changed
+
+
+def reconstruct_missing_lab_url_provenance(row: dict[str, str]) -> bool:
+    """Recover a lost provenance object from surviving same-row evidence.
+
+    This is intentionally strict: the URL must already be trusted, the exact lab
+    URL must occur in enrichment_source_urls, and an official professor/profile
+    or department page must survive in the same row. The method name explicitly
+    records that this is a provenance reconstruction rather than a new fetch.
+    """
+    url = normalize_url(row.get("lab_url", ""))
+    status = clean_text(row.get("lab_url_status", ""))
+    if not url or status not in TRUSTED_LAB_URL_STATUSES or lab_url_provenance(row):
+        return False
+    source_candidates = [
+        normalize_url(row.get("department_page_url", "")),
+        normalize_url(row.get("professor_profile_url", "")),
+        normalize_url(row.get("source_url", "")),
+    ]
+    source_url = next((item for item in source_candidates if item and is_official_postech_source(item)), "")
+    enrichment_urls = {canonical_url_key(item) for item in split_multi(row.get("enrichment_source_urls", "")) if normalize_url(item)}
+    if not source_url or canonical_url_key(url) not in enrichment_urls:
+        return False
+    stamp = clean_text(row.get("enriched_at", "") or row.get("crawled_at", "")) or now_iso()
+    provenance = parse_json_dict(row.get("field_provenance", ""))
+    provenance["lab_url"] = {
+        "scope": "lab_homepage" if status == "verified_homepage" else "department_page",
+        "source_url": source_url,
+        "verified_url": url,
+        "method": "legacy_trusted_link_reconstructed_from_official_identity_and_enrichment_sources",
+        "source_kind": "legacy_provenance_reconstruction",
+        "verified_at": stamp,
+        "reconstructed_at": now_iso(),
+    }
+    row["field_provenance"] = compact_json(provenance)
+    return True
+
+
+def migrate_all_legacy_lab_url_provenance(
+    labs_by_id: dict[str, dict[str, str]],
+) -> int:
+    changed = 0
+    for row in labs_by_id.values():
+        changed += int(migrate_legacy_lab_url_provenance(row))
+        changed += int(reconstruct_missing_lab_url_provenance(row))
+    return changed
+
+
+PROTECTED_LINK_FIELDS = (
+    "lab_url", "lab_url_status", "lab_name_kor", "lab_name_eng",
+    "field_provenance", "professor_profile_url", "department_page_url",
+    "enrichment_source_urls",
+)
+
+
+def snapshot_protected_link_fields(
+    labs_by_id: dict[str, dict[str, str]],
+) -> dict[str, dict[str, str]]:
+    return {
+        lab_id: {field: row.get(field, "") for field in PROTECTED_LINK_FIELDS}
+        for lab_id, row in labs_by_id.items()
+    }
+
+
+def restore_unexplained_link_regressions(
+    labs_by_id: dict[str, dict[str, str]],
+    snapshot: dict[str, dict[str, str]],
+) -> Counter[str]:
+    """Restore link/name evidence lost without an explicit invalidation reason.
+
+    A rebuild may replace a value with stronger evidence, but it may not silently
+    erase a usable URL, downgrade a trusted status, remove complete provenance,
+    or replace an actual lab name with a placeholder. Known false positives are
+    already marked invalid before this guard runs and are therefore not restored.
+    """
+    report: Counter[str] = Counter()
+    for lab_id, before in snapshot.items():
+        row = labs_by_id.get(lab_id)
+        if not row:
+            continue
+        before_url = normalize_url(before.get("lab_url", ""))
+        after_url = normalize_url(row.get("lab_url", ""))
+        before_status = clean_text(before.get("lab_url_status", ""))
+        after_status = clean_text(row.get("lab_url_status", ""))
+        explicit_invalid = after_status == "invalid"
+        if before_url and not after_url and not explicit_invalid:
+            for field in ("lab_url", "lab_url_status"):
+                row[field] = before.get(field, "")
+            report["url_restored"] += 1
+        elif before_url and after_url == before_url and lab_url_status_rank(after_status) < lab_url_status_rank(before_status) and not explicit_invalid:
+            row["lab_url_status"] = before_status
+            report["status_restored"] += 1
+
+        before_prov = before.get("field_provenance", "")
+        if before_prov and not row.get("field_provenance", ""):
+            row["field_provenance"] = before_prov
+            report["provenance_restored"] += 1
+        else:
+            before_item = parse_json_dict(before_prov).get("lab_url", {})
+            after_item = lab_url_provenance(row)
+            if isinstance(before_item, dict) and before_item and not after_item:
+                provenance = parse_json_dict(row.get("field_provenance", ""))
+                provenance["lab_url"] = before_item
+                row["field_provenance"] = compact_json(provenance)
+                report["link_provenance_restored"] += 1
+
+        before_actual = bool(
+            clean_text(before.get("lab_name_kor", ""))
+            and not looks_placeholder_lab_name(before.get("lab_name_kor", ""))
+        )
+        after_actual = bool(
+            clean_text(row.get("lab_name_kor", ""))
+            and not looks_placeholder_lab_name(row.get("lab_name_kor", ""))
+        )
+        if before_actual and not after_actual and clean_text(row.get("lab_url_status", "")) != "invalid":
+            row["lab_name_kor"] = before.get("lab_name_kor", "")
+            row["lab_name_eng"] = before.get("lab_name_eng", "")
+            report["lab_name_restored"] += 1
+    return report
 
 
 def lab_link_source_priority(candidate: LabLinkCandidate) -> int:
@@ -6203,15 +6361,17 @@ def clear_non_authoritative_enrichment_for_full_rebuild(
             "manual",
         }
 
-        if not homepage_trusted:
-            if clean_text(lab.get("lab_url", "")):
-                lab["lab_url"] = ""
-                report["lab_url"] += 1
-            if clean_text(lab.get("lab_url_status", "")) != "unverified":
-                lab["lab_url_status"] = "unverified"
-                report["lab_url_status"] += 1
-
-        if not homepage_trusted:
+        # Preservation-first rebuild: verified-card and candidate-card links are
+        # evidence-bearing observations, not disposable cache. Known department
+        # pages and forbidden URLs are invalidated by the dedicated sanitation
+        # pass; every other existing URL/name survives until stronger evidence
+        # replaces it. This prevents a bounded recrawl from deleting data it did
+        # not have enough time to rediscover.
+        preserve_existing_link = bool(
+            normalize_url(lab.get("lab_url", ""))
+            and clean_text(lab.get("lab_url_status", "")) != "invalid"
+        )
+        if not preserve_existing_link and not homepage_trusted:
             for field_name in ("lab_name_eng", "location"):
                 if clean_text(lab.get(field_name, "")):
                     lab[field_name] = ""
@@ -6500,6 +6660,27 @@ def reset_foreign_department_provenance(
         page_url = normalize_url(row.get("department_page_url", ""))
         page_host = hostname(page_url).removeprefix("www.")
         if not page_host or page_host in own_hosts:
+            continue
+
+        # Cross-listed faculty commonly appear on another official department's
+        # roster. Exact-email per-field evidence is authoritative for that person
+        # even when the host differs from the immutable primary department. Host
+        # mismatch alone must never erase a directly matched current record.
+        provenance = parse_json_dict(row.get("field_provenance", ""))
+        exact_official_page_evidence = False
+        for field_name, evidence in provenance.items():
+            if not isinstance(evidence, dict):
+                continue
+            evidence_source = normalize_url(evidence.get("source_url", ""))
+            method = clean_text(evidence.get("method", ""))
+            if (
+                canonical_url_key(evidence_source) == canonical_url_key(page_url)
+                and is_official_postech_source(evidence_source)
+                and "exact_email" in method
+            ):
+                exact_official_page_evidence = True
+                break
+        if exact_official_page_evidence:
             continue
 
         status = clean_text(row.get("lab_url_status", ""))
@@ -6988,6 +7169,8 @@ def run_stage2(args: argparse.Namespace) -> None:
     cleaned_labs, clean_report = clean_all_labs(labs)
     clean_departments(departments)
     labs_by_id, department_by_id = initialize_rows(departments, cleaned_labs)
+    legacy_provenance_migrated = migrate_all_legacy_lab_url_provenance(labs_by_id)
+    protected_link_snapshot = snapshot_protected_link_fields(labs_by_id)
     local_link_sanitation: dict[str, object] = {}
     data_state_repair = {"preserved": 0, "restored_from_backup": 0, "reconstructed": 0}
     if args.clean_only:
@@ -7020,7 +7203,9 @@ def run_stage2(args: argparse.Namespace) -> None:
         reset_affiliation_count = reset_affiliations_for_full_rebuild(departments, labs_by_id)
         for lab in labs_by_id.values():
             lab["affiliation_evidence"] = primary_affiliation_evidence(lab)
-            lab["field_provenance"] = ""
+            # Preserve per-field evidence, especially lab_url provenance. New
+            # authoritative observations overwrite their own keys and retain
+            # history; a full crawl must never erase unrelated verified facts.
             lab["data_state"] = "authoritative_rebuild_pending"
         authoritative_field_reset_report = clear_non_authoritative_enrichment_for_full_rebuild(labs_by_id)
     stale_identity_report = reset_stale_cross_identity_contamination(
@@ -7745,9 +7930,20 @@ def run_stage2(args: argparse.Namespace) -> None:
             lab["data_state"] = "authoritative_no_match"
         lab["enricher_version"] = ENRICHER_VERSION
 
+    link_regression_repairs = restore_unexplained_link_regressions(
+        labs_by_id, protected_link_snapshot
+    )
+    # Re-run schema migration because a restored legacy record may still lack
+    # verified_url. Evidence-free records remain queued for network revalidation.
+    legacy_provenance_migrated += migrate_all_legacy_lab_url_provenance(labs_by_id)
+    for lab in labs_by_id.values():
+        lab["data_quality_status"] = data_quality_status(lab)
+
     failure_reasons, commit_metrics = authoritative_commit_failure_reasons(
         selected_departments, labs_by_id.values(), overrides
     )
+    commit_metrics["legacy_provenance_migrated"] = legacy_provenance_migrated
+    commit_metrics["link_regression_repairs"] = dict(link_regression_repairs)
     if authoritative_rebuild and not args.dry_run and failure_reasons:
         append_jsonl(
             paths.log,
@@ -7800,6 +7996,8 @@ def run_stage2(args: argparse.Namespace) -> None:
             "duplicate_emails_excluded": sorted(duplicate_emails),
             "labs_touched": len(touched_lab_ids),
             "manual_overrides": manual_count,
+            "legacy_provenance_migrated": legacy_provenance_migrated,
+            "link_regression_repairs": dict(link_regression_repairs),
             "quality_counts": dict(quality_counts),
             "status_counts": dict(status_counts),
             "lab_url_status_counts": dict(url_status_counts),
@@ -7832,6 +8030,8 @@ def run_stage2(args: argparse.Namespace) -> None:
     print(f"사후 정제 변경   : 행 {final_clean_report.changed_rows}, 필드 {sum(final_clean_report.changed_fields.values())}")
     print(f"크롤링 갱신 랩 수: {len(touched_lab_ids)}")
     print(f"수동 보정 수    : {manual_count}")
+    print(f"구형 provenance 이관: {legacy_provenance_migrated}")
+    print(f"링크 퇴행 자동 복구 : {dict(link_regression_repairs)}")
     print(f"품질 상태       : {dict(quality_counts)}")
     print(f"수집 상태       : {dict(status_counts)}")
     print(f"URL 상태        : {dict(url_status_counts)}")
@@ -8564,6 +8764,16 @@ def build_data_audit_report(
         )
         page_host = hostname(page_url).removeprefix("www.")
         if page_host and page_host not in own_hosts:
+            provenance = parse_json_dict(row.get("field_provenance", ""))
+            exact_cross_listed = any(
+                isinstance(evidence, dict)
+                and canonical_url_key(evidence.get("source_url", "")) == canonical_url_key(page_url)
+                and is_official_postech_source(evidence.get("source_url", ""))
+                and "exact_email" in clean_text(evidence.get("method", ""))
+                for evidence in provenance.values()
+            )
+            if exact_cross_listed:
+                continue
             foreign_department_page_rows.append({
                 "lab_id": clean_text(row.get("lab_id", "")),
                 "professor_name": clean_text(row.get("professor_name", "")),
@@ -8575,6 +8785,7 @@ def build_data_audit_report(
     known_department_page_rows = []
     trusted_without_provenance = []
     trusted_incomplete_provenance = []
+    reconstructed_provenance_rows = []
     suspicious_lab_name_rows = []
     trusted_url_groups: defaultdict[str, list[dict[str, str]]] = defaultdict(list)
     for row in labs:
@@ -8596,6 +8807,8 @@ def build_data_audit_report(
                 trusted_without_provenance.append(provenance_item)
             if not lab_url_provenance_complete(row):
                 trusted_incomplete_provenance.append(provenance_item)
+            elif clean_text(lab_url_provenance(row).get("source_kind", "")) == "legacy_provenance_reconstruction":
+                reconstructed_provenance_rows.append(provenance_item)
         if url and status in TRUSTED_LAB_URL_STATUSES:
             trusted_url_groups[canonical_url_key(url)].append(row)
         professor = clean_text(row.get("professor_name", ""))
@@ -8633,6 +8846,8 @@ def build_data_audit_report(
         "trusted_without_field_provenance_count": len(trusted_without_provenance),
         "trusted_with_incomplete_field_provenance": trusted_incomplete_provenance,
         "trusted_with_incomplete_field_provenance_count": len(trusted_incomplete_provenance),
+        "reconstructed_field_provenance_rows": reconstructed_provenance_rows,
+        "reconstructed_field_provenance_count": len(reconstructed_provenance_rows),
         "duplicate_trusted_url_groups": duplicate_trusted_url_groups,
         "unverified_shared_url_group_count": sum(not item["shared_lab_verified"] for item in duplicate_trusted_url_groups),
         "suspicious_lab_name_rows": suspicious_lab_name_rows,
@@ -9059,7 +9274,7 @@ def run_self_test() -> None:
     assert not email_exact and conflict and score <= 7
     tests += 1
 
-    # Full rebuild preserves exact-homepage evidence but drops card-derived data.
+    # Full rebuild preserves all non-invalid link observations while rebuilding unrelated fields.
     rebuild_rows = {
         "A": {
             "lab_id": "A", "professor_name": "A교수", "lab_name_kor": "Trusted Lab",
@@ -9081,8 +9296,9 @@ def run_self_test() -> None:
     assert rebuild_rows["A"]["lab_name_kor"] == "Trusted Lab"
     assert rebuild_rows["A"]["research_summary"] == "Homepage summary"
     assert rebuild_rows["A"]["primary_field"] == ""
-    assert rebuild_rows["B"]["lab_url"] == ""
-    assert looks_placeholder_lab_name(rebuild_rows["B"]["lab_name_kor"])
+    assert rebuild_rows["B"]["lab_url"] == "https://candidate.example.com"
+    assert rebuild_rows["B"]["lab_url_status"] == "verified_card"
+    assert rebuild_rows["B"]["lab_name_kor"] == "Wrong Card Lab"
     assert reset_report["department_page_url"] == 2
     tests += 1
 
@@ -9560,9 +9776,9 @@ def run_self_test() -> None:
     tests += 1
 
     generic_rows = [
-        {"lab_id": "G1", "professor_name": "가나다", "email": "g1@postech.ac.kr", "department_name": "인공지능대학원", "lab_name_kor": "Machine Learning Lab", "lab_name_eng": "Machine Learning Lab", "lab_url": "https://ml.example.com/", "lab_url_status": "verified_homepage", "field_provenance": "{}"},
-        {"lab_id": "G2", "professor_name": "라마바", "email": "g2@postech.ac.kr", "department_name": "인공지능대학원", "lab_name_kor": "Machine Learning Lab", "lab_name_eng": "Machine Learning Lab @ Postech", "lab_url": "https://ml.example.com/", "lab_url_status": "candidate_card", "field_provenance": "{}"},
-        {"lab_id": "G3", "professor_name": "사아자", "email": "g3@postech.ac.kr", "department_name": "인공지능대학원", "lab_name_kor": "Machine Learning Lab", "lab_name_eng": "Machine Learning Lab @ Postech", "lab_url": "https://ml.example.com/", "lab_url_status": "candidate_card", "field_provenance": "{}"},
+        {"lab_id": "G1", "professor_name": "가나다", "email": "g1@postech.ac.kr", "department_name": "인공지능대학원", "lab_name_kor": "Machine Learning Lab", "lab_name_eng": "Machine Learning Lab", "lab_url": "", "lab_url_status": "unverified", "field_provenance": "{}"},
+        {"lab_id": "G2", "professor_name": "라마바", "email": "g2@postech.ac.kr", "department_name": "인공지능대학원", "lab_name_kor": "Machine Learning Lab", "lab_name_eng": "Machine Learning Lab @ Postech", "lab_url": "", "lab_url_status": "unverified", "field_provenance": "{}"},
+        {"lab_id": "G3", "professor_name": "사아자", "email": "g3@postech.ac.kr", "department_name": "인공지능대학원", "lab_name_kor": "Machine Learning Lab", "lab_name_eng": "Machine Learning Lab @ Postech", "lab_url": "", "lab_url_status": "unverified", "field_provenance": "{}"},
     ]
     generic_report = CleanReport()
     remove_repeated_generic_values(generic_rows, generic_report)
@@ -9637,6 +9853,30 @@ def run_self_test() -> None:
     assert any("공유 연구실 근거 부족" in issue for issue in lab_link_safety_issues([], same_department_unverified))
     tests += 1
 
+    cross_listed = {
+        "X": {
+            "lab_id": "X", "department_id": "AI", "primary_department_id": "AI",
+            "department_name": "인공지능대학원", "professor_name": "홍길동",
+            "email": "hong@postech.ac.kr", "department_page_url": "https://cse.postech.ac.kr/faculty",
+            "lab_url": "https://hong.example.com/", "lab_url_status": "verified_card",
+            "lab_name_kor": "Hong Lab", "lab_name_eng": "Hong Lab",
+            "field_provenance": compact_json({"lab_url": {
+                "source_url": "https://cse.postech.ac.kr/faculty",
+                "verified_url": "https://hong.example.com/",
+                "method": "department_faculty_card_exact_email_direct_lab_link",
+                "verified_at": "2026-01-01T00:00:00+09:00",
+            }}),
+            "affiliated_programs": "인공지능대학원", "enrichment_source_urls": "",
+        }
+    }
+    cross_departments = [{
+        "department_id": "AI", "department_name_kor": "인공지능대학원",
+        "homepage_url": "https://ai.postech.ac.kr/", "detail_url": "https://ai.postech.ac.kr/",
+    }]
+    assert not reset_foreign_department_provenance(cross_departments, cross_listed, {})
+    assert cross_listed["X"]["lab_url"] == "https://hong.example.com/"
+    tests += 1
+
     state_rows = {
         "A": {"lab_id": "A", "data_state": "authoritative_rebuilt", "enrichment_status": "success"},
         "B": {"lab_id": "B", "data_state": "clean_only_quarantined", "enrichment_status": "no_match"},
@@ -9660,6 +9900,60 @@ def run_self_test() -> None:
     assert classify_lab_link_verification_failure("identity_conflict") == "identity_insufficient"
     assert classify_lab_link_verification_failure("dead_or_generic_page") == "dead_homepage"
     assert classify_lab_link_verification_failure("known_department_page") == "false_positive_page"
+    tests += 1
+
+    legacy_schema_row = {
+        "lab_url": "https://legacy.example.com/",
+        "lab_url_status": "verified_homepage",
+        "field_provenance": compact_json({"lab_url": {
+            "source_url": "https://dept.postech.ac.kr/faculty/a",
+            "method": "homepage_exact_email",
+            "verified_at": "2026-01-01T00:00:00+09:00",
+        }}),
+    }
+    assert migrate_legacy_lab_url_provenance(legacy_schema_row)
+    assert lab_url_provenance_complete(legacy_schema_row)
+    assert not migrate_legacy_lab_url_provenance(legacy_schema_row)
+    tests += 1
+
+    reconstructed_row = {
+        "lab_url": "https://recover.example.com/",
+        "lab_url_status": "verified_homepage",
+        "professor_profile_url": "https://www.postech.ac.kr/kor/research-industry-academia/researcher-search.do?mode=view&id=abc",
+        "department_page_url": "",
+        "source_url": "",
+        "enrichment_source_urls": "https://recover.example.com/;https://www.postech.ac.kr/kor/research-industry-academia/researcher-search.do?mode=view&id=abc",
+        "field_provenance": "{}",
+        "enriched_at": "2026-01-01T00:00:00+09:00",
+    }
+    assert reconstruct_missing_lab_url_provenance(reconstructed_row)
+    assert lab_url_provenance_complete(reconstructed_row)
+    assert lab_url_provenance(reconstructed_row)["source_kind"] == "legacy_provenance_reconstruction"
+    tests += 1
+
+    guard_rows = {"L": {
+        "lab_url": "", "lab_url_status": "unverified",
+        "lab_name_kor": "홍길동 교수 연구실", "lab_name_eng": "",
+        "field_provenance": "",
+    }}
+    guard_before = {"L": {
+        "lab_url": "https://preserve.example.com/",
+        "lab_url_status": "verified_card",
+        "lab_name_kor": "Preservation Lab", "lab_name_eng": "Preservation Lab",
+        "field_provenance": compact_json({"lab_url": {
+            "source_url": "https://dept.postech.ac.kr/faculty",
+            "verified_url": "https://preserve.example.com/",
+            "method": "official_exact_email_card_reachable",
+            "verified_at": "2026-01-01T00:00:00+09:00",
+        }}),
+        "professor_profile_url": "", "department_page_url": "",
+        "enrichment_source_urls": "",
+    }}
+    guard_report = restore_unexplained_link_regressions(guard_rows, guard_before)
+    assert guard_rows["L"]["lab_url"] == "https://preserve.example.com/"
+    assert guard_rows["L"]["lab_url_status"] == "verified_card"
+    assert guard_rows["L"]["lab_name_kor"] == "Preservation Lab"
+    assert guard_report["url_restored"] == 1
     tests += 1
 
     assert clean_location_value("37673 경상북도 포항시 남구 청암로 77(효자동 산31)") == ""

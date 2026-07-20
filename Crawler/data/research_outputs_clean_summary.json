@@ -15,5 +15,5 @@
   "recent_rows": 2445,
   "lab_count_fields_changed": 0,
   "raw_source_modified": false,
-  "enricher_version": "0.12.3-provenance-state-repair"
+  "enricher_version": "0.12.4-preservation-first-repair"
 }
