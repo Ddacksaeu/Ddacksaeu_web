@@ -55,10 +55,7 @@ def extract_docx_text(content: bytes, minimum_characters: int) -> str:
         document = Document(BytesIO(content))
         paragraphs = [paragraph.text for paragraph in document.paragraphs]
         table_cells = [
-            cell.text
-            for table in document.tables
-            for row in table.rows
-            for cell in row.cells
+            cell.text for table in document.tables for row in table.rows for cell in row.cells
         ]
         text = normalize_text("\n".join([*paragraphs, *table_cells]))
     except Exception as exc:
@@ -388,11 +385,7 @@ def _education(lines: list[str], unsectioned: list[str]) -> list[EducationAnalys
         start, end = _date_range(combined)
         parts = [part.strip() for part in re.split(r"\s*[|·]\s*", header) if part.strip()]
         degree_index = next(
-            (
-                index
-                for index, part in enumerate(parts)
-                if degree_pattern.search(part)
-            ),
+            (index for index, part in enumerate(parts) if degree_pattern.search(part)),
             None,
         )
         institution_index = next(
@@ -411,7 +404,9 @@ def _education(lines: list[str], unsectioned: list[str]) -> list[EducationAnalys
                     (
                         detail
                         for detail in details
-                        if re.search(r"korea|seoul|pohang|city|province|대한민국|서울|포항", detail, re.I)
+                        if re.search(
+                            r"korea|seoul|pohang|city|province|대한민국|서울|포항", detail, re.I
+                        )
                     ),
                     "",
                 )[:200],
@@ -443,9 +438,7 @@ def _extract_terms(
         matches = [match for alias in aliases for match in _matches(text, alias)]
         if matches:
             hits[label] = matches
-            priority_hits[label] = sum(
-                len(_matches(priority_text, alias)) for alias in aliases
-            )
+            priority_hits[label] = sum(len(_matches(priority_text, alias)) for alias in aliases)
     ordered = sorted(
         hits,
         key=lambda label: (
@@ -458,9 +451,7 @@ def _extract_terms(
         label: min(
             1.0,
             round(
-                0.45
-                + 0.08 * len(hits[label])
-                + min(0.3, 0.15 * priority_hits[label]),
+                0.45 + 0.08 * len(hits[label]) + min(0.3, 0.15 * priority_hits[label]),
                 2,
             ),
         )
@@ -472,7 +463,9 @@ def _extract_terms(
             EvidenceItem(
                 value=label,
                 confidence=weights[label],
-                evidence=next((line[:280] for line in lines if _matches(line, TERM_ALIASES[label][0])), label),
+                evidence=next(
+                    (line[:280] for line in lines if _matches(line, TERM_ALIASES[label][0])), label
+                ),
             )
             for label in ordered[:30]
         ]
@@ -490,10 +483,7 @@ class LocalRuleBasedCvAnalyzer:
         research = _experience(sections["research"])
         campus = _experience(sections["campus"])
         priority_text = " ".join(
-            sections["skills"]
-            + sections["interests"]
-            + sections["research"]
-            + sections["projects"]
+            sections["skills"] + sections["interests"] + sections["research"] + sections["projects"]
         )
         keywords, keyword_weights, evidence = _extract_terms(text, priority_text)
         skills = [term for term in keywords if term in SKILL_TERMS]
@@ -530,9 +520,7 @@ class LocalRuleBasedCvAnalyzer:
                 )
             )
         strengths = [
-            f"Repeated evidence of {term}"
-            for term in keywords
-            if keyword_weights[term] >= 0.75
+            f"Repeated evidence of {term}" for term in keywords if keyword_weights[term] >= 0.75
         ][:5]
         missing = [
             label
@@ -562,7 +550,10 @@ class LocalRuleBasedCvAnalyzer:
             summary_parts.append(f"Research focus: {', '.join(interests[:4])}")
         if skills:
             summary_parts.append(f"Core skills: {', '.join(skills[:5])}")
-        short_summary = ". ".join(summary_parts) or "CV sections were organized, but no supported research keywords were found"
+        short_summary = (
+            ". ".join(summary_parts)
+            or "CV sections were organized, but no supported research keywords were found"
+        )
         return StructuredDocumentAnalysis(
             education=education,
             work_experience=work,

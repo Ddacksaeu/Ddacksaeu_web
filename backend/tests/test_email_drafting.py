@@ -9,9 +9,7 @@ def _seed(session_factory) -> None:
         seed_database(session)
 
 
-def test_db_backed_english_local_personalized_draft(
-    client: TestClient, session_factory
-) -> None:
+def test_db_backed_english_local_personalized_draft(client: TestClient, session_factory) -> None:
     _seed(session_factory)
 
     response = client.post(

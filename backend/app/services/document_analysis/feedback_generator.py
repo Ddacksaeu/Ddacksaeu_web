@@ -142,9 +142,7 @@ def generate_category_feedback(
         )
     elif action_verb_count < 2:
         work_improvements.append("Work entries use few outcome-oriented action verbs.")
-        work_suggestions.append(
-            "Describe what you implemented, improved, supported, or delivered."
-        )
+        work_suggestions.append("Describe what you implemented, improved, supported, or delivered.")
 
     campus_improvements: list[str] = []
     campus_suggestions: list[str] = []

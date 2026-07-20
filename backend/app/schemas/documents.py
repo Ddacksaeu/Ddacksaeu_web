@@ -51,17 +51,11 @@ class CategoryFeedback(BaseModel):
 class StructuredDocumentAnalysis(BaseModel):
     education: list[EducationAnalysis] = Field(default_factory=list)
 
-    work_experience: list[ExperienceAnalysis] = Field(
-        default_factory=list
-    )
+    work_experience: list[ExperienceAnalysis] = Field(default_factory=list)
 
-    campus_community_involvement: list[ExperienceAnalysis] = Field(
-        default_factory=list
-    )
+    campus_community_involvement: list[ExperienceAnalysis] = Field(default_factory=list)
 
-    research_experience: list[ExperienceAnalysis] = Field(
-        default_factory=list
-    )
+    research_experience: list[ExperienceAnalysis] = Field(default_factory=list)
 
     projects: list[ProjectAnalysis] = Field(default_factory=list)
 
@@ -82,22 +76,15 @@ class StructuredDocumentAnalysis(BaseModel):
         max_length=2_000,
     )
 
-    evidence_items: dict[str, list[EvidenceItem]] = Field(
-        default_factory=dict
-    )
+    evidence_items: dict[str, list[EvidenceItem]] = Field(default_factory=dict)
 
-    category_feedback: list[CategoryFeedback] = Field(
-        default_factory=list
-    )
+    category_feedback: list[CategoryFeedback] = Field(default_factory=list)
 
     @field_validator("education", mode="before")
     @classmethod
     def upgrade_legacy_education(cls, value: Any) -> Any:
         if isinstance(value, list):
-            return [
-                {"degree": item} if isinstance(item, str) else item
-                for item in value
-            ]
+            return [{"degree": item} if isinstance(item, str) else item for item in value]
         return value
 
     @field_validator(
@@ -109,10 +96,7 @@ class StructuredDocumentAnalysis(BaseModel):
     @classmethod
     def upgrade_legacy_experience(cls, value: Any) -> Any:
         if isinstance(value, list):
-            return [
-                {"title": item} if isinstance(item, str) else item
-                for item in value
-            ]
+            return [{"title": item} if isinstance(item, str) else item for item in value]
         return value
 
 

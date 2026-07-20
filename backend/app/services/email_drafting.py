@@ -61,8 +61,7 @@ def _context(session: Session, lab_id: str, user_id: str):
         else str(first_project.get("description", ""))
     )
     evidence = CandidateEvidence(
-        interests=list(structured.get("research_interests", []))
-        or list(profile.interests_json),
+        interests=list(structured.get("research_interests", [])) or list(profile.interests_json),
         skills=list(analysis.skills_json) if analysis else list(profile.skills_json),
         project_name=str(first_project.get("name", "")),
         project_detail=project_detail,
@@ -98,9 +97,7 @@ def _generate_local(
     skills = [item for item in evidence.skills if item]
     fit = interests[0] if interests else lab.field
     summary = (lab.summary or lab.field).strip()
-    candidate_text = " ".join(
-        [*interests, *skills, evidence.project_name, evidence.project_detail]
-    )
+    candidate_text = " ".join([*interests, *skills, evidence.project_name, evidence.project_detail])
     candidate_tokens = tokens(candidate_text)
     papers = sorted(
         lab.papers,
@@ -155,7 +152,7 @@ def _generate_local(
     )
     paper_en = (
         f"I was particularly interested in your {paper.published_year} publication "
-        f"\"{paper.title}\". The topic stood out because it intersects with my background "
+        f'"{paper.title}". The topic stood out because it intersects with my background '
         f"in {shared_focus}."
         if paper
         else f"I was particularly interested in the lab's public research focus on {summary}."
@@ -218,17 +215,9 @@ def _generate_local(
             f"Lab: {lab.name} ({lab.field})",
             f"Profile: {profile.name}, {profile.affiliation}",
             f"Shared interest: {fit}",
-            *(
-                [f"Recent publication: {paper.title} ({paper.published_year})"]
-                if paper
-                else []
-            ),
+            *([f"Recent publication: {paper.title} ({paper.published_year})"] if paper else []),
             *([f"Lab homepage: {lab.homepage_url}"] if lab.homepage_url else []),
-            *(
-                [f"CV project evidence: {evidence.project_name}"]
-                if evidence.project_name
-                else []
-            ),
+            *([f"CV project evidence: {evidence.project_name}"] if evidence.project_name else []),
         ],
     )
 
@@ -330,8 +319,7 @@ def review_email(
                 severity="warning",
                 message="The message does not mention the lab's research by name or keyword.",
                 suggestion=(
-                    f"Connect your experience to {lab.field} or a verified "
-                    f"{lab.name} topic."
+                    f"Connect your experience to {lab.field} or a verified {lab.name} topic."
                 ),
             )
         )
@@ -342,8 +330,7 @@ def review_email(
                 severity="info",
                 message=f"One lab-specific reference was found: {mentioned[0]}.",
                 suggestion=(
-                    "Add one concrete sentence explaining how your experience "
-                    "relates to it."
+                    "Add one concrete sentence explaining how your experience relates to it."
                 ),
             )
         )
@@ -357,8 +344,7 @@ def review_email(
                 category="flow",
                 severity="warning",
                 message=(
-                    "The message has few paragraph breaks, so the purpose is "
-                    "difficult to scan."
+                    "The message has few paragraph breaks, so the purpose is difficult to scan."
                 ),
                 suggestion="Separate the introduction, research fit, request, and closing.",
             )
@@ -379,8 +365,7 @@ def review_email(
                 severity="warning",
                 message="The email may be too long for a first contact.",
                 suggestion=(
-                    "Keep the first message focused on fit, evidence, "
-                    "and one clear request."
+                    "Keep the first message focused on fit, evidence, and one clear request."
                 ),
             )
         )
