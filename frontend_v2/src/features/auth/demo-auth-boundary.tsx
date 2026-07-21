@@ -4,6 +4,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { type ReactNode, useEffect, useState } from "react";
 
 import { hasCompletedDemoOnboarding, hasDemoSession } from "./demo-session";
+import { isShowcaseMode } from "../showcase/mode";
 
 const PROTECTED_PREFIXES = [
   "/dashboard",
@@ -26,9 +27,11 @@ export function DemoAuthBoundary({ children }: DemoAuthBoundaryProperties) {
   const pathname = usePathname();
   const router = useRouter();
   const protectedRoute = requiresDemoSession(pathname);
-  const [ready, setReady] = useState(!protectedRoute);
+  const showcaseMode = isShowcaseMode();
+  const [ready, setReady] = useState(showcaseMode || !protectedRoute);
 
   useEffect(() => {
+    if (showcaseMode) return;
     const signedIn = hasDemoSession(window.localStorage);
     const onboardingComplete = hasCompletedDemoOnboarding(window.localStorage);
 
@@ -49,7 +52,7 @@ export function DemoAuthBoundary({ children }: DemoAuthBoundaryProperties) {
 
     const frame = window.requestAnimationFrame(() => setReady(true));
     return () => window.cancelAnimationFrame(frame);
-  }, [pathname, protectedRoute, router]);
+  }, [pathname, protectedRoute, router, showcaseMode]);
 
   if (!ready) {
     return <main className="auth-gate-status" role="status">Checking your session.</main>;

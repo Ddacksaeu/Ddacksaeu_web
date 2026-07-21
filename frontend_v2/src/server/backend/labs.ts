@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { backendOrigin } from "./client";
+import { isShowcaseMode } from "../../features/showcase/mode";
 
 export type LabSummary = Readonly<{ id: string; name: string; professorName: string; university: string; department: string; field: string; summary: string | null; keywords: readonly string[]; homepageUrl: string | null; updatedAt: string; recommendationScore: number | null; isFavorite: boolean }>;
 export type LabFact = Readonly<{ factType: string; valueText: string | null; valueNumber: number | null; audience: string | null; origin: string; sourceUrl: string | null; sourceCheckedAt: string | null }>;
@@ -25,6 +26,7 @@ const labSummarySchema = z.object({
 const similarLabsSchema = z.object({ items: z.array(labSummarySchema) });
 
 export async function fetchBackendLabs(query = ""): Promise<LabSearchResponse> {
+  if (isShowcaseMode()) return { items: [], page: 1, pageSize: 100, total: 0 };
   const params = new URLSearchParams({ page: "1", page_size: "100" });
   if (query.trim()) params.set("q", query.trim());
   const response = await fetch(`${backendOrigin()}/api/v1/labs?${params}`, { cache: "no-store" });
@@ -33,6 +35,7 @@ export async function fetchBackendLabs(query = ""): Promise<LabSearchResponse> {
 }
 
 export async function fetchBackendLab(id: string): Promise<LabDetail | null> {
+  if (isShowcaseMode()) return null;
   const response = await fetch(`${backendOrigin()}/api/v1/labs/${encodeURIComponent(id)}`, { cache: "no-store" });
   if (response.status === 404) return null;
   if (!response.ok) throw new Error("Unable to load lab");
@@ -40,6 +43,7 @@ export async function fetchBackendLab(id: string): Promise<LabDetail | null> {
 }
 
 export async function fetchBackendSimilarLabs(id: string): Promise<readonly LabSummary[] | null> {
+  if (isShowcaseMode()) return null;
   try {
     const response = await fetch(`${backendOrigin()}/api/v1/labs/${encodeURIComponent(id)}/similar`, { cache: "no-store" });
     if (!response.ok) return null;

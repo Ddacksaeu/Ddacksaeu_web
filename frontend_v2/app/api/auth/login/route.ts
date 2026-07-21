@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
 
 import { BACKEND_SESSION_COOKIE, backendOrigin } from "../../../../src/server/backend/client";
+import { isShowcaseMode, SHOWCASE_UNAVAILABLE_MESSAGE } from "../../../../src/features/showcase/mode";
 
 export async function POST(request: Request): Promise<NextResponse> {
+  if (isShowcaseMode()) return NextResponse.json({ detail: SHOWCASE_UNAVAILABLE_MESSAGE }, { status: 503 });
   const payload = await request.json();
   const upstream = await fetch(`${backendOrigin()}/api/v1/auth/login`, {
     method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json" }, body: JSON.stringify(payload), cache: "no-store",
