@@ -17,10 +17,11 @@ test("calendar event form uses labelled designed controls", async ({ page }) => 
   await page.goto("/calendar");
 
   // Then
-  const title = page.getByLabel("Reminder");
-  const date = page.getByLabel("Date", { exact: true });
-  const kind = page.getByLabel("Type");
-  const addButton = page.getByRole("button", { name: "Add reminder" });
+  const quickAdd = page.getByRole("form", { name: "Quick add reminder" });
+  const title = quickAdd.getByLabel("Reminder");
+  const date = quickAdd.getByLabel("Date", { exact: true });
+  const kind = quickAdd.getByLabel("Type");
+  const addButton = quickAdd.getByRole("button", { name: "Add reminder" });
   const exportButton = page.getByRole("button", { name: "Export calendar" });
 
   await expect(title).toBeVisible();

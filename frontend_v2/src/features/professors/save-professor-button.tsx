@@ -13,10 +13,16 @@ export function SaveProfessorButton({ labId }: SaveProfessorButtonProperties) {
   const [status, setStatus] = useState("");
 
   useEffect(() => {
-    void ky.get(`/api/backend/labs/${labId}`).json<{ isFavorite: boolean }>().then((value) => {
+    const controller = new AbortController();
+    void ky.get(`/api/backend/labs/${labId}`, { signal: controller.signal }).json<{ isFavorite: boolean }>().then((value) => {
       setSaved(value.isFavorite);
       setReady(true);
-    }).catch(() => { setStatus("Could not load saved state."); setReady(true); });
+    }).catch((error: unknown) => {
+      if (error instanceof DOMException && error.name === "AbortError") return;
+      setStatus("Could not load saved state.");
+      setReady(true);
+    });
+    return () => controller.abort();
   }, [labId]);
 
   async function toggle(): Promise<void> {

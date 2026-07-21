@@ -14,7 +14,6 @@
     "doctor": "npx react-doctor@latest"
   },
   "dependencies": {
-    "@next/third-parties": "^16.0.0",
     "ky": "^1.8.0",
     "next": "^16.0.0",
     "react": "^19.0.0",
@@ -22,17 +21,13 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
-    "@eslint/eslintrc": "^3.2.0",
     "@playwright/test": "^1.55.0",
-    "@tailwindcss/postcss": "^4.1.0",
     "@types/node": "^22.0.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "eslint": "^9.0.0",
     "eslint-config-next": "^16.0.0",
     "react-doctor": "^0.7.8",
-    "react-grab": "^0.1.48",
-    "react-scan": "^0.5.7",
     "tailwindcss": "^4.1.0",
     "typescript": "^5.7.0",
     "vitest": "^3.2.0"

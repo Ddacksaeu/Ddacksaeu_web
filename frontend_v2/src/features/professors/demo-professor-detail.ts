@@ -1,12 +1,12 @@
 import type { LabCatalogEntry } from "../../server/catalog/schema";
 
-export type DemoResearchFocus = {
+type DemoResearchFocus = {
   readonly title: string;
   readonly description: string;
   readonly keywords: readonly string[];
 };
 
-export type DemoPaperPreview = {
+type DemoPaperPreview = {
   readonly title: string;
   readonly year: string;
   readonly summary: string;

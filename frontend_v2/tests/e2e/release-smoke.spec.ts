@@ -18,7 +18,7 @@ test.describe("release API smoke", () => {
     const recommendations = page.getByRole("region", { name: "CV-based professor recommendations" });
     await expect(recommendations.getByRole("heading", { name: "Best professor matches" })).toBeVisible({ timeout: 60_000 });
     const firstLab = recommendations.getByRole("link", { name: "View professor details" }).first(); await expect(firstLab).toBeVisible(); await firstLab.click();
-    await expect(page).toHaveURL(/\/professors\/LAB_[A-Z0-9]+$/, { timeout: 30_000 });
+    await expect(page).toHaveURL(/\/professors\/[^/?#]+$/, { timeout: 30_000 });
     await page.getByRole("button", { name: "Save professor" }).click(); await expect(page.getByText("Saved this professor.")).toBeVisible(); await page.reload();
     await expect(page.getByRole("button", { name: "Remove saved professor" })).toBeVisible();
     await page.getByRole("link", { name: "Create outreach email draft" }).click(); await expect(page.getByRole("heading", { name: "Outreach email draft" })).toBeVisible();

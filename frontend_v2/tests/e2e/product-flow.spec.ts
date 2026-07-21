@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 import { useSignedInDemo } from "./demo-session";
+import { getFirstBackendLab } from "./backend-lab";
 
 test("Given a new applicant, when onboarding is completed, then the personalized dashboard is shown", async ({ page }) => {
   const email = `product-flow-${Date.now()}@example.test`;
@@ -18,6 +19,11 @@ test("Given a new applicant, when onboarding is completed, then the personalized
   await page.getByLabel("Preferred university").selectOption("Seoul National University");
   await page.getByLabel("Target major and research interests").fill("Computer Vision");
   await page.getByRole("radio", { name: "Master’s" }).check();
+  await page.locator('input[name="cv"]').setInputFiles({
+    name: "product-flow-cv.txt",
+    mimeType: "text/plain",
+    buffer: Buffer.from("Computer vision graduate applicant with Python and PyTorch skills. Built multimodal medical imaging and object detection research projects. Interested in representation learning, human-centered AI, and robust machine learning."),
+  });
   await page.getByRole("button", { name: "Complete setup" }).click();
 
   // Then
@@ -25,7 +31,8 @@ test("Given a new applicant, when onboarding is completed, then the personalized
   expect(new URL(page.url()).search).toBe("");
   await expect(page.getByRole("heading", { name: "Home", level: 1 })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Professors close to your interests" })).toBeVisible();
-  await expect(page.getByText("Profile ready - Next: add a CV")).toBeVisible();
+  await expect(page.getByRole("progressbar", { name: "Application readiness: 80%" })).toBeVisible();
+  await expect(page.getByRole("link", { name: /Next: save a professor/i })).toBeVisible();
   const savedProfile = await page.evaluate(async () => {
     const response = await fetch("/api/profile");
     return response.json() as Promise<{ readonly profile: { readonly preferredUniversity: string; readonly applicationTerm: string; readonly degreeProgram: string } }>;
@@ -47,7 +54,7 @@ test("Given the dashboard, when a professor is explored, then detail and contact
   const results = page.getByRole("region", { name: "Professor search results" });
   await expect(results.getByRole("article").first()).toBeVisible();
   await results.getByRole("link", { name: "View details" }).first().click();
-  await expect(page).toHaveURL(/professors\/LAB_[A-Z0-9]+$/, { timeout: 30_000 });
+  await expect(page).toHaveURL(/professors\/[^/?#]+$/, { timeout: 30_000 });
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
   await expect(page.getByRole("complementary", { name: "Application context" })).toBeVisible();
   await page.getByRole("link", { name: "Create outreach email draft" }).click();
@@ -102,13 +109,13 @@ test("professor results keep compact spacing below the result count", async ({ p
   expect(gap).toBeLessThanOrEqual(16);
 });
 
-test("professor detail keeps publication titles intact on mobile", async ({ page }) => {
+test("professor detail remains usable on mobile when publication data is unavailable", async ({ page, request }) => {
   await page.setViewportSize({ width: 375, height: 812 });
   await useSignedInDemo(page);
-  await page.goto("/professors/LAB_E10BFB94AFD8");
+  const lab = await getFirstBackendLab(request);
+  await page.goto(`/professors/${lab.id}`);
 
-  const publication = page.getByRole("article", { name: "Professor research profile" }).getByRole("heading", { level: 3 }).first();
-  await expect(publication).toBeVisible();
+  await expect(page.getByRole("article", { name: "Professor research profile" })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 });
 

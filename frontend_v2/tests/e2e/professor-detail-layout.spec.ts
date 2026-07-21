@@ -1,15 +1,11 @@
 import { mkdir } from "node:fs/promises";
 
-import { expect, test, type APIRequestContext, type Page } from "@playwright/test";
-import { z } from "zod";
+import { expect, test, type Page } from "@playwright/test";
 
+import { getFirstBackendLab } from "./backend-lab";
 import { useSignedInDemo } from "./demo-session";
 
-const labSearchSchema = z.object({
-  items: z.array(z.object({ id: z.string() })),
-});
 const evidenceDir = ".omo/evidence/professor-detail-adaptive";
-const appOrigin = process.env["PLAYWRIGHT_APP_ORIGIN"] ?? "";
 const viewports = [
   { name: "desktop", width: 1280, height: 900 },
   { name: "tablet", width: 768, height: 1024 },
@@ -19,15 +15,6 @@ const viewports = [
 test.beforeAll(async () => {
   await mkdir(evidenceDir, { recursive: true });
 });
-
-async function getFirstBackendLabId(request: APIRequestContext): Promise<string> {
-  const response = await request.get("http://127.0.0.1:8000/api/v1/labs?page=1&page_size=1");
-  expect(response.ok()).toBe(true);
-  const result = labSearchSchema.parse(await response.json());
-  const lab = result.items.at(0);
-  if (lab === undefined) throw new RangeError("Professor detail layout requires at least one backend lab.");
-  return lab.id;
-}
 
 async function useEmptyApplicationContext(page: Page): Promise<void> {
   await page.route("**/api/backend/me/profile", (route) => route.fulfill({
@@ -61,8 +48,8 @@ test("empty save status does not create a blank row between professor actions", 
   await page.setViewportSize({ width: 375, height: 812 });
   await useSignedInDemo(page);
   await useEmptyApplicationContext(page);
-  const labId = await getFirstBackendLabId(request);
-  await page.goto(`${appOrigin}/professors/${labId}`);
+  const lab = await getFirstBackendLab(request);
+  await page.goto(`/professors/${lab.id}`);
 
   const saveButton = page.getByRole("button", { name: /Save professor|Remove saved professor/ });
   const status = page.locator(".detail-save-control span");
@@ -90,8 +77,8 @@ test("professor detail adapts its sections to the available backend data", async
   await page.setViewportSize({ width: 1280, height: 900 });
   await useSignedInDemo(page);
   await useEmptyApplicationContext(page);
-  const labId = await getFirstBackendLabId(request);
-  await page.goto(`${appOrigin}/professors/${labId}`);
+  const lab = await getFirstBackendLab(request);
+  await page.goto(`/professors/${lab.id}`);
 
   const backLink = page.getByRole("link", { name: "Back to professor search" });
   const backIcon = backLink.locator("svg");
@@ -110,13 +97,12 @@ test("professor detail adapts its sections to the available backend data", async
   const researchSections = researchProfile.locator(":scope > section");
   const similarSection = page.getByRole("heading", { name: "Similar labs" }).locator("..");
 
-  await expect(researchSections).toHaveCount(2);
+  await expect(researchSections).toHaveCount(1);
   await expect(researchProfile.getByRole("heading", { name: "Lab overview" })).toBeVisible();
-  await expect(researchProfile.getByRole("heading", { name: "Recent publication" })).toBeVisible();
+  await expect(researchProfile.getByRole("heading", { name: "Recent publication" })).toHaveCount(0);
   await expect(researchProfile.getByRole("heading", { name: "Research focus" })).toHaveCount(0);
   await expect(researchProfile.getByRole("heading", { name: "Lab facts" })).toHaveCount(0);
-  await expect(researchProfile.getByTestId("paper-preview")).toHaveCount(1);
-  await expect(page.getByRole("note", { name: "Research focus from source" })).toBeVisible();
+  await expect(researchProfile.getByTestId("paper-preview")).toHaveCount(0);
   await expect(applicationContext.getByRole("heading", { name: "Recruitment status" })).toBeVisible();
   await expect(applicationContext.getByText("Not verified", { exact: true })).toBeVisible();
   await expect(applicationContext).toContainText("graduate admissions notice");

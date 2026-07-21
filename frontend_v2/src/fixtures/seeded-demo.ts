@@ -3,5 +3,3 @@ export const seededDemo = {
   profileStatus: "not-created",
   preparationMessage: "Your workspace opens after sign-in."
 } as const;
-
-export type SeededDemo = typeof seededDemo;

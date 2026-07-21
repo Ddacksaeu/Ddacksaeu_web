@@ -3,6 +3,7 @@ import { mkdir } from "node:fs/promises";
 import { expect, test, type Page } from "@playwright/test";
 
 import { useSignedInDemo } from "./demo-session";
+import { getFirstBackendLab } from "./backend-lab";
 
 const evidenceDir = ".omo/evidence/profile-detail-qa";
 const viewports = [
@@ -29,7 +30,8 @@ test.beforeEach(async ({ page }) => {
   await useSignedInDemo(page);
 });
 
-test("captures every affected profile and professor state", async ({ page }) => {
+test("captures every affected profile and professor state", async ({ page, request }) => {
+  const lab = await getFirstBackendLab(request);
   await page.goto("/profile");
   await expect(page.getByRole("heading", { name: "Playwright Researcher’s Profile" })).toBeVisible();
   await captureBreakpoints(page, "profile-default");
@@ -54,19 +56,19 @@ test("captures every affected profile and professor state", async ({ page }) => 
   await expect(page.getByRole("heading", { name: "Alex Kim’s Profile" })).toBeVisible();
   await captureBreakpoints(page, "profile-saved");
 
-  await page.evaluate(() => {
+  await page.evaluate(({ labId, professor }) => {
     window.localStorage.setItem("ddaksaewoo:contact-draft", JSON.stringify({
-      labId: "LAB_E10BFB94AFD8",
-      professor: "황형주",
+      labId,
+      professor,
       subject: "Research inquiry",
       body: "I am continuing this outreach email based on my saved research experience.",
     }));
-  });
+  }, { labId: lab.id, professor: lab.professorName });
   await page.reload();
   await expect(page.getByRole("region", { name: "Outreach draft in progress" })).toBeVisible();
   await captureBreakpoints(page, "profile-contact-draft");
 
-  await page.goto("/professors/LAB_E10BFB94AFD8");
+  await page.goto(`/professors/${lab.id}`);
   await expect(page.getByRole("article", { name: "Professor research profile" })).toBeVisible();
   await expect(page.getByRole("complementary", { name: "Application context" })).toBeVisible();
   await captureBreakpoints(page, "professor-detail");
