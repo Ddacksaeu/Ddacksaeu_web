@@ -18,6 +18,22 @@ test("Given the public landing, when a visitor opens it, then entry paths are cl
   await expect(firstLogoItem).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
 });
 
+test("Given the public header, when the landing renders, then the shrimp mark sits beside the brand", async ({ page }) => {
+  // Given / When
+  await page.goto("/");
+
+  // Then
+  const brand = page.getByRole("link", { name: "Ddaksaeu" });
+  const mark = brand.locator(".brand-logo");
+  await expect(mark).toBeVisible();
+  await expect(mark).toHaveAttribute("src", /brand-shrimp.png/);
+  await expect(mark).toHaveCSS("opacity", "0.95");
+  const bounds = await mark.boundingBox();
+  expect(bounds).not.toBeNull();
+  expect(bounds!.width).toBe(24);
+  expect(bounds!.height).toBe(24);
+});
+
 test("Given the profile CTA, when the landing page renders, then its single action is centered in the action column", async ({ page }) => {
   await page.goto("/");
 

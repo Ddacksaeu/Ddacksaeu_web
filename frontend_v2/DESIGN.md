@@ -64,7 +64,7 @@ The featured research story keeps the original content-first layout on one quiet
 
 ## 5. Required primitives and states
 
-- `AppHeader`, buttons/links, `SearchField`, `SelectField`, `FilterGroup/Chip/Drawer`, `ResultToolbar`. Single-select controls use one centered chevron, a 36px end inset, and a 1px optical bottom correction across every form.
+- `AppHeader`: pair the decorative shrimp mark at 24px desktop and 22px mobile with the `Ddaksaeu` wordmark at 95% opacity; preserve the empty alt text, brand-link name, and 44px focus target. Buttons/links, `SearchField`, `SelectField`, `FilterGroup/Chip/Drawer`, `ResultToolbar`. Single-select controls use one centered chevron, a 36px end inset, and a 1px optical bottom correction across every form.
 - `UniversityMarquee`: 사용자가 제공한 대학 로고 이미지를 원본 비율로 표시하는 탐색 가능 마키. 각 로고는 고정 높이 안에서 `contain`으로 맞추고 대체 텍스트를 제공하며, 중복 트랙은 보조기술에서 숨긴다. reduced-motion과 모바일에서는 정적 가로 목록으로 전환한다.
 - `LabCard/ListRow`: default, focus, saved, recommended, selected, unavailable-source.
 - `SourceBadge`: official, verified date, user-entered, stale/unknown.

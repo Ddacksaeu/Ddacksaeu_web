@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -30,7 +31,10 @@ export function AppHeader({ current, setup = false }: AppHeaderProperties) {
   return (
     <header className={`site-header${workspace || setup ? " site-header-workspace" : ""}`}>
       <div className="site-header-inner">
-        <Link className="brand" href={setup ? "/onboarding" : workspace ? "/dashboard" : "/"}>Ddaksaeu</Link>
+        <Link className="brand" href={setup ? "/onboarding" : workspace ? "/dashboard" : "/"}>
+          <Image alt="" className="brand-logo" height={24} src="/brand-shrimp.png" width={24} />
+          <span>Ddaksaeu</span>
+        </Link>
         <nav aria-label="Main navigation" className="main-nav">
           {workspace ? ITEMS.map((item) => (
             <Link aria-current={item.id === current ? "page" : undefined} href={item.href} key={item.id}>
