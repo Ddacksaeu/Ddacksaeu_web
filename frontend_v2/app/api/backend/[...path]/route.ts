@@ -1,8 +1,15 @@
 import { backendHeaders, backendOrigin } from "../../../../src/server/backend/client";
+import { isShowcaseMode, SHOWCASE_UNAVAILABLE_MESSAGE } from "../../../../src/features/showcase/mode";
 
 type Context = { params: Promise<{ path: string[] }> };
 
 async function proxy(request: Request, { params }: Context): Promise<Response> {
+  if (isShowcaseMode()) {
+    return Response.json(
+      { error: { code: "showcase_mode", message: SHOWCASE_UNAVAILABLE_MESSAGE } },
+      { status: 503 },
+    );
+  }
   const { path } = await params;
   const url = new URL(request.url);
   const target = `${backendOrigin()}/api/v1/${path.map(encodeURIComponent).join("/")}${url.search}`;
