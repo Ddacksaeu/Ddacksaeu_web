@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { AppHeader } from "../../src/components/app-header";
 import { completeDemoOnboarding } from "../../src/features/auth/demo-session";
+import { analyzeDocument } from "../../src/features/profile/documents-api";
+import { saveProfile } from "../../src/features/workspace/api";
 import styles from "../../src/styles/auth.module.css";
 
 export default function OnboardingPage() {
@@ -20,24 +22,38 @@ export default function OnboardingPage() {
       .split(/[,\n]/)
       .map((value) => value.trim())
       .filter(Boolean);
+    const preferredUniversity = String(form.get("preferredUniversity") ?? "");
+    const applicationTerm = String(form.get("applicationTerm") ?? "");
+    const degreeProgram = String(form.get("degreeProgram") ?? "");
     setSaving(true);
     setStatus("Saving your setup.");
     try {
-      await ky.put("/api/profile", {
-        json: {
-          consentToStorage: true,
-          displayName: "Researcher",
-          researchInterests,
-          preferredUniversity: String(form.get("preferredUniversity") ?? ""),
-          applicationTerm: String(form.get("applicationTerm") ?? ""),
-          degreeProgram: String(form.get("degreeProgram") ?? ""),
-        },
-      });
+      await Promise.all([
+        ky.put("/api/profile", {
+          json: {
+            consentToStorage: true,
+            displayName: "Researcher",
+            researchInterests,
+            preferredUniversity,
+            applicationTerm,
+            degreeProgram,
+          },
+        }),
+        saveProfile({
+          affiliation: preferredUniversity,
+          status: applicationTerm,
+          program: degreeProgram,
+          interests: researchInterests,
+        }),
+      ]);
       const cv = form.get("cv");
       if (cv instanceof File && cv.size > 0) {
         const body = new FormData();
         body.set("cv", cv);
-        await ky.post("/api/profile", { body });
+        await Promise.all([
+          ky.post("/api/profile", { body }),
+          analyzeDocument(cv),
+        ]);
       }
       completeDemoOnboarding(window.localStorage);
       router.push("/dashboard");

@@ -102,7 +102,7 @@ export function DashboardHome() {
         <div className={styles["mainColumn"]}>
           <section aria-label="Professor recommendations" className={`${styles["feedSection"]} ${styles["recommendationSection"]}`}>
             <div className={styles["sectionHeader"]}>
-              <div><h2>Professors close to your interests</h2><p>Generated from your latest CV analysis and current POSTECH lab data.</p></div>
+              <div><h2>Professors close to your interests</h2><p>Generated from your latest CV analysis and current indexed lab data.</p></div>
               <Link className={styles["sectionAction"]} href="/professors">View all</Link>
             </div>
             {recommendations.length ? (

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { z } from "zod";
 import {
   createEvent, deleteEvent, getAdmissions, getEvents, updateEvent,
@@ -18,6 +18,7 @@ const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const;
 const MONTH_FORMATTER = new Intl.DateTimeFormat("en-US", { month: "long", timeZone: "UTC" });
 const SHORT_MONTH_FORMATTER = new Intl.DateTimeFormat("en-US", { month: "short", timeZone: "Asia/Seoul" });
 const LONG_DATE_FORMATTER = new Intl.DateTimeFormat("en-US", { month: "long", day: "numeric", weekday: "short", timeZone: "Asia/Seoul" });
+const SEOUL_DATE_KEY_FORMATTER = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Seoul", year: "numeric", month: "2-digit", day: "2-digit" });
 type ViewFilter = "all" | "official" | "personal";
 type CalendarState = "loading" | "ready" | "unauthorized" | "error";
 type DisplayEvent = Readonly<{
@@ -35,7 +36,7 @@ function dateKey(value: string): string { return value.slice(0, 10); }
 function eventDate(value: string): Date { return new Date(value.length === 10 ? `${value}T12:00:00+09:00` : value); }
 function formattedDate(value: string): string { return LONG_DATE_FORMATTER.format(eventDate(value)); }
 function seoulDateKey(date = new Date()): string {
-  const parts = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Seoul", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(date);
+  const parts = SEOUL_DATE_KEY_FORMATTER.formatToParts(date);
   const part = (type: Intl.DateTimeFormatPartTypes) => parts.find((item) => item.type === type)?.value;
   return `${part("year")}-${part("month")}-${part("day")}`;
 }
@@ -60,6 +61,7 @@ export function RealCalendar() {
   const [selectedDate, setSelectedDate] = useState(() => (requestedDate && /^\d{4}-\d{2}-\d{2}$/.test(requestedDate) ? requestedDate : today));
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<CalendarEvent | null>(null);
+  const dialogRef = useRef<HTMLDialogElement>(null);
 
   const selectDate = useCallback((date: string, openDialog = true) => {
     setSelectedDate(date); setMonthKey(date.slice(0, 7));
@@ -68,13 +70,16 @@ export function RealCalendar() {
     if (openDialog) setDialogOpen(true);
   }, [pathname, router, searchParams]);
 
-  useEffect(() => {
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") { setDialogOpen(false); setEditing(null); }
-    };
-    window.addEventListener("keydown", closeOnEscape);
-    return () => window.removeEventListener("keydown", closeOnEscape);
+  const closeDialog = useCallback(() => {
+    if (dialogRef.current?.open) dialogRef.current.close();
+    setDialogOpen(false);
+    setEditing(null);
   }, []);
+
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (dialogOpen && dialog && !dialog.open) dialog.showModal();
+  }, [dialogOpen]);
 
   const load = useCallback(() => {
     setState("loading");
@@ -115,18 +120,20 @@ export function RealCalendar() {
     return `${cellDate.getUTCFullYear()}-${String(cellDate.getUTCMonth() + 1).padStart(2, "0")}-${String(cellDate.getUTCDate()).padStart(2, "0")}`;
   });
   const monthEvents = displayEvents.filter((event) => dateKey(event.date).startsWith(monthKey));
+  const selectedDayEvents = displayEvents.filter((event) => dateKey(event.date) === selectedDate);
 
   async function saveEvent(data: FormData): Promise<void> {
     const parsed = inputSchema.safeParse({ title: data.get("title"), date: data.get("date"), kind: data.get("kind") });
     if (!parsed.success) { setMessage("A title and date are required."); return; }
     setMessage("Saving...");
     try {
+      const wasEditing = editing !== null;
       const event = editing
         ? await updateEvent(editing.id, parsed.data)
         : await createEvent({ ...parsed.data, labId: null, memo: null });
       setPersonal((items) => (editing ? items.map((item) => item.id === event.id ? event : item) : [...items, event]).sort((a, b) => a.date.localeCompare(b.date)));
       setMonthKey(event.date.slice(0, 7));
-      setSelectedDate(event.date); setEditing(null); setDialogOpen(false); setMessage(editing ? "Event updated." : "Event added.");
+      setSelectedDate(event.date); closeDialog(); setMessage(wasEditing ? "Event updated." : "Event added.");
     } catch (error) {
       setMessage(error instanceof WorkspaceApiError && error.status === 401 ? "Your session has expired. Please log in again." : "Could not save the event.");
     }
@@ -209,10 +216,10 @@ export function RealCalendar() {
 
         <aside aria-labelledby="upcoming-title" className="calendar-upcoming">
           <div className="calendar-upcoming-heading"><p>UPCOMING AGENDA</p><h2 id="upcoming-title">Upcoming dates</h2></div>
-          <form action={(data) => void saveEvent(data)} className="calendar-quick-add">
+          <form action={(data) => void saveEvent(data)} aria-label="Quick add reminder" className="calendar-quick-add">
             <label>Reminder<input name="title" placeholder="Event title" required /></label>
             <div><label>Date<input defaultValue={selectedDate} name="date" required type="date" /></label><label>Type<select name="kind" defaultValue="apply"><option value="apply">Application</option><option value="contact">Contact</option><option value="docs">Documents</option><option value="interview">Interview</option></select></label></div>
-            <button type="submit">Add reminder</button>
+            <button disabled={state !== "ready"} type="submit">Add reminder</button>
           </form>
           {state === "loading" ? <p className="calendar-empty-message" role="status">Loading calendar...</p> : displayEvents.length ? (
             <ol className="calendar-agenda">
@@ -223,7 +230,7 @@ export function RealCalendar() {
                     <div className="calendar-badges"><span>{event.source}</span><span>{event.source === "Official" ? "Verify date" : "User-entered"}</span></div>
                     <h3>{event.title}</h3><p>{formattedDate(event.date)} - Asia/Seoul</p><small>{event.detail}</small>
                     {event.sourceUrl && <a href={event.sourceUrl} rel="noreferrer" target="_blank">Official source <span aria-hidden="true">-&gt;</span></a>}
-                    {event.personalId && <button className="calendar-delete-button" onClick={() => void remove(event.personalId!)} type="button">Delete reminder</button>}
+                    {event.personalId && <button className="calendar-delete-button" onClick={() => { const personalId = event.personalId; if (personalId) void remove(personalId); }} type="button">Delete reminder</button>}
                   </div>
                 </li>
               ))}
@@ -231,7 +238,27 @@ export function RealCalendar() {
           ) : <p className="calendar-empty-message">No dates are available yet.</p>}
         </aside>
       </section>
-      {dialogOpen && <div className="calendar-dialog-backdrop" onMouseDown={() => { setDialogOpen(false); setEditing(null); }} role="presentation"><section aria-labelledby="calendar-dialog-title" aria-modal="true" className="calendar-dialog" onMouseDown={(event) => event.stopPropagation()} role="dialog"><button aria-label="Close date details" className="calendar-dialog-close" onClick={() => { setDialogOpen(false); setEditing(null); }} type="button">×</button><p>{formattedDate(selectedDate)}</p><h2 id="calendar-dialog-title">Events on this date</h2>{displayEvents.filter((event) => dateKey(event.date) === selectedDate).length ? <ul className="calendar-dialog-events">{displayEvents.filter((event) => dateKey(event.date) === selectedDate).map((event) => <li key={event.id}><strong>{event.title}</strong><span>{event.source} · {event.kind}</span><p>{event.detail}</p>{event.personalId && <div><button onClick={() => { const found = personal.find((item) => item.id === event.personalId); if (found) setEditing(found); }} type="button">Edit</button><button onClick={() => void remove(event.personalId!)} type="button">Delete</button></div>}</li>)}</ul> : <p>No events on this date.</p>}<form action={(data) => void saveEvent(data)} className="calendar-dialog-form"><h3>{editing ? "Edit reminder" : "Add reminder"}</h3><label>Reminder<input defaultValue={editing?.title ?? ""} name="title" required /></label><label>Date<input defaultValue={editing?.date ?? selectedDate} name="date" required type="date" /></label><label>Type<select defaultValue={editing?.kind ?? "apply"} name="kind"><option value="apply">Application</option><option value="contact">Contact</option><option value="docs">Documents</option><option value="interview">Interview</option></select></label><button type="submit">{editing ? "Save changes" : "Add reminder"}</button></form></section></div>}
+      {dialogOpen && <dialog
+        aria-labelledby="calendar-dialog-title"
+        className="calendar-dialog"
+        onCancel={closeDialog}
+        onClick={(event) => {
+          const bounds = event.currentTarget.getBoundingClientRect();
+          const clickedBackdrop = event.clientX < bounds.left || event.clientX > bounds.right
+            || event.clientY < bounds.top || event.clientY > bounds.bottom;
+          if (clickedBackdrop) closeDialog();
+        }}
+        ref={dialogRef}
+      >
+        <button aria-label="Close date details" className="calendar-dialog-close" onClick={closeDialog} type="button">×</button>
+        <p>{formattedDate(selectedDate)}</p>
+        <h2 id="calendar-dialog-title">Events on this date</h2>
+        {selectedDayEvents.length ? <ul className="calendar-dialog-events">{selectedDayEvents.map((event) => {
+          const personalId = event.personalId;
+          return <li key={event.id}><strong>{event.title}</strong><span>{event.source} · {event.kind}</span><p>{event.detail}</p>{personalId && <div><button onClick={() => { const found = personal.find((item) => item.id === personalId); if (found) setEditing(found); }} type="button">Edit</button><button onClick={() => void remove(personalId)} type="button">Delete</button></div>}</li>;
+        })}</ul> : <p>No events on this date.</p>}
+        <form action={(data) => void saveEvent(data)} aria-label="Date reminder editor" className="calendar-dialog-form" key={`${editing?.id ?? "new"}-${selectedDate}`}><h3>{editing ? "Edit reminder" : "Add reminder"}</h3><label>Reminder<input defaultValue={editing?.title ?? ""} name="title" required /></label><label>Date<input defaultValue={editing?.date ?? selectedDate} name="date" required type="date" /></label><label>Type<select defaultValue={editing?.kind ?? "apply"} name="kind"><option value="apply">Application</option><option value="contact">Contact</option><option value="docs">Documents</option><option value="interview">Interview</option></select></label><button disabled={state !== "ready"} type="submit">{editing ? "Save changes" : "Add reminder"}</button></form>
+      </dialog>}
       <p className="calendar-status" aria-live="polite">{message}</p>
     </main>
   );

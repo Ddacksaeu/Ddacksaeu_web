@@ -23,6 +23,12 @@ test("signed-in home uses a practical recommendation feed with an application ov
     throw new Error("Dashboard columns must be visible");
   }
   expect(recommendationBox.x).toBeLessThan(overviewBox.x);
+
+  const firstUpcomingTitle = overview.locator('[class*="deadlineList"] strong').first();
+  const upcomingTitleBox = await firstUpcomingTitle.boundingBox();
+  expect(upcomingTitleBox).not.toBeNull();
+  if (upcomingTitleBox === null) throw new Error("Upcoming date title must be visible");
+  expect(upcomingTitleBox.width).toBeGreaterThan(120);
 });
 
 test("personalized signed-in home remains readable at every product breakpoint", async ({ page }) => {

@@ -34,15 +34,15 @@ function SectionShell({ title, count, priority = false, children }: Readonly<{ t
 }
 
 function DetailList({ details }: Readonly<{ details: readonly string[] }>) {
-  return details.length > 0 ? <ul className="cv-detail-list">{details.map((detail, index) => <li key={`${detail}-${index}`}>{detail}</li>)}</ul> : null;
+  return details.length > 0 ? <ul className="cv-detail-list">{details.map((detail) => <li key={detail}>{detail}</li>)}</ul> : null;
 }
 
 function ExperienceSection({ title, items, priority = false }: Readonly<{ title: string; items: readonly Experience[]; priority?: boolean }>) {
   if (items.length === 0) return null;
   return (
     <SectionShell title={title} count={items.length} priority={priority}>
-      {items.map((item, index) => (
-        <article className="cv-entry" key={`${item.title}-${item.organization}-${index}`}>
+      {items.map((item) => (
+        <article className="cv-entry" key={`${item.title}-${item.organization}-${item.start_date}-${item.end_date}-${item.details.join("|")}`}>
           <h4>{item.title || "Experience entry"}</h4>
           <EntryMeta values={[item.organization, item.location, [item.start_date, item.end_date].filter(Boolean).join(" – ")]} />
           <DetailList details={item.details} />
@@ -56,8 +56,8 @@ function EducationSection({ items }: Readonly<{ items: readonly Education[] }>) 
   if (items.length === 0) return null;
   return (
     <SectionShell title="Education" count={items.length}>
-      {items.map((item, index) => (
-        <article className="cv-entry" key={`${item.degree}-${item.institution}-${index}`}>
+      {items.map((item) => (
+        <article className="cv-entry" key={`${item.degree}-${item.institution}-${item.start_date}-${item.end_date}-${item.details.join("|")}`}>
           <h4>{item.degree || "Education entry"}</h4>
           <EntryMeta values={[item.institution, item.location, [item.start_date, item.end_date].filter(Boolean).join(" – ")]} />
           <DetailList details={item.details} />
@@ -71,8 +71,8 @@ function ProjectsSection({ items }: Readonly<{ items: readonly Project[] }>) {
   if (items.length === 0) return null;
   return (
     <SectionShell title="Projects" count={items.length} priority>
-      {items.map((project, index) => (
-        <article className="cv-entry cv-project-entry" key={`${project.name}-${index}`}>
+      {items.map((project) => (
+        <article className="cv-entry cv-project-entry" key={`${project.name}-${project.organization}-${project.start_date}-${project.end_date}-${project.details.join("|")}`}>
           <h4>{project.name}</h4>
           <EntryMeta values={[project.organization, project.location, [project.start_date, project.end_date].filter(Boolean).join(" – ")]} />
           <DetailList details={project.details.length > 0 ? project.details : project.description ? [project.description] : []} />

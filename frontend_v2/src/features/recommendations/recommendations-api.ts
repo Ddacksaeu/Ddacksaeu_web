@@ -36,7 +36,7 @@ const recommendationResponseSchema = z.object({
   items: z.array(recommendationSchema),
 });
 
-export type RecommendationScorePart = Readonly<{
+type RecommendationScorePart = Readonly<{
   score: number;
   maxScore: number;
   rawScore: number;

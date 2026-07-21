@@ -120,7 +120,7 @@ export function ContactWorkspace({ initialProfessor }: ContactWorkspacePropertie
           <article><h3>Review score: {review.score}/100</h3><p>{review.summary}</p></article>
           {review.issues.length === 0
             ? <article><h3>No major issues found</h3><p>Verify every factual claim before sending.</p></article>
-            : review.issues.map((issue, index) => <article key={`${issue.category}-${index}`}><h3>{issue.category.replace("_", " ")} · {issue.severity}</h3><p>{issue.message}</p><p><strong>Suggestion:</strong> {issue.suggestion}</p></article>)}
+            : review.issues.map((issue) => <article key={`${issue.category}-${issue.message}-${issue.suggestion}`}><h3>{issue.category.replace("_", " ")} · {issue.severity}</h3><p>{issue.message}</p><p><strong>Suggestion:</strong> {issue.suggestion}</p></article>)}
           {(review.reviewedSubject !== subject || review.reviewedBody !== draft) && <button className={styles["secondary"]} type="button" onClick={applyMechanicalFixes}>Apply spelling and spacing fixes</button>}
         </div>}
       </section>

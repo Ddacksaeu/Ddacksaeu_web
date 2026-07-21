@@ -1,13 +1,13 @@
 import { z } from "zod";
 
-export const cvSummarySchema = z.object({
+const cvSummarySchema = z.object({
   id: z.string(),
   fileName: z.string(),
   contentType: z.string(),
   byteLength: z.number(),
 }).readonly();
 
-export const profileSummarySchema = z.object({
+const profileSummarySchema = z.object({
   displayName: z.string(),
   researchInterests: z.array(z.string()).readonly(),
   preferredUniversity: z.string().default(""),
@@ -16,7 +16,7 @@ export const profileSummarySchema = z.object({
   consentedAt: z.string(),
 }).readonly();
 
-export const profileWorkspaceSchema = z.object({
+const profileWorkspaceSchema = z.object({
   profile: profileSummarySchema.nullable(),
   cvAssets: z.array(cvSummarySchema).readonly(),
   targetLabIds: z.array(z.string()).readonly().default([]),

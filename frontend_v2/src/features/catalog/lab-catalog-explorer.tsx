@@ -41,7 +41,7 @@ function LabCard({ lab, saved, saving, onToggle }: Readonly<{
       </div>
       {lab.summary && <p>{lab.summary}</p>}
       <ul aria-label={`${lab.name} research keywords`} className="catalog-topic-list">{lab.keywords.map((keyword) => <li key={keyword}>{keyword}</li>)}</ul>
-      <div className="catalog-source-row"><span>POSTECH catalogue data</span><span className="catalog-source-date">Updated {formatter.format(new Date(lab.updatedAt))}</span></div>
+      <div className="catalog-source-row"><span>Indexed lab data</span><span className="catalog-source-date">Updated {formatter.format(new Date(lab.updatedAt))}</span></div>
     </article>
   );
 }
@@ -131,7 +131,7 @@ export function LabCatalogExplorer({ initialLabs, initialTotal, initialQuery = "
       <header className="catalog-hero">
         <p className="catalog-kicker">PROFESSOR DISCOVERY</p>
         <h1>Find professors aligned with your research</h1>
-        <p>Combine research topics and keywords to narrow POSTECH professor candidates.</p>
+        <p>Combine research topics and keywords to narrow graduate lab candidates.</p>
       </header>
       <div className="catalog-workspace">
         <button aria-controls="professor-filter-panel" aria-expanded={filtersOpen} aria-label={filtersOpen ? "Close professor search filters" : "Open professor search filters"} className="catalog-filter-trigger" onClick={() => setFiltersOpen((current) => !current)} type="button">

@@ -28,7 +28,7 @@ export function AppHeader({ current, setup = false }: AppHeaderProperties) {
   }
 
   return (
-    <header className="site-header">
+    <header className={`site-header${workspace || setup ? " site-header-workspace" : ""}`}>
       <div className="site-header-inner">
         <Link className="brand" href={setup ? "/onboarding" : workspace ? "/dashboard" : "/"}>Ddaksaeu</Link>
         <nav aria-label="Main navigation" className="main-nav">
